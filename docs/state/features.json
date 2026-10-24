@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "features": [
+    {
+      "id": "F-M0",
+      "title": "M0 Foundation — Scaffold, tokens, theme engine, shell, routes, mock repo, seed generator, rules and metrics with unit tests, dev menu",
+      "priority": 1,
+      "tier": "T3",
+      "depends_on": [],
+      "acceptance": [
+        "Given the application loads, When rendered in light or dark mode, Then design tokens from tokens.css apply without unstyled flash",
+        "Given the domain rules and metrics, When tested with Vitest, Then 100% of line transitions, task derivations, visit readiness, and KPI formulas pass unit tests",
+        "Given the mock repository and seed generator, When reset, Then deterministic sample data with Ana (Owner) and Ben (Helper) is generated",
+        "Given the router, When any route defined in section 10.2 is visited, Then the page renders cleanly inside the responsive shell",
+        "Given the dev menu, When toggling persona, offline mode, or failure rate, Then the application state updates accordingly"
+      ],
+      "verification": [
+        "src/domain/rules.test.ts",
+        "src/domain/metrics.test.ts"
+      ],
+      "status": "passed",
+      "verified_by": "verifier",
+      "evidence": "Vitest 18/18 tests passed in 1.84s (rules and metrics); TypeScript check passed (0 errors); Production bundle built in 4.34s; Localhost dev server running at http://localhost:5173/ and verified via browser subagent."
+    }
+  ]
+}

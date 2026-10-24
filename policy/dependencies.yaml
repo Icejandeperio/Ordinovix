@@ -1,0 +1,14 @@
+allowed_registries:
+  - "https://registry.npmjs.org/"
+minimum_release_age_days: 7
+allowed_licenses:
+  - MIT
+  - Apache-2.0
+  - BSD-2-Clause
+  - BSD-3-Clause
+  - ISC
+  - CC0-1.0
+disallowed_packages:
+  - supabase
+  - frappe
+  - erpnext
