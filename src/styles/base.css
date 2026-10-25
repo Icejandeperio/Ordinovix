@@ -50,5 +50,50 @@
   ::-webkit-scrollbar-thumb:hover {
     background: var(--rule-strong);
   }
+
+  /* Section 19.1 WCAG 2.2 AA scroll padding */
+  html, body, main {
+    scroll-padding-top: 72px;
+    scroll-padding-bottom: 72px;
+  }
+
+  /* Section 19.5 Privacy Mode */
+  .privacy-mode .sensitive-data,
+  .privacy-mode [data-sensitive="true"],
+  .privacy-mode .tin-masked,
+  .privacy-mode .tax-amount {
+    filter: blur(6px);
+    transition: filter 0.15s ease-out;
+    user-select: none;
+  }
+
+  .privacy-mode .sensitive-data:hover,
+  .privacy-mode [data-sensitive="true"]:hover,
+  .privacy-mode .tin-masked:hover,
+  .privacy-mode .tax-amount:hover,
+  .privacy-mode .sensitive-data:focus-within,
+  .privacy-mode [data-sensitive="true"]:focus-within {
+    filter: none;
+    user-select: auto;
+  }
+
+  /* Root text scale preferences */
+  html[data-text-scale="112.5"] {
+    font-size: 112.5%;
+  }
+  html[data-text-scale="125"] {
+    font-size: 125%;
+  }
+
+  /* Section 8.8 & 19.1 Reduced motion overrides */
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
+
 

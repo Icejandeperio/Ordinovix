@@ -1,13 +1,40 @@
+/**
+ * Section 19.6: High-fidelity Print Stylesheet
+ * Strict black text on white for trip packs, client checklists, histories, and summaries.
+ */
+
 @media print {
+  @page {
+    margin: 12mm 15mm;
+    size: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
   body {
     background: #FFFFFF !important;
     color: #000000 !important;
-    font-size: 11pt;
-    line-height: 1.35;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
-  /* Hide navigation, dev menu, toasts, floating overlays */
-  nav, aside, header, .no-print, [role="dialog"], [role="status"], #dev-menu {
+  /* Hide navigation, mobile bar, dev tools, sample banner, overlays */
+  nav,
+  aside,
+  header,
+  .no-print,
+  [role="dialog"],
+  [role="status"],
+  #dev-menu,
+  .sample-data-banner,
+  button:not(.print-include) {
     display: none !important;
   }
 
@@ -16,17 +43,49 @@
     padding: 0 !important;
     max-width: 100% !important;
     width: 100% !important;
+    overflow: visible !important;
+  }
+
+  /* 9 pt metadata typography */
+  .meta,
+  .print-meta,
+  small {
+    font-size: 9pt !important;
+    color: #444444 !important;
+  }
+
+  /* 4 mm physical bordered square checkboxes */
+  .print-checkbox,
+  input[type="checkbox"] {
+    width: 4mm !important;
+    height: 4mm !important;
+    min-width: 4mm !important;
+    min-height: 4mm !important;
+    border: 1.2pt solid #000000 !important;
+    border-radius: 0.5mm !important;
+    background: #FFFFFF !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+    margin-right: 2mm !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+  }
+
+  /* Page break preservation */
+  .page-break-after {
+    page-break-after: always;
+    break-after: always;
+  }
+
+  .avoid-break,
+  .client-block,
+  tr,
+  table {
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   .print-only {
     display: block !important;
-  }
-
-  /* Page break rules */
-  .page-break-after {
-    page-break-after: always;
-  }
-  .avoid-break {
-    page-break-inside: avoid;
   }
 }
