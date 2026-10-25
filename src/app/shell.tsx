@@ -21,7 +21,13 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldAlert,
+  Eye,
+  EyeOff,
+  Lock,
+  WifiOff,
+  Download,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { DevMenu } from './dev-menu';
 import { CommandPalette } from '@/components/command-palette';
 import { NotificationsPopover } from '@/components/notifications-popover';
@@ -40,8 +46,36 @@ export function LogoMark({ className = 'w-7 h-7 text-stamp' }: { className?: str
 export function AppShell() {
   const { data: session } = useSession();
   const { data: unreadCount = 0 } = useUnreadNotificationsCount();
+  const navigate = useNavigate();
   const [commandOpen, setCommandOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+
+  // Privacy Mode State (Section 19.5: Shift+P)
+  const [privacyMode, setPrivacyMode] = useState(() => {
+    try {
+      return localStorage.getItem('ordinovix:privacy_mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const togglePrivacyMode = () => {
+    setPrivacyMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('ordinovix:privacy_mode', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  // Idle Lock State (Section 19.5: default 15 mins)
+  const [isIdleLocked, setIsIdleLocked] = useState(false);
+
+  // Offline detection
+  const isDevOffline = devControls.getOffline();
+
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem('ordinovix:sidebar_collapsed') === 'true';
@@ -60,15 +94,58 @@ export function AppShell() {
     });
   };
 
+  // Listeners: Ctrl+[ for sidebar, Shift+P for privacy mode
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === '[') {
         e.preventDefault();
         toggleCollapsed();
       }
+      if (e.shiftKey && (e.key === 'P' || e.key === 'p')) {
+        e.preventDefault();
+        togglePrivacyMode();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Idle timer listener (Section 19.5)
+  useEffect(() => {
+    const rawTimeout = localStorage.getItem('ordinovix:idle_timeout') || '15';
+    if (rawTimeout === 'off') return;
+    const timeoutMs = parseInt(rawTimeout, 10) * 60 * 1000;
+
+    let timer = setTimeout(() => {
+      setIsIdleLocked(true);
+    }, timeoutMs);
+
+    const resetIdleTimer = () => {
+      if (!isIdleLocked) {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          setIsIdleLocked(true);
+        }, timeoutMs);
+      }
+    };
+
+    const events = ['mousemove', 'keydown', 'scroll', 'touchstart'];
+    events.forEach((ev) => window.addEventListener(ev, resetIdleTimer, { passive: true }));
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach((ev) => window.removeEventListener(ev, resetIdleTimer));
+    };
+  }, [isIdleLocked]);
+
+  // Capture PWA install prompt (Section 19.3)
+  useEffect(() => {
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
   }, []);
 
   const location = useLocation();
@@ -93,9 +170,17 @@ export function AppShell() {
   ];
 
   return (
-    <div className="h-screen max-h-screen flex flex-col bg-paper text-ink overflow-hidden">
+    <div className={`h-screen max-h-screen flex flex-col bg-paper text-ink overflow-hidden ${privacyMode ? 'privacy-mode' : ''}`}>
+      {/* Skip to Content Link (Section 19.1 WCAG 2.2 AA) */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-stamp focus:text-on-stamp focus:rounded-control focus:text-xs focus:font-bold focus:shadow-md"
+      >
+        Skip to content
+      </a>
+
       {/* Sample data banner */}
-      <div className="shrink-0 bg-stamp-soft text-stamp-strong border-b border-rule px-4 py-1 text-center text-xs font-semibold flex items-center justify-center gap-2 z-30">
+      <div className="shrink-0 bg-stamp-soft text-stamp-strong border-b border-rule px-4 py-1 text-center text-xs font-semibold flex items-center justify-center gap-2 z-30 sample-data-banner">
         <span className="w-2 h-2 rounded-full bg-stamp animate-pulse" />
         <span>Sample Data Mode</span>
         <span className="text-ink-3">|</span>
@@ -103,6 +188,14 @@ export function AppShell() {
           Persona: <strong>{currentPersona === 'owner' ? 'Ana Santos (Owner)' : 'Ben Morales (Helper)'}</strong>
         </span>
       </div>
+
+      {/* Offline Status Banner (Section 19.3) */}
+      {isDevOffline && (
+        <div className="shrink-0 bg-warn-bg text-warn-fg border-b border-warn-bd px-4 py-1 text-center text-xs font-semibold flex items-center justify-center gap-2 z-30" role="status" aria-live="polite">
+          <WifiOff className="w-3.5 h-3.5 text-warn-solid" />
+          <span>Working offline. Changes are saved locally and will sync when reconnected.</span>
+        </div>
+      )}
 
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Desktop Sidebar (>=1024px) / Tablet Rail (640px-1023px) */}
@@ -219,7 +312,40 @@ export function AppShell() {
             </div>
 
             {/* Right icons */}
-            <div className="flex items-center gap-3 relative">
+            <div className="flex items-center gap-2 sm:gap-3 relative">
+              {/* Privacy Mode Toggle (Section 19.5) */}
+              <button
+                type="button"
+                onClick={togglePrivacyMode}
+                className={`p-2 rounded-control text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                  privacyMode
+                    ? 'bg-warn-bg text-warn-fg border border-warn-bd shadow-xs'
+                    : 'text-ink-2 hover:bg-sheet-2 hover:text-ink'
+                }`}
+                title="Privacy Mode (Shift+P) — Blurs sensitive taxpayer records and amounts"
+                aria-label="Toggle Privacy Mode (Shift+P)"
+                aria-pressed={privacyMode}
+              >
+                {privacyMode ? <EyeOff className="w-4 h-4 text-warn-fg" /> : <Eye className="w-4 h-4" />}
+                <span className="hidden md:inline">{privacyMode ? 'Privacy On' : 'Privacy'}</span>
+              </button>
+
+              {/* Install App Button (Section 19.3) */}
+              {installPrompt && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    installPrompt.prompt();
+                    setInstallPrompt(null);
+                  }}
+                  className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-control bg-sheet-2 border border-rule text-xs font-semibold text-ink hover:bg-sheet-3 transition-colors"
+                  title="Install Ordinovix application"
+                >
+                  <Download className="w-3.5 h-3.5 text-stamp" />
+                  <span>Install</span>
+                </button>
+              )}
+
               <div className="relative">
                 <button
                   type="button"
@@ -248,14 +374,52 @@ export function AppShell() {
             </div>
           </header>
 
-          {/* Page Content Viewport */}
-          <main className="flex-1 overflow-y-auto min-h-0 w-full">
+          {/* Page Content Viewport with Landmark and WCAG 2.2 AA scroll padding */}
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="flex-1 overflow-y-auto min-h-0 w-full focus:outline-none"
+            style={{ scrollPaddingTop: '72px', scrollPaddingBottom: '72px' }}
+          >
             <div className="max-w-[1400px] w-full mx-auto p-4 sm:p-6 lg:p-8 pb-24 sm:pb-8">
               <Outlet />
             </div>
           </main>
         </div>
       </div>
+
+      {/* Idle Lock Curtain Overlay (Section 19.5) */}
+      {isIdleLocked && (
+        <div className="fixed inset-0 z-50 bg-paper/95 backdrop-blur-md flex flex-col items-center justify-center p-4 text-center">
+          <div className="max-w-sm w-full bg-sheet border border-rule rounded-xl p-8 shadow-xl space-y-5 animate-in fade-in zoom-in-95">
+            <div className="w-14 h-14 rounded-full bg-stamp-soft text-stamp flex items-center justify-center mx-auto border border-stamp/20 shadow-inner">
+              <Lock className="w-7 h-7" />
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-xl font-bold tracking-tight text-ink">Session Inactivity Lock</h2>
+              <p className="text-xs text-ink-2 leading-relaxed">
+                Ordinovix is locked to protect sensitive taxpayer data and BIR filings.
+              </p>
+            </div>
+            <div className="pt-2 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => setIsIdleLocked(false)}
+                className="w-full py-2.5 px-4 rounded-control bg-stamp text-on-stamp text-xs font-bold hover:bg-stamp-strong transition-colors"
+              >
+                Unlock Session
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/sign-in')}
+                className="w-full py-2.5 px-4 rounded-control border border-rule bg-sheet text-ink-2 hover:bg-sheet-2 hover:text-ink text-xs font-medium transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Bottom Bar (<640px) */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 h-16 bg-sheet border-t border-rule flex items-center justify-around z-40 px-2 pb-[env(safe-area-inset-bottom)]">
