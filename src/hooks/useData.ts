@@ -870,6 +870,50 @@ export function useSuggestVisitTasks(visitId: string) {
   });
 }
 
+export function useSavePayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (p: Parameters<typeof repositories.payments.save>[0]) =>
+      repositories.payments.save(p),
+    onSuccess: (saved) => {
+      qc.invalidateQueries({ queryKey: ['payments'] });
+      qc.invalidateQueries({ queryKey: ['task', saved.taskId] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}
 
+export function useRemovePayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      repositories.payments.remove(id, reason),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payments'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}
 
-
+export function useChangeTaskDue() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      dueDate,
+      ref,
+      reason,
+    }: {
+      id: string;
+      dueDate: string;
+      ref?: string;
+      reason: string;
+    }) => repositories.tasks.changeDue(id, dueDate, ref || '', reason),
+    onSuccess: (updated) => {
+      qc.invalidateQueries({ queryKey: ['task', updated.id] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['calendar'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}

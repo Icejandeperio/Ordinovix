@@ -196,3 +196,27 @@
   - Add / Edit Office modal (`OfficeFormModal`) supporting full CRUD on office entities.
 - Verification: 53 unit tests green across 8 test files (`src/data/mock/visits.test.ts` exercising readiness determination, physical pack list generation, pack state toggling, departure override logging, Spec 16.6 outcome mappings, expense handling, and office directory management), TypeScript compilation clean (`0 errors`), full `verify.ps1` gate passed in 11.28s, and automated browser subagent QA verified all visits and offices workflows.
 
+## Session 2026-10-25 (M8 Calendar & Payments)
+- Implemented full Section 11.10 Tax Calendar (`src/routes/calendar/page.tsx`):
+  - Custom date grid built entirely on `date-fns` (never an external calendar library) respecting Manila date formatting.
+  - Three distinct views: `Month` (standard desktop grid with weekday headers, today indicator, up to 3 items per cell + "+N more" badge opening an items popover), `Week` (7-day column schedule), and `Agenda` (chronological list with day headers and overdue/due-today grouping, optimized for mobile).
+  - Multi-item aggregation from `repositories.calendar.range`: Task due dates (colored by dueState: critical for overdue, warn for due_today, info for on_track; blocked lock icon), Office visits (office short name, arrive-by time, readiness indicator), Holidays (Philippine regular & special non-working days), Client follow-up expected dates, Authorization expiries, and moved deadlines.
+  - Rescheduling capabilities: Drag visit / Move date dialog with Undo toast; Task due date adjustment dialog (`ChangeDueDateDialog`) requiring new date, statutory source reference (e.g. BIR RMC circular), and operational reason.
+- Implemented Section 11.12 & 12.8 Payments Register & Management (`src/routes/payments/page.tsx`):
+  - Summary KPI cards: Total Recorded Payments (live sum in PHP), Proof Missing count with warning badge, and Pending Reimbursement count.
+  - Built-in view tabs: `All` (default), `Proof missing` (warning tone), `To be reimbursed` (info tone).
+  - Search and filter strip: Text search across reference numbers, client names, and provider; dropdowns for Client, Channel, and Paid By.
+  - Interactive table: Paid on date, Client code folder tab and legal name, Reference number with one-click copy button and feedback toast, Channel & Provider, Amount formatted in integer centavos, Paid by badge (`Client` | `Me / Operator`), Reimbursement status chip, Proof attachment indicator, and Actions menu (Edit, Remove with reason modal).
+  - Live Totals row at the bottom dynamically summing filtered rows in real-time.
+  - Export menu supporting CSV (with UTF-8 BOM) and Microsoft Excel (.xls).
+- Implemented Section 12.8 Record Payment Modal Sheet (`src/components/payments/record-payment-sheet.tsx`):
+  - Slide-over sheet for recording BIR tax payments and teller transactions.
+  - Fields: Client combobox, Task combobox (dynamically filtered to selected client's tasks), Amount (`MoneyInput` storing integer centavos, validated > 0), Paid on (`DateField`, validated not in future), Channel (`aab_otc`, `rco`, `online`, `other`), Provider (free text with suggestions like Landbank, DBP, GCash, Maya), Reference number (required for non-OTC channels), Paid by segmented switch (`Client` | `Me / Operator`), Reimbursement status controls when paid by operator (`waiting`, `reimbursed`, `not_needed`), Proof attachment with missing proof warning, and operational notes (<= 300 chars).
+  - Domain rule Section 11.12: Recording a payment with proof on a task automatically clears next actions mentioning proof.
+- Verification & Test Coverage:
+  - 64 unit tests green across 9 test files (`src/data/mock/calendar-payments.test.ts` exercising payment register listing, integer centavos calculations, channel & reimbursement filtering, proofMissing queries, helper persona client scoping, payment CRUD with versioning, task proof clearance domain rule, calendar range derivations across task_due, visit, holiday, follow_up, auth_expiry, and statutory due date adjustments).
+  - Full TypeScript typecheck clean (`0 errors`).
+  - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 64 Vitest tests, Vite production build).
+  - Browser subagent visual QA verified Calendar views (Month, Week, Agenda) and Payments register with modal form.
+
+

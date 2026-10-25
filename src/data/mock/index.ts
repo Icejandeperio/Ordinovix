@@ -58,6 +58,7 @@ import { generateSeedData } from './seed';
 import {
   derivedStatus,
   dueState,
+  isBlocked,
   blockingReason,
   statusGroup,
   visitItemReadiness,
@@ -2685,6 +2686,19 @@ export const mockRepositories: Repositories = {
       await simulateLatency();
       let list = store.payments.filter((p) => !p.deletedAt && isClientAllowed(p.clientId));
       if (f?.clientId) list = list.filter((p) => p.clientId === f.clientId);
+      if (f?.taskId) list = list.filter((p) => p.taskId === f.taskId);
+      if (f?.channel) list = list.filter((p) => p.channel === f.channel);
+      if (f?.paidBy) list = list.filter((p) => p.paidBy === f.paidBy);
+      if (f?.reimbursement) list = list.filter((p) => p.reimbursement?.status === f.reimbursement);
+      if (f?.proofMissing !== undefined) {
+        list = list.filter((p) =>
+          f.proofMissing ? p.proofDocumentIds.length === 0 : p.proofDocumentIds.length > 0
+        );
+      }
+      if (f?.from) list = list.filter((p) => p.paidOn >= f.from!);
+      if (f?.to) list = list.filter((p) => p.paidOn <= f.to!);
+
+      list.sort((a, b) => b.paidOn.localeCompare(a.paidOn));
       const total = list.reduce((acc, p) => acc + p.amount, 0);
       return { items: list, total: list.length, totalAmount: total };
     },
@@ -2692,6 +2706,33 @@ export const mockRepositories: Repositories = {
     async save(p) {
       await simulateLatency();
       const { user } = getCurrentUser();
+
+      const existing = p.id ? store.payments.find((item) => item.id === p.id) : undefined;
+      if (existing) {
+        if (p.amount !== undefined) existing.amount = p.amount;
+        if (p.paidOn) existing.paidOn = p.paidOn;
+        if (p.channel) existing.channel = p.channel;
+        existing.provider = p.provider;
+        existing.referenceNo = p.referenceNo;
+        if (p.paidBy) existing.paidBy = p.paidBy;
+        existing.reimbursement = p.reimbursement;
+        if (p.proofDocumentIds) existing.proofDocumentIds = p.proofDocumentIds;
+        existing.note = p.note;
+        existing.updatedAt = todayInManila() + 'T00:00:00+08:00';
+        existing.updatedBy = user.id;
+        existing.version += 1;
+
+        if (existing.proofDocumentIds.length > 0 && existing.taskId) {
+          const task = store.tasks.find((t) => t.id === existing.taskId);
+          if (task && task.nextAction?.text?.toLowerCase().includes('proof')) {
+            delete task.nextAction;
+          }
+        }
+
+        saveStore();
+        return existing;
+      }
+
       const payment: Payment = {
         id: p.id || generateId(),
         orgId: store.org.id,
@@ -2713,7 +2754,23 @@ export const mockRepositories: Repositories = {
         version: 1,
       };
       store.payments.push(payment);
+
+      // Section 11.12: Recording payment with proof clears next action "Attach payment proof"
+      if (payment.proofDocumentIds.length > 0 && payment.taskId) {
+        const task = store.tasks.find((t) => t.id === payment.taskId);
+        if (task && task.nextAction?.text?.toLowerCase().includes('proof')) {
+          delete task.nextAction;
+        }
+      }
+
       saveStore();
+      logActivity(
+        'created',
+        'payment',
+        payment.id,
+        `Recorded payment of ₱${(payment.amount / 100).toFixed(2)}`,
+        payment.clientId
+      );
       return payment;
     },
 
@@ -2724,6 +2781,7 @@ export const mockRepositories: Repositories = {
         p.deletedAt = todayInManila() + 'T00:00:00+08:00';
         p.deletedReason = reason;
         saveStore();
+        logActivity('deleted', 'payment', id, `Removed payment record: ${reason}`, p.clientId);
       }
     },
   },
@@ -2829,9 +2887,20 @@ export const mockRepositories: Repositories = {
 
       // 1. Task due dates
       store.tasks
-        .filter((t) => isClientAllowed(t.clientId) && t.dueDate >= from && t.dueDate <= to)
+        .filter(
+          (t) =>
+            isClientAllowed(t.clientId) &&
+            t.dueDate >= from &&
+            t.dueDate <= to &&
+            t.status !== 'archived'
+        )
         .forEach((t) => {
           const client = store.clients.find((c) => c.id === t.clientId);
+          const lines = store.taskLines.filter((l) => l.taskId === t.id);
+          const dispStatus = derivedStatus(t, lines);
+          const dState = dueState(t, todayInManila());
+          const blocked = isBlocked(t, lines);
+
           items.push({
             id: t.id,
             type: 'task_due',
@@ -2839,18 +2908,52 @@ export const mockRepositories: Repositories = {
             date: t.dueDate,
             clientId: t.clientId,
             clientCode: client?.code,
+            statusTone:
+              dState === 'overdue'
+                ? 'critical'
+                : dState === 'due_today'
+                ? 'warn'
+                : 'info',
+            meta: {
+              taskId: t.id,
+              clientCode: client?.code,
+              clientName: client?.displayName,
+              title: t.title,
+              isBlocked: blocked,
+              dueState: dState,
+              displayedStatus: dispStatus,
+              dueDate: t.dueDate,
+              dueSource: t.dueSource,
+              ownerUserId: t.ownerUserId,
+            },
           });
         });
 
       // 2. Visits
       store.visits
-        .filter((v) => v.plannedDate >= from && v.plannedDate <= to)
+        .filter(
+          (v) =>
+            !v.deletedAt &&
+            v.status !== 'cancelled' &&
+            v.plannedDate >= from &&
+            v.plannedDate <= to
+        )
         .forEach((v) => {
+          const summary = buildVisitSummary(v);
           items.push({
             id: v.id,
             type: 'visit',
             title: `Visit: ${v.officeName}`,
             date: v.plannedDate,
+            meta: {
+              visitId: v.id,
+              officeName: v.officeName,
+              rdoCode: v.rdoCode,
+              arriveBy: v.arriveBy,
+              assigneeUserId: v.assigneeUserId,
+              isReady: summary.isReady,
+              status: v.status,
+            },
           });
         });
 
@@ -2861,8 +2964,67 @@ export const mockRepositories: Repositories = {
           items.push({
             id: h.id,
             type: 'holiday',
-            title: `Holiday: ${h.name}`,
+            title: h.name,
             date: h.date,
+            meta: {
+              holidayType: h.type,
+              sourceRef: h.sourceRef,
+            },
+          });
+        });
+
+      // 4. Follow-up expected responses
+      store.followUps
+        .filter(
+          (fu) =>
+            !fu.deletedAt &&
+            fu.status !== 'resolved' &&
+            fu.expectedBy &&
+            fu.expectedBy >= from &&
+            fu.expectedBy <= to &&
+            isClientAllowed(fu.clientId)
+        )
+        .forEach((fu) => {
+          const client = store.clients.find((c) => c.id === fu.clientId);
+          items.push({
+            id: fu.id,
+            type: 'follow_up',
+            title: `Follow-up: ${client?.code || 'Client'}`,
+            date: fu.expectedBy!,
+            clientId: fu.clientId,
+            clientCode: client?.code,
+            meta: {
+              followUpId: fu.id,
+              channel: fu.channel,
+              attemptCount: fu.attemptCount,
+            },
+          });
+        });
+
+      // 5. Authorization expiries
+      store.authorizations
+        .filter(
+          (a) =>
+            !a.deletedAt &&
+            !a.replacedById &&
+            a.validUntil &&
+            a.validUntil >= from &&
+            a.validUntil <= to &&
+            isClientAllowed(a.clientId)
+        )
+        .forEach((a) => {
+          const client = store.clients.find((c) => c.id === a.clientId);
+          items.push({
+            id: a.id,
+            type: 'authorization_expiry',
+            title: `SPA Expiry: ${client?.code || 'Client'}`,
+            date: a.validUntil!,
+            clientId: a.clientId,
+            clientCode: client?.code,
+            meta: {
+              authId: a.id,
+              authType: a.type,
+            },
           });
         });
 
