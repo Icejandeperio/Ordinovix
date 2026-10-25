@@ -274,6 +274,32 @@
   - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 81 Vitest tests, Vite production build).
   - Browser subagent visual QA verified `/sign-in`, `/access-pending`, `/welcome`, `/settings` (both Ana and Ben personas), `/audit`, and `/help`.
 
-
-
-
+## Session 2026-10-25 (M11 Polish, PWA, Accessibility & Privacy Mode)
+- Implemented Section 19.3 PWA & Installable Web App:
+  - Created Web App Manifest (`public/manifest.webmanifest`) with standalone display, `#EEF1F4` theme/background color, and high-contrast SVG icons (`icon-192.svg`, `icon-512.svg`).
+  - Linked manifest and apple-touch-icon in `index.html`.
+  - Added native `beforeinstallprompt` event listener in `src/app/shell.tsx` with top bar "Install App" button and installation prompt dispatch.
+- Implemented Section 19.1 & 19.2 Accessibility (WCAG 2.2 AA):
+  - Accessible "Skip to main content" link at top of document tree focusing `#main-content`.
+  - Proper landmark `<main id="main-content" tabIndex={-1}>` wrapping route content.
+  - 72px scroll padding (`scroll-padding-top: 72px`) in `src/styles/base.css` ensuring headers are not obscured when navigating to anchor tags.
+  - Root text scaling overrides for user preferences (`data-text-scale="112.5"`, `data-text-scale="125"`).
+  - Reduced motion media query overrides (`prefers-reduced-motion: reduce`) damping animations.
+- Implemented Section 19.5 Privacy Mode & Idle Lock:
+  - Top bar Privacy Mode toggle with `Shift+P` global keyboard shortcut.
+  - When enabled, applies `.privacy-mode` to the root container, blurring sensitive taxpayer identifiers (TINs, client names, tax amounts, sensitive data attributes) with seamless unblur on `:hover` and `:focus-within`.
+  - Idle Lock curtain overlay respecting configurable inactivity timeout (`localStorage['ordinovix:idle_timeout']`, default 15 minutes) with user activity listeners (`mousemove`, `keydown`, `scroll`, `touchstart`) and "Unlock Session" modal action.
+- Implemented Section 19.6 High-Fidelity Print Stylesheet (`src/styles/print.css`):
+  - Strict print rules per Section 19.6: 11pt body text, 9pt meta text, 4mm physical bordered square checkboxes (avoiding Unicode rendering artifacts on dot-matrix/inkjet printers), `@page` margin rules, and page break avoidance.
+- Implemented Section 19.8 Local Ring Buffer Error Logger (`src/lib/error-buffer.ts`):
+  - In-memory ring buffer holding the last 50 frontend errors with timestamps, URLs, and caller context.
+  - Automatic credential sanitization redacting password and secret patterns.
+  - Diagnostic report generator (`generateDiagnosticReport`) exporting browser environment, screen dimensions, theme, and error history.
+- Implemented Section 19.4 Performance & Code Splitting (`src/app/router.tsx`, `vite.config.ts`):
+  - Route-level dynamic code-splitting via `React.lazy` and accessible `Suspense` loading fallback for non-core routes (`CalendarPage`, `DocumentsPage`, `InsightsPage`, `ReportsPage`, `SettingsPage`, `AuditPage`, `HelpPage`, `DevTokensPage`, `DevStatesPage`).
+  - Rollup manual chunking splitting `vendor-react` and `vendor-icons`.
+- Verification & Test Coverage:
+  - 95 unit tests green across 12 test files (`src/data/mock/polish.test.ts` exercising error ring buffer logging, token sanitization, 50-item cap eviction, diagnostic reporting, idle lock timeout calculations, centavos currency formatting, and Manila timezone date strings).
+  - Full TypeScript typecheck clean (`0 errors`).
+  - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 95 Vitest tests, Vite production build).
+  - Automated browser subagent visual QA verified Privacy Mode toggle, `Shift+P` keyboard shortcut, Skip link, top bar Install button, and responsive 360px mobile viewport rendering without horizontal overflow.
