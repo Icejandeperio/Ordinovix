@@ -29,8 +29,26 @@ import { HelpPage } from '@/routes/help/page';
 import { DevTokensPage } from '@/routes/dev/tokens';
 import { DevStatesPage } from '@/routes/dev/states';
 import { NotFoundPage } from '@/routes/not-found';
+import { SignInPage } from '@/routes/sign-in/page';
+import { AccessPendingPage } from '@/routes/access-pending/page';
+import { WelcomePage } from '@/routes/welcome/page';
 
 export const router = createBrowserRouter([
+  {
+    path: '/sign-in',
+    element: <SignInPage />,
+    errorElement: <NotFoundPage />,
+  },
+  {
+    path: '/access-pending',
+    element: <AccessPendingPage />,
+    errorElement: <NotFoundPage />,
+  },
+  {
+    path: '/welcome',
+    element: <WelcomePage />,
+    errorElement: <NotFoundPage />,
+  },
   {
     path: '/',
     element: <AppShell />,
