@@ -246,5 +246,34 @@
   - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 73 Vitest tests, Vite production build).
   - Automated browser subagent visual QA verified all 6 Insights tabs, chart table toggles, and Reports export cards.
 
+## Session 2026-10-25 (M10 Settings, Onboarding, Audit Log, Help & Error Pages)
+- Implemented Section 11.1 Sign-in & Access Pending (`src/routes/sign-in/page.tsx`, `src/routes/access-pending/page.tsx`):
+  - `/sign-in`: Centered on `--paper` (max 400px) with 48px logomark, branded Google sign-in button ("Continue with Google"), allowlist security note ("Only people the owner has added can sign in"), and mock persona switcher (`[ Continue as Ana — Owner ]` & `[ Continue as Ben — Helper ]`).
+  - `/access-pending`: Centered warning card for unauthorized accounts with clear copy ("You're signed in as maria.unauthorized@gmail.com, but this account hasn't been added to Ordinovix. Ask the owner to add this email address in Settings -> Users & Access.") and actions to "Use a different Google account" or "Sign out" with zero app data loaded.
+- Implemented Section 11.2 First-run Setup Wizard (`src/routes/welcome/page.tsx`):
+  - 5-step onboarding wizard in centered 640px panel with progressive step indicator ("Step X of 5") and `--stamp` progress bar.
+  - Step 1 (Your details): Display name in messages ({{operator}}), practice name, mobile number, and optional BIR Tax Agent accreditation number & validity date.
+  - Step 2 (Add clients): 3 choices as RadioCards (Import a spreadsheet, Add one at a time, Do this later).
+  - Step 3 (Choose task types): Obligation templates checklist grouped by cycle with unverified warning notice.
+  - Step 4 (Invite a helper): Helper Google account email and client scoping controls (All clients vs Specific clients).
+  - Step 5 (Phone install): Instructions for Android (Chrome Add to Home screen) and iPhone (Safari Share -> Add to Home Screen) with "Turn on reminders" push notification toggle.
+  - Finish action lands on Today with confirmation toast.
+- Enhanced Section 11.17 Settings Hub (`src/routes/settings/page.tsx`):
+  - 13-tab two-column layout with URL route synchronization (`/settings/:tab`).
+  - Strict Helper scoping: As Ben Morales (helper), navigation strictly exposes only Profile, Appearance, Notifications, Task templates (read-only view), Security, and About; owner-only tabs are hidden and direct route access displays an access denied guard.
+  - Before Ordinovix Baseline (Section 12.15): Assessment period dates, office trips/month, repeat trips/month, follow-up messages/week, hours finding records/week (step 0.5), filings late/quarter, confidence (1–5 RadioCards), discovery notes, and persistence via `useSaveBaseline`.
+  - Task Templates (Section 12.10): Verification modal strictly enforcing statutory source reference (e.g. NIRC / RR circular) before marking verified; helper view restricted to read-only.
+  - Data & Backups (Section 11.17): Practice archive export (JSON download), automated 7-year statutory retention backup status, and Reset sample data trigger (`devControls.reset()`).
+- Section 11.18 Audit Log & Section 11.19 Help (`src/routes/audit/page.tsx`, `src/routes/help/page.tsx`):
+  - Audit log table with owner access restriction (helpers receive 403 Access Denied), event filters (Sensitive, Overrides), and CSV export.
+  - Help center with 18-term tax/legal Glossary, 4-stage task and requirement flow diagram, global keyboard shortcuts, and "What Ordinovix does not do" statutory disclaimer.
+- Section 11.20 Error Pages (`src/routes/not-found.tsx`): 404 page with Today and Search actions.
+- Verification & Test Coverage:
+  - 81 unit tests green across 11 test files (`src/data/mock/settings.test.ts` exercising baseline save/retrieve with version increments, audit log owner access, helper audit query restriction, helper entity activity scoping, and statutory template verification rules).
+  - Full TypeScript typecheck clean (`0 errors`).
+  - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 81 Vitest tests, Vite production build).
+  - Browser subagent visual QA verified `/sign-in`, `/access-pending`, `/welcome`, `/settings` (both Ana and Ben personas), `/audit`, and `/help`.
+
+
 
 
