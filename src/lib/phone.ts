@@ -13,3 +13,26 @@ export function formatPhone(phone?: string | null): string {
   }
   return phone;
 }
+
+export const formatPhoneDisplay = formatPhone;
+
+/**
+ * Normalizes user input into E.164 (+63...) format.
+ */
+export function formatPhoneE164(input?: string | null): string {
+  if (!input) return '';
+  const digits = input.replace(/\D/g, '');
+  if (digits.startsWith('63') && digits.length >= 11) {
+    return `+${digits}`;
+  }
+  if (digits.startsWith('09') && digits.length === 11) {
+    return `+63${digits.slice(1)}`;
+  }
+  if (digits.startsWith('02') && digits.length === 10) {
+    return `+63${digits.slice(1)}`;
+  }
+  if (digits.length === 10 && digits.startsWith('9')) {
+    return `+63${digits}`;
+  }
+  return input.startsWith('+') ? input : `+${input}`;
+}

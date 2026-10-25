@@ -1,0 +1,328 @@
+import React from 'react';
+import {
+  CircleDashed,
+  Send,
+  Inbox,
+  ScanEye,
+  BadgeCheck,
+  CircleAlert,
+  PencilLine,
+  MinusCircle,
+  CircleDot,
+  Lock,
+  Pencil,
+  UserCheck,
+  CircleCheck,
+  Clock,
+  CircleCheckBig,
+  Archive,
+  Hourglass,
+  AlarmClock,
+  ShieldCheck,
+  ShieldAlert,
+} from 'lucide-react';
+import { cn } from '@/lib/cn';
+import {
+  LINE_STATUS_META,
+  TASK_STATUS_META,
+  type StatusMeta,
+} from '@/domain/labels';
+import type { LineStatus, TaskStatus, DueState, AuthorizationState } from '@/domain/types';
+
+// Map icon string to Lucide component
+const ICON_MAP: Record<string, React.ElementType> = {
+  CircleDashed,
+  Send,
+  Inbox,
+  ScanEye,
+  BadgeCheck,
+  CircleAlert,
+  PencilLine,
+  MinusCircle,
+  CircleDot,
+  Lock,
+  Pencil,
+  UserCheck,
+  CircleCheck,
+  Clock,
+  CircleCheckBig,
+  Archive,
+};
+
+const TONE_CLASSES: Record<StatusMeta['tone'], string> = {
+  neutral: 'text-neutral-fg bg-neutral-bg border-neutral-bd',
+  info: 'text-info-fg bg-info-bg border-info-bd',
+  warn: 'text-warn-fg bg-warn-bg border-warn-bd',
+  serious: 'text-serious-fg bg-serious-bg border-serious-bd',
+  critical: 'text-critical-fg bg-critical-bg border-critical-bd',
+  good: 'text-good-fg bg-good-bg border-good-bd',
+};
+
+// ===== 9.7 StatusChip (Task Status) =====
+export interface StatusChipProps {
+  status: TaskStatus;
+  className?: string;
+}
+
+export function StatusChip({ status, className }: StatusChipProps) {
+  const meta = TASK_STATUS_META[status] || {
+    label: status,
+    tone: 'neutral',
+    icon: 'CircleDot',
+  };
+  const Icon = ICON_MAP[meta.icon] || CircleDot;
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+        TONE_CLASSES[meta.tone],
+        className
+      )}
+    >
+      <Icon className="w-3.5 h-3.5 shrink-0" />
+      <span className="truncate">{meta.label}</span>
+    </span>
+  );
+}
+
+// ===== 9.7 LineChip (Line Status) =====
+export interface LineChipProps {
+  status: LineStatus;
+  onClick?: () => void;
+  className?: string;
+}
+
+export function LineChip({ status, onClick, className }: LineChipProps) {
+  const meta = LINE_STATUS_META[status] || {
+    label: status,
+    tone: 'neutral',
+    icon: 'CircleDashed',
+  };
+  const Icon = ICON_MAP[meta.icon] || CircleDashed;
+
+  const content = (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+        TONE_CLASSES[meta.tone],
+        onClick && 'cursor-pointer hover:opacity-90 active:scale-95 transition-all',
+        className
+      )}
+      onClick={onClick}
+    >
+      <Icon className="w-3.5 h-3.5 shrink-0" />
+      <span className="truncate">{meta.label}</span>
+    </span>
+  );
+
+  return content;
+}
+
+// ===== 9.7 DueBadge =====
+export interface DueBadgeProps {
+  state?: DueState;
+  daysDiff?: number;
+  dueDate?: string;
+  isCompleted?: boolean;
+  completedDate?: string;
+  className?: string;
+}
+
+export function DueBadge({
+  state = 'ok',
+  daysDiff = 0,
+  dueDate,
+  isCompleted = false,
+  completedDate,
+  className,
+}: DueBadgeProps) {
+  if (isCompleted) {
+    return (
+      <span
+        className={cn(
+          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+          'text-neutral-fg bg-neutral-bg border-neutral-bd',
+          className
+        )}
+      >
+        <CircleCheck className="w-3.5 h-3.5 shrink-0" />
+        <span>Done {completedDate || 'recently'}</span>
+      </span>
+    );
+  }
+
+  if (state === 'overdue') {
+    return (
+      <span
+        className={cn(
+          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+          'text-critical-fg bg-critical-bg border-critical-bd',
+          className
+        )}
+      >
+        <AlarmClock className="w-3.5 h-3.5 shrink-0 animate-pulse" />
+        <span>Overdue {Math.abs(daysDiff)}d</span>
+      </span>
+    );
+  }
+
+  if (state === 'due_today') {
+    return (
+      <span
+        className={cn(
+          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+          'text-warn-fg bg-warn-bg border-warn-bd',
+          className
+        )}
+      >
+        <Clock className="w-3.5 h-3.5 shrink-0" />
+        <span>Due today</span>
+      </span>
+    );
+  }
+
+  if (state === 'due_soon') {
+    return (
+      <span
+        className={cn(
+          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+          'text-warn-fg bg-warn-bg border-warn-bd',
+          className
+        )}
+      >
+        <Hourglass className="w-3.5 h-3.5 shrink-0" />
+        <span>Due in {daysDiff}d</span>
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+        'text-neutral-fg bg-neutral-bg border-neutral-bd',
+        className
+      )}
+    >
+      <Clock className="w-3.5 h-3.5 shrink-0" />
+      <span>Due {dueDate || 'later'}</span>
+    </span>
+  );
+}
+
+// ===== 9.7 AuthorizationBadge =====
+export interface AuthorizationBadgeProps {
+  state: AuthorizationState | 'none';
+  detail?: string;
+  className?: string;
+}
+
+export function AuthorizationBadge({ state, detail, className }: AuthorizationBadgeProps) {
+  if (state === 'valid') {
+    return (
+      <span
+        className={cn(
+          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+          'text-good-fg bg-good-bg border-good-bd',
+          className
+        )}
+      >
+        <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+        <span>Valid {detail ? `to ${detail}` : ''}</span>
+      </span>
+    );
+  }
+
+  if (state === 'expiring') {
+    return (
+      <span
+        className={cn(
+          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+          'text-warn-fg bg-warn-bg border-warn-bd',
+          className
+        )}
+      >
+        <Hourglass className="w-3.5 h-3.5 shrink-0" />
+        <span>Expires in {detail || 'soon'}</span>
+      </span>
+    );
+  }
+
+  if (state === 'expired') {
+    return (
+      <span
+        className={cn(
+          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+          'text-critical-fg bg-critical-bg border-critical-bd',
+          className
+        )}
+      >
+        <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+        <span>Expired {detail || ''}</span>
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+        'text-critical-fg bg-critical-bg border-critical-bd',
+        className
+      )}
+    >
+      <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+      <span>No authorization</span>
+    </span>
+  );
+}
+
+// ===== 9.7 ReadinessMeter =====
+export interface ReadinessMeterProps {
+  total: number;
+  ready: number;
+  label?: string;
+  className?: string;
+}
+
+export function ReadinessMeter({ total, ready, label, className }: ReadinessMeterProps) {
+  const isComplete = total > 0 && ready === total;
+
+  return (
+    <div className={cn('space-y-1.5', className)} aria-label={`${ready} of ${total} ready`}>
+      <div className="flex items-center justify-between text-xs font-semibold">
+        <span className="text-ink-2">{label || 'Readiness'}</span>
+        <span className={cn('tabular-nums font-bold', isComplete ? 'text-good-fg' : 'text-ink-3')}>
+          {ready} of {total} ready
+        </span>
+      </div>
+      <div className="flex gap-1 h-2 w-full">
+        {Array.from({ length: total }).map((_, i) => (
+          <div
+            key={i}
+            className={cn(
+              'flex-1 rounded-[2px] transition-all duration-slow',
+              i < ready ? 'bg-good-solid shadow-xs' : 'bg-sheet-3'
+            )}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ===== 9.7 ClientFlags =====
+export function ClientFlag({ label, className }: { label: string; className?: string }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider',
+        'bg-sheet-2 text-ink-3 border border-rule',
+        className
+      )}
+    >
+      {label}
+    </span>
+  );
+}

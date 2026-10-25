@@ -14,3 +14,10 @@
 - Upgraded export engine (`src/lib/export.ts`) to support Microsoft Excel (.xls), printable PDF document views, and CSV with UTF-8 BOM.
 - Built Section 9.6 custom date picker (`src/components/inputs/date-field.tsx`) with natural language parsing (`chrono-node`), quick preset chips, month/year navigation, and relative date cues.
 - Replaced top and bottom sidebar collapse chevron buttons with a centered border notch handle (`src/app/shell.tsx`) featuring `<` and `>` directional chevrons, position sync between 248px and 72px, `Ctrl+[` keyboard shortcut, and `localStorage` state persistence.
+- Built Section 9 Core Component Library:
+  - Section 9.1 `Button` with Primary, Secondary, Ghost, Danger, Icon variants, loading spinner, and keyboard focus rings.
+  - Section 9.3 `MoneyInput` (stores integer centavos, tabular formatting, ₱ prefix, quick-fill chips) and `NumberStepper` (-/+ buttons, rapid hold repeat).
+  - Section 9.4 Identity inputs: `TinInput` (`###-###-###-#####`), `MaskedTin` (30s timed reveal toggle), `PhoneInput` (PH mobile & landlines, E.164 conversion, tel/sms actions), `EmailInput`.
+  - Section 8.6 & 9.7 `ReviewStamp` (double rule, -3° deterministic rotation, SVG feTurbulence ink texture, stamp-press animation, variants: line, ready, done, received).
+  - Section 9.7 Status indicators: `StatusChip`, `LineChip`, `DueBadge`, `AuthorizationBadge`, `ReadinessMeter`, and `ClientFlag`.
+- Expanded `/dev/states` Component State Gallery to exercise all four canonical states (Loading Skeleton, Empty State, Error with Retry, Populated View) in both Light & Dark modes.
