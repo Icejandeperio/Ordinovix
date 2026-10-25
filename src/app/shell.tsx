@@ -23,6 +23,8 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { DevMenu } from './dev-menu';
+import { CommandPalette } from '@/components/command-palette';
+import { NotificationsPopover } from '@/components/notifications-popover';
 
 // Logomark SVG component
 export function LogoMark({ className = 'w-7 h-7 text-stamp' }: { className?: string }) {
@@ -38,6 +40,8 @@ export function LogoMark({ className = 'w-7 h-7 text-stamp' }: { className?: str
 export function AppShell() {
   const { data: session } = useSession();
   const { data: unreadCount = 0 } = useUnreadNotificationsCount();
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem('ordinovix:sidebar_collapsed') === 'true';
@@ -199,28 +203,44 @@ export function AppShell() {
 
             {/* Title / breadcrumb / Search trigger */}
             <div className="hidden sm:flex items-center gap-3 flex-1 max-w-md">
-              <div className="relative w-full">
+              <button
+                type="button"
+                onClick={() => setCommandOpen(true)}
+                className="relative w-full text-left"
+              >
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
-                <input
-                  type="text"
-                  placeholder="Search clients, tasks, documents... (Ctrl+K)"
-                  className="w-full pl-9 pr-4 py-1.5 text-xs rounded-control bg-sheet-2 border border-rule text-ink placeholder:text-ink-3 focus:bg-sheet focus:border-stamp focus:outline-none"
-                />
-              </div>
+                <div className="w-full pl-9 pr-4 py-1.5 text-xs rounded-control bg-sheet-2 border border-rule text-ink-3 hover:bg-sheet-3 transition-colors flex items-center justify-between cursor-pointer">
+                  <span>Search clients, tasks, documents...</span>
+                  <kbd className="px-1.5 py-0.2 rounded-chip bg-sheet border border-rule font-mono text-[10px] text-ink-3">
+                    Ctrl K
+                  </kbd>
+                </div>
+              </button>
             </div>
 
             {/* Right icons */}
-            <div className="flex items-center gap-3">
-              <NavLink
-                to="/notifications"
-                className="relative p-2 rounded-control hover:bg-sheet-2 text-ink-2 hover:text-ink"
-                title="Notifications"
-              >
-                <Bell className="w-4 h-4" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-critical-solid" />
-                )}
-              </NavLink>
+            <div className="flex items-center gap-3 relative">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setNotificationsOpen(!notificationsOpen)}
+                  className={`relative p-2 rounded-control hover:bg-sheet-2 transition-colors ${
+                    notificationsOpen ? 'bg-sheet-2 text-stamp' : 'text-ink-2 hover:text-ink'
+                  }`}
+                  title="Notifications"
+                  aria-expanded={notificationsOpen}
+                >
+                  <Bell className="w-4 h-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-critical-solid ring-2 ring-sheet" />
+                  )}
+                </button>
+
+                <NotificationsPopover
+                  open={notificationsOpen}
+                  onClose={() => setNotificationsOpen(false)}
+                />
+              </div>
 
               <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-rule text-xs text-ink-2">
                 <span className="font-semibold">{session?.org.name || 'Santos Tax Services'}</span>
@@ -265,6 +285,9 @@ export function AppShell() {
 
       {/* Developer Drawer */}
       <DevMenu />
+
+      {/* Global Command Palette (cmdk) */}
+      <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
     </div>
   );
 }

@@ -21,3 +21,25 @@
   - Section 8.6 & 9.7 `ReviewStamp` (double rule, -3° deterministic rotation, SVG feTurbulence ink texture, stamp-press animation, variants: line, ready, done, received).
   - Section 9.7 Status indicators: `StatusChip`, `LineChip`, `DueBadge`, `AuthorizationBadge`, `ReadinessMeter`, and `ClientFlag`.
 - Expanded `/dev/states` Component State Gallery to exercise all four canonical states (Loading Skeleton, Empty State, Error with Retry, Populated View) in both Light & Dark modes.
+
+## Session 2026-10-25 (M2 Today, Search & Notifications)
+- Implemented full Section 11.3 Today Focus Dashboard (`src/routes/today/page.tsx`):
+  - Two-column responsive desktop layout (>=1280px) and collapsible single-column layout on smaller viewports.
+  - Manila date header with "X need you · Y visits this week" and "Mine / Everyone" scope toggle (owner-only, remembered).
+  - Interactive count strip button pills (`Overdue`, `Due this week`, `Blocked by client`, `Awaiting my review`, `Follow-ups due`, `Visits this week`) with smooth scroll targeting.
+  - Left column: Urgent filings with `DueBadge` and `StatusChip`, Received review items with interactive `ReviewStamp` accept animation and issue flagging, Blocked client groups with "Request missing" CTA, and Ready for action tasks with "Mark submitted" / "Add to visit".
+  - Right rail: Next visits with `ReadinessMeter` and READY badge, Follow-ups due today with client chips, Expiring authorizations, 14-day mini calendar strip, and Recent activity log.
+  - Strict helper role scoping: Switching to Ben Morales strictly confines all tasks, review lines, visits, and count pills to assigned clients (`client-rsp` and `client-cruz`).
+- Implemented Global Command Palette (`src/components/command-palette.tsx`):
+  - Powered by `cmdk` with global keyboard listener (`Ctrl+K`, `Cmd+K`, and `/` key outside input fields).
+  - Search across Quick Actions (new task, new client, open period, plan visit, toggle theme, switch persona), Navigation routes, Clients, and Tasks.
+  - Top bar search bar wired directly into the palette with clickable trigger.
+- Implemented Global Search Results Page (`src/routes/search/page.tsx`):
+  - Categorized results across Clients, Tasks, Documents, Visits, Follow-ups, Payments, and Offices with top-5 pagination and "Show all" toggles.
+  - Matched search terms highlighted with `--stamp-soft` background.
+  - Recent search query chips with localStorage persistence.
+- Implemented Notifications System (`src/components/notifications-popover.tsx` and `src/routes/notifications/page.tsx`):
+  - 400px header bell popover displaying latest 10 notifications with unread dot indicators, timestamps, and "Mark all read" action.
+  - Full notifications center page with day grouping (`Today`), filter tabs (`All` / `Unread`), and read/unread status.
+- Verification: 20 unit tests green (rules, metrics, mock today queue with helper scoping), TypeScript compilation clean (`0 errors`), and automated browser subagent QA verified all 5 milestone criteria.
+

@@ -76,7 +76,7 @@ import {
   countLateDiscoveredBlockers,
   calculateClientResponseDays,
 } from '@/domain/metrics';
-import { todayInManila, setDevToday, getDevToday } from '@/lib/dates';
+import { todayInManila, setDevToday, getDevToday, addDaysToDate } from '@/lib/dates';
 import { generateId } from '@/lib/ids';
 
 const STORAGE_KEY = 'ox-mock-data-v2';
@@ -116,14 +116,35 @@ interface StoreData {
   activity: ActivityEvent[];
 }
 
+const getStorageItem = (k: string): string | null => {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      return window.localStorage.getItem(k);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
+const setStorageItem = (k: string, v: string): void => {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      window.localStorage.setItem(k, v);
+    } catch {
+      // ignore in constrained environments
+    }
+  }
+};
+
+let currentPersona: 'owner' | 'helper' = (getStorageItem(PERSONA_KEY) as 'owner' | 'helper') || 'owner';
+let failureRate: number = parseFloat(getStorageItem(FAILURE_RATE_KEY) || '0');
+let isOffline: boolean = getStorageItem(OFFLINE_KEY) === 'true';
 let store: StoreData = loadStore();
-let currentPersona: 'owner' | 'helper' = (localStorage.getItem(PERSONA_KEY) as 'owner' | 'helper') || 'owner';
-let failureRate: number = parseFloat(localStorage.getItem(FAILURE_RATE_KEY) || '0');
-let isOffline: boolean = localStorage.getItem(OFFLINE_KEY) === 'true';
 
 function loadStore(): StoreData {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = getStorageItem(STORAGE_KEY);
     if (raw) {
       return JSON.parse(raw);
     }
@@ -135,11 +156,121 @@ function loadStore(): StoreData {
     ...seed,
     documents: [],
     notes: [],
-    notifications: [],
+    notifications: [
+      {
+        id: 'notif-1',
+        orgId: seed.org.id,
+        userId: 'user-ana',
+        type: 'daily_digest',
+        title: 'Daily Digest',
+        body: 'Today: 1 overdue, 1 due soon, 1 review needed, 1 visit scheduled.',
+        link: '/',
+        createdAt: `${todayInManila()}T07:00:00+08:00`,
+        createdBy: 'user-ana',
+        updatedAt: `${todayInManila()}T07:00:00+08:00`,
+        updatedBy: 'user-ana',
+        version: 1,
+      },
+      {
+        id: 'notif-2',
+        orgId: seed.org.id,
+        userId: 'user-ana',
+        type: 'due_soon_blocked',
+        title: 'Due soon & missing items',
+        body: 'RSP 1601-EQ Q3 is due in 3 days and still waiting on 2 items.',
+        link: '/tasks/t-rsp-1601eq',
+        entity: 'task',
+        entityId: 't-rsp-1601eq',
+        createdAt: `${todayInManila()}T07:05:00+08:00`,
+        createdBy: 'user-ana',
+        updatedAt: `${todayInManila()}T07:05:00+08:00`,
+        updatedBy: 'user-ana',
+        version: 1,
+      },
+      {
+        id: 'notif-3',
+        orgId: seed.org.id,
+        userId: 'user-ana',
+        type: 'received_needs_review',
+        title: 'Document needs review',
+        body: 'Ben Morales added Signed 2307s for RSP 1601-EQ. Needs review.',
+        link: '/',
+        createdAt: `${todayInManila()}T08:15:00+08:00`,
+        createdBy: 'user-ben',
+        updatedAt: `${todayInManila()}T08:15:00+08:00`,
+        updatedBy: 'user-ben',
+        version: 1,
+      },
+      {
+        id: 'notif-4',
+        orgId: seed.org.id,
+        userId: 'user-ana',
+        type: 'visit_not_ready_tomorrow',
+        title: 'Upcoming visit not ready',
+        body: "Tomorrow's RDO 39 visit is not ready: 1 item missing.",
+        link: '/visits/v-rdo-01',
+        entity: 'visit',
+        entityId: 'v-rdo-01',
+        createdAt: `${todayInManila()}T08:30:00+08:00`,
+        createdBy: 'user-ana',
+        updatedAt: `${todayInManila()}T08:30:00+08:00`,
+        updatedBy: 'user-ana',
+        version: 1,
+      },
+      {
+        id: 'notif-5',
+        orgId: seed.org.id,
+        userId: 'user-ben',
+        type: 'assigned',
+        title: 'Assigned to you',
+        body: 'Ana Santos assigned you the RDO 39 visit on Oct 27.',
+        link: '/visits/v-rdo-01',
+        entity: 'visit',
+        entityId: 'v-rdo-01',
+        createdAt: `${todayInManila()}T09:00:00+08:00`,
+        createdBy: 'user-ana',
+        updatedAt: `${todayInManila()}T09:00:00+08:00`,
+        updatedBy: 'user-ana',
+        version: 1,
+      },
+    ],
     savedViews: [],
     baseline: null,
     pulses: [],
-    activity: [],
+    activity: [
+      {
+        id: 'act-init-1',
+        orgId: seed.org.id,
+        at: `${todayInManila()}T08:30:00+08:00`,
+        actorId: 'user-ana',
+        entity: 'task',
+        entityId: 't-rsp-1601eq',
+        clientId: 'c-rsp',
+        action: 'created',
+        summary: 'Ana Santos created 1601-EQ Q3 for Rivera Salonga & Partners',
+      },
+      {
+        id: 'act-init-2',
+        orgId: seed.org.id,
+        at: `${todayInManila()}T09:15:00+08:00`,
+        actorId: 'user-ben',
+        entity: 'line',
+        entityId: 'l-rsp-1',
+        clientId: 'c-rsp',
+        action: 'file_uploaded',
+        summary: 'Ben Morales uploaded Signed 2307s for RSP',
+      },
+      {
+        id: 'act-init-3',
+        orgId: seed.org.id,
+        at: `${todayInManila()}T10:00:00+08:00`,
+        actorId: 'user-ana',
+        entity: 'visit',
+        entityId: 'v-rdo-01',
+        action: 'created',
+        summary: 'Trip to RDO 39 scheduled for Tuesday morning',
+      },
+    ],
   };
   saveStore(initialStore);
   return initialStore;
@@ -147,7 +278,7 @@ function loadStore(): StoreData {
 
 function saveStore(data: StoreData = store) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    setStorageItem(STORAGE_KEY, JSON.stringify(data));
   } catch (e) {
     console.error('Failed to save store to localStorage', e);
   }
@@ -385,7 +516,7 @@ export const mockRepositories: Repositories = {
     async queue(scope = 'everyone') {
       await simulateLatency();
       const today = todayInManila();
-      const { user } = getCurrentUser();
+      const { user, membership } = getCurrentUser();
 
       // Filter tasks by allowed clients
       const allowedTasks = store.tasks.filter((t) => {
@@ -408,9 +539,89 @@ export const mockRepositories: Repositories = {
         );
         const client = store.clients.find((c) => c.id === t.clientId)!;
         for (const l of lines) {
-          reviewLines.push({ line: l, task: t, client });
+          const files = store.documents.filter((d) => d.lineId === l.id && !d.deletedAt);
+          reviewLines.push({ line: l, task: t, client, files });
         }
       }
+      reviewLines.sort((a, b) => (a.line.receivedAt || '').localeCompare(b.line.receivedAt || ''));
+
+      // Blocked by client tasks
+      const clientBlockedMap = new Map<ID, { client: Client; tasks: Array<{ task: Task; missingLines: TaskLine[] }> }>();
+      for (const t of allowedTasks) {
+        const lines = store.taskLines.filter((l) => l.taskId === t.id);
+        const missingLines = lines.filter(
+          (l) =>
+            l.status === 'requested' ||
+            l.status === 'not_requested' ||
+            l.status === 'incomplete' ||
+            l.status === 'needs_correction'
+        );
+        if (missingLines.length > 0) {
+          if (!clientBlockedMap.has(t.clientId)) {
+            const client = store.clients.find((c) => c.id === t.clientId)!;
+            clientBlockedMap.set(t.clientId, { client, tasks: [] });
+          }
+          clientBlockedMap.get(t.clientId)!.tasks.push({ task: t, missingLines });
+        }
+      }
+      const blockedByClient: TodayQueue['blockedByClient'] = Array.from(clientBlockedMap.values()).map((entry) => {
+        const allMissing = entry.tasks.flatMap((t) => t.missingLines);
+        const labels = Array.from(new Set(allMissing.map((l) => l.label)));
+        const firstTwo = labels.slice(0, 2);
+        const remaining = labels.length - 2;
+        const firstMissingLabels = remaining > 0 ? [...firstTwo, `+${remaining} more`] : firstTwo;
+
+        const relatedFollowUps = store.followUps.filter((fu) => fu.clientId === entry.client.id);
+        const attempts = store.followUpAttempts.filter((a) => relatedFollowUps.some((fu) => fu.id === a.followUpId));
+        const lastAttempt = attempts.sort((a, b) => (b.sentAt || '').localeCompare(a.sentAt || ''))[0];
+
+        return {
+          client: entry.client,
+          tasks: entry.tasks,
+          missingCount: allMissing.length,
+          firstMissingLabels,
+          lastRequestedDate: lastAttempt && lastAttempt.sentAt ? lastAttempt.sentAt.slice(0, 10) : undefined,
+          attemptCount: attempts.length,
+        };
+      });
+
+      // Ready for my action
+      const readyForActionTasks = summaries.filter((s) => {
+        const lines = store.taskLines.filter((l) => l.taskId === s.task.id);
+        const requiredLines = lines.filter((l) => l.required);
+        const allRequiredAccepted = requiredLines.length > 0 && requiredLines.every((l) => l.status === 'accepted');
+        return allRequiredAccepted && s.task.status !== 'completed' && s.task.status !== 'submitted';
+      });
+
+      // Next visits (upcoming visits, ordered by date)
+      const nextVisits = store.visits
+        .filter((v) => {
+          if (v.status === 'cancelled' || v.status === 'done') return false;
+          if (v.plannedDate < today) return false;
+          const items = store.visitItems.filter((vi) => vi.visitId === v.id);
+          const hasAllowedClient = items.some((vi) => {
+            const task = store.tasks.find((t) => t.id === vi.taskId);
+            return task && isClientAllowed(task.clientId);
+          });
+          if (membership.role !== 'owner' && !hasAllowedClient && v.assigneeUserId !== user.id) {
+            return false;
+          }
+          return true;
+        })
+        .sort((a, b) => a.plannedDate.localeCompare(b.plannedDate))
+        .slice(0, 5)
+        .map((v) => {
+          const summary = buildVisitSummary(v);
+          const office = store.offices.find((o) => o.id === v.officeId);
+          return {
+            visit: v,
+            office,
+            itemCount: summary.itemCount,
+            readyItemCount: summary.readyItemCount,
+            isReady: summary.isReady,
+            blockingReasons: summary.blockingReasons,
+          };
+        });
 
       // Follow-ups due
       const followUps = store.followUps
@@ -426,14 +637,69 @@ export const mockRepositories: Repositories = {
         })
         .filter((f) => f.state === 'due_today' || f.state === 'overdue');
 
-      // Visits today
-      const visitsToday = store.visits
-        .filter((v) => v.plannedDate === today && v.status !== 'cancelled')
-        .map(buildVisitSummary);
+      // Authorizations expiring
+      const authorizationsExpiring = store.authorizations
+        .filter((a) => {
+          if (!isClientAllowed(a.clientId)) return false;
+          const state = authorizationState(a, today);
+          return state === 'expiring' || state === 'expired';
+        })
+        .map((a) => {
+          const client = store.clients.find((c) => c.id === a.clientId)!;
+          const state = authorizationState(a, today);
+          return { authorization: a, client, state };
+        })
+        .sort((a, b) => (a.authorization.validUntil || '').localeCompare(b.authorization.validUntil || ''));
+
+      // Next 14 days mini calendar
+      const next14Days: TodayQueue['next14Days'] = [];
+      for (let i = 0; i < 14; i++) {
+        const d = addDaysToDate(today, i);
+        const parts = d.split('-').map(Number);
+        const dt = new Date(parts[0], parts[1] - 1, parts[2]);
+        const dayNumber = dt.getDate();
+        const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dt.getDay()];
+        const hasDueTasks = allowedTasks.some((t) => t.dueDate === d);
+        const hasVisits = store.visits.some(
+          (v) =>
+            v.plannedDate === d &&
+            v.status !== 'cancelled' &&
+            (membership.role === 'owner' || v.assigneeUserId === user.id)
+        );
+        next14Days.push({ date: d, dayNumber, dayName, hasDueTasks, hasVisits });
+      }
+
+      // Recent activity
+      const recentActivity = store.activity
+        .filter((e) => !e.clientId || isClientAllowed(e.clientId))
+        .sort((a, b) => b.at.localeCompare(a.at))
+        .slice(0, 5);
 
       // KPI stats
       const firstPassRate = calculateFirstPassRate(store.visitItems);
       const blockedCount = summaries.filter((s) => s.statusGroup === 'blocked').length;
+
+      // Counts
+      const weekEndDate = addDaysToDate(today, 7);
+      const visitsThisWeekCount = store.visits.filter((v) => {
+        if (v.status === 'cancelled') return false;
+        if (v.plannedDate < today || v.plannedDate > weekEndDate) return false;
+        const items = store.visitItems.filter((vi) => vi.visitId === v.id);
+        const hasAllowedClient = items.some((vi) => {
+          const task = store.tasks.find((t) => t.id === vi.taskId);
+          return task && isClientAllowed(task.clientId);
+        });
+        return membership.role === 'owner' || hasAllowedClient || v.assigneeUserId === user.id;
+      }).length;
+
+      const counts = {
+        overdue: overdue.length,
+        dueThisWeek: summaries.filter((s) => s.dueState === 'due_soon' || s.dueState === 'due_today').length,
+        blockedByClient: blockedByClient.length,
+        awaitingReview: reviewLines.length,
+        followUpsDue: followUps.length,
+        visitsThisWeek: visitsThisWeekCount,
+      };
 
       return {
         focusDate: today,
@@ -441,8 +707,14 @@ export const mockRepositories: Repositories = {
         dueTodayTasks: dueToday,
         dueSoonTasks: dueSoon,
         reviewRequiredLines: reviewLines,
+        blockedByClient,
+        readyForActionTasks,
+        nextVisits,
         followUpsDue: followUps,
-        visitsToday,
+        authorizationsExpiring,
+        next14Days,
+        recentActivity,
+        counts,
         kpiStats: {
           firstPassRate,
           blockedCount,
@@ -2281,18 +2553,103 @@ export const mockRepositories: Repositories = {
     async query(q) {
       await simulateLatency();
       const query = q.toLowerCase();
+      const today = todayInManila();
+      const { user, membership } = getCurrentUser();
+
+      // Clients: match name, code, or contacts
+      const matchingClientIds = new Set<ID>();
+      store.contacts.forEach((ct) => {
+        if (ct.name.toLowerCase().includes(query) || (ct.email && ct.email.toLowerCase().includes(query))) {
+          matchingClientIds.add(ct.clientId);
+        }
+      });
+
       const clients = store.clients
-        .filter((c) => isClientAllowed(c.id) && (c.displayName.toLowerCase().includes(query) || c.code.toLowerCase().includes(query)))
+        .filter(
+          (c) =>
+            isClientAllowed(c.id) &&
+            (c.displayName.toLowerCase().includes(query) ||
+              c.code.toLowerCase().includes(query) ||
+              (c.registeredName && c.registeredName.toLowerCase().includes(query)) ||
+              matchingClientIds.has(c.id))
+        )
         .map(buildClientSummary);
+
+      // Tasks: match title, period, kind
       const tasks = store.tasks
-        .filter((t) => isClientAllowed(t.clientId) && (t.title?.toLowerCase().includes(query)))
+        .filter(
+          (t) =>
+            isClientAllowed(t.clientId) &&
+            (t.title?.toLowerCase().includes(query) ||
+              t.period?.toLowerCase().includes(query) ||
+              t.kind.toLowerCase().includes(query))
+        )
         .map(buildTaskSummary);
-      const offices = store.offices.filter((o) => o.name.toLowerCase().includes(query));
+
+      // Documents: match display name
+      const documents = store.documents.filter(
+        (d) => isClientAllowed(d.clientId) && !d.deletedAt && d.displayName.toLowerCase().includes(query)
+      );
+
+      // Visits: match officeName or purpose, respect scoping
+      const visits = store.visits
+        .filter((v) => {
+          if (v.status === 'cancelled') return false;
+          const items = store.visitItems.filter((vi) => vi.visitId === v.id);
+          const hasAllowedClient = items.some((vi) => {
+            const task = store.tasks.find((t) => t.id === vi.taskId);
+            return task && isClientAllowed(task.clientId);
+          });
+          if (membership.role !== 'owner' && !hasAllowedClient && v.assigneeUserId !== user.id) {
+            return false;
+          }
+          return (
+            v.officeName.toLowerCase().includes(query) ||
+            (v.purpose && v.purpose.toLowerCase().includes(query))
+          );
+        })
+        .map(buildVisitSummary);
+
+      // Follow-ups: match client or lines
+      const followUps = store.followUps
+        .filter((fu) => isClientAllowed(fu.clientId))
+        .map((fu) => {
+          const client = store.clients.find((c) => c.id === fu.clientId)!;
+          const task = store.tasks.find((t) => t.id === fu.taskId);
+          const lines = store.taskLines.filter((l) => fu.lineIds.includes(l.id));
+          const contact = store.contacts.find((c) => c.id === fu.contactId);
+          const state = followUpState(fu, today);
+          const attempts = store.followUpAttempts.filter((a) => a.followUpId === fu.id);
+          return { followUp: fu, client, task, lines, contact, state, attempts };
+        })
+        .filter(
+          (f) =>
+            f.client.displayName.toLowerCase().includes(query) ||
+            f.client.code.toLowerCase().includes(query) ||
+            f.lines.some((l) => l.label.toLowerCase().includes(query))
+        );
+
+      // Payments: match reference number or channel
+      const payments = store.payments.filter((p) => {
+        if (!isClientAllowed(p.clientId)) return false;
+        return (
+          (p.referenceNo && p.referenceNo.toLowerCase().includes(query)) ||
+          p.channel.toLowerCase().includes(query)
+        );
+      });
+
+      // Offices: match name or rdoCode
+      const offices = store.offices.filter(
+        (o) => o.name.toLowerCase().includes(query) || (o.rdoCode && o.rdoCode.toLowerCase().includes(query))
+      );
 
       return {
         clients,
         tasks,
-        documents: [],
+        documents,
+        visits,
+        followUps,
+        payments,
         offices,
       };
     },
@@ -2302,37 +2659,46 @@ export const mockRepositories: Repositories = {
 // Dev Controls
 export const mockDevControls = {
   reset() {
-    localStorage.removeItem(STORAGE_KEY);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem(STORAGE_KEY);
+    }
     store = loadStore();
-    window.location.reload();
+    if (typeof window !== 'undefined' && window.location?.reload) {
+      window.location.reload();
+    }
   },
   setPersona(role: 'owner' | 'helper') {
     currentPersona = role;
-    localStorage.setItem(PERSONA_KEY, role);
-    window.location.reload();
+    setStorageItem(PERSONA_KEY, role);
+    if (typeof window !== 'undefined' && window.location?.reload) {
+      window.location.reload();
+    }
   },
   getPersona(): 'owner' | 'helper' {
     return currentPersona;
   },
   setOffline(offline: boolean) {
     isOffline = offline;
-    localStorage.setItem(OFFLINE_KEY, String(offline));
+    setStorageItem(OFFLINE_KEY, String(offline));
   },
   getOffline(): boolean {
     return isOffline;
   },
   setFailureRate(rate: number) {
     failureRate = rate;
-    localStorage.setItem(FAILURE_RATE_KEY, String(rate));
+    setStorageItem(FAILURE_RATE_KEY, String(rate));
   },
   getFailureRate(): number {
     return failureRate;
   },
   setToday(date: ISODate | null) {
     setDevToday(date);
-    window.location.reload();
+    if (typeof window !== 'undefined' && window.location?.reload) {
+      window.location.reload();
+    }
   },
   getToday(): ISODate | null {
     return getDevToday();
   },
 };
+

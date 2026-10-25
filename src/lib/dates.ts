@@ -110,3 +110,17 @@ export function formatDateTime(isoDateTime?: string | null): string {
     return isoDateTime;
   }
 }
+
+/**
+ * Formats a calendar date: 'Saturday, October 24'
+ */
+export function formatHeaderDate(dateStr: string = todayInManila()): string {
+  try {
+    const parts = dateStr.split('-').map(Number);
+    const date = new Date(parts[0], parts[1] - 1, parts[2]);
+    return format(date, 'EEEE, MMMM d');
+  } catch {
+    return dateStr;
+  }
+}
+

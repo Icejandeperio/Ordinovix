@@ -544,9 +544,46 @@ export interface TodayQueue {
   overdueTasks: TaskSummary[];
   dueTodayTasks: TaskSummary[];
   dueSoonTasks: TaskSummary[];
-  reviewRequiredLines: Array<{ line: TaskLine; task: Task; client: Client }>;
+  reviewRequiredLines: Array<{ line: TaskLine; task: Task; client: Client; files: DocumentFile[] }>;
+  blockedByClient: Array<{
+    client: Client;
+    tasks: Array<{ task: Task; missingLines: TaskLine[] }>;
+    missingCount: number;
+    firstMissingLabels: string[];
+    lastRequestedDate?: ISODate;
+    attemptCount: number;
+  }>;
+  readyForActionTasks: TaskSummary[];
+  nextVisits: Array<{
+    visit: Visit;
+    office?: Office;
+    itemCount: number;
+    readyItemCount: number;
+    isReady: boolean;
+    blockingReasons: string[];
+  }>;
   followUpsDue: FollowUpView[];
-  visitsToday: VisitSummary[];
+  authorizationsExpiring: Array<{
+    authorization: Authorization;
+    client: Client;
+    state: AuthorizationState;
+  }>;
+  next14Days: Array<{
+    date: ISODate;
+    dayNumber: number;
+    dayName: string;
+    hasDueTasks: boolean;
+    hasVisits: boolean;
+  }>;
+  recentActivity: ActivityEvent[];
+  counts: {
+    overdue: number;
+    dueThisWeek: number;
+    blockedByClient: number;
+    awaitingReview: number;
+    followUpsDue: number;
+    visitsThisWeek: number;
+  };
   kpiStats: {
     firstPassRate: number;              // 0-100%
     blockedCount: number;
@@ -620,6 +657,9 @@ export interface SearchResults {
   clients: ClientSummary[];
   tasks: TaskSummary[];
   documents: DocumentFile[];
+  visits: VisitSummary[];
+  followUps: FollowUpView[];
+  payments: Payment[];
   offices: Office[];
 }
 

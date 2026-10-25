@@ -125,6 +125,18 @@ export function useUnreadNotificationsCount() {
   });
 }
 
+export function useMarkNotificationsRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: Parameters<typeof repositories.notifications.markRead>[0]) =>
+      repositories.notifications.markRead(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+    },
+  });
+}
+
 export function useAuditLog(filters?: Parameters<typeof repositories.activity.list>[0]) {
   return useQuery({
     queryKey: ['audit-log', filters],
