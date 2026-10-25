@@ -103,7 +103,7 @@ export function AppShell() {
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Desktop Sidebar (>=1024px) / Tablet Rail (640px-1023px) */}
         <aside
-          className={`hidden sm:flex flex-col border-r border-rule bg-sheet transition-all duration-200 z-30 relative shrink-0 h-full overflow-hidden ${
+          className={`hidden sm:flex flex-col border-r border-rule bg-sheet transition-all duration-200 z-30 relative shrink-0 h-full ${
             collapsed ? 'w-[72px]' : 'lg:w-[248px] sm:w-[72px]'
           }`}
         >
@@ -123,7 +123,7 @@ export function AppShell() {
           </button>
 
           {/* Logo & Brand Header */}
-          <div className={`h-14 shrink-0 border-b border-rule flex items-center ${collapsed ? 'px-2 justify-center' : 'px-4'}`}>
+          <div className={`h-14 shrink-0 border-b border-rule flex items-center overflow-hidden ${collapsed ? 'px-2 justify-center' : 'px-4'}`}>
             <NavLink
               to="/"
               className={`flex items-center transition-opacity hover:opacity-90 ${collapsed ? 'justify-center' : 'gap-2.5 min-w-0'}`}
@@ -167,7 +167,7 @@ export function AppShell() {
           </nav>
 
           {/* User profile / Organization footer */}
-          <div className={`p-3 shrink-0 mt-auto border-t border-rule bg-sheet-2 flex items-center ${collapsed ? 'justify-center' : 'gap-2.5'}`}>
+          <div className={`p-3 shrink-0 mt-auto border-t border-rule bg-sheet-2 flex items-center overflow-hidden ${collapsed ? 'justify-center' : 'gap-2.5'}`}>
             <div
               className="w-8 h-8 rounded-full bg-stamp text-on-stamp flex items-center justify-center text-xs font-bold shrink-0 shadow-xs"
               title={currentPersona === 'owner' ? 'Ana Santos (Owner)' : 'Ben Morales (Helper)'}
