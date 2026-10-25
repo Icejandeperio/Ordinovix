@@ -104,6 +104,12 @@ export const COPY_FORM_LABELS: Record<CopyForm, string> = {
   digital: 'Digital',
 };
 
+export function copyFormLabel(form?: CopyForm): string {
+  if (!form) return '';
+  return COPY_FORM_LABELS[form] || form;
+}
+
+
 export const SUPPLIER_LABELS: Record<Supplier, string> = {
   client: 'Client',
   operator: 'Me (Preparer)',

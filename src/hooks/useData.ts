@@ -10,6 +10,12 @@ export function useSession() {
   });
 }
 
+export function useOrgSettings() {
+  const { data: session } = useSession();
+  return { data: session?.settings };
+}
+
+
 export function useToday(scope: 'mine' | 'everyone' = 'everyone') {
   return useQuery({
     queryKey: ['today', scope],
@@ -632,5 +638,94 @@ export function useRemoveDocument() {
     },
   });
 }
+
+export function useMessageTemplates() {
+  return useQuery({
+    queryKey: ['messageTemplates'],
+    queryFn: () => repositories.messages.list(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCreateFollowUp() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (f: Parameters<typeof repositories.followUps.create>[0]) =>
+      repositories.followUps.create(f),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['followUps'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+}
+
+export function useMarkFollowUpSent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      action,
+    }: {
+      id: string;
+      action: Parameters<typeof repositories.followUps.markSent>[1];
+    }) => repositories.followUps.markSent(id, action),
+    onSuccess: (updated) => {
+      qc.invalidateQueries({ queryKey: ['followUps'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+      if (updated.task?.id) {
+        qc.invalidateQueries({ queryKey: ['task', updated.task.id] });
+      }
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+}
+
+export function useLogFollowUpResponse() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      response,
+    }: {
+      id: string;
+      response: Parameters<typeof repositories.followUps.logResponse>[1];
+    }) => repositories.followUps.logResponse(id, response),
+    onSuccess: (updated) => {
+      qc.invalidateQueries({ queryKey: ['followUps'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+      if (updated.task?.id) {
+        qc.invalidateQueries({ queryKey: ['task', updated.task.id] });
+      }
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+}
+
+export function useEscalateFollowUp() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      repositories.followUps.escalate(id, reason),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['followUps'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}
+
+export function useResolveFollowUp() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      repositories.followUps.resolve(id, reason),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['followUps'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+}
+
 
 

@@ -24,6 +24,7 @@ import type {
   Payment,
   FollowUpView,
   FollowUp,
+  FollowUpAttempt,
   MessageTemplate,
   Office,
   VisitDetail,
@@ -256,14 +257,256 @@ function buildSampleDocuments(orgId: string, baseDate: string): DocumentFile[] {
   ];
 }
 
+function buildStandardMessageTemplates(orgId: string): MessageTemplate[] {
+  const now = todayInManila() + 'T00:00:00+08:00';
+  return [
+    {
+      id: 'tmpl-msg-fil-reminder',
+      orgId,
+      name: 'Paalala (Filipino)',
+      language: 'fil',
+      purpose: 'reminder',
+      body: 'Magandang araw po, {{contact}}. Follow-up lang po sa:\n\n{{items}}\n\npara sa {{task}} ({{period}}). Pakisend po sa amin sa o bago mag-{{due}}. Maraming salamat po! — {{operator}}',
+      active: true,
+      createdAt: now,
+      createdBy: 'user-ana',
+      updatedAt: now,
+      updatedBy: 'user-ana',
+      version: 1,
+    },
+    {
+      id: 'tmpl-msg-en-reminder',
+      orgId,
+      name: 'Follow-up Reminder (English)',
+      language: 'en',
+      purpose: 'reminder',
+      body: 'Good day {{contact}},\n\nFollowing up on our request for {{task}} covering {{period}}. Kindly send over the remaining requirements on or before {{due}}:\n\n{{items}}\n\nThank you! — {{operator}}',
+      active: true,
+      createdAt: now,
+      createdBy: 'user-ana',
+      updatedAt: now,
+      updatedBy: 'user-ana',
+      version: 1,
+    },
+    {
+      id: 'tmpl-msg-en-first',
+      orgId,
+      name: 'Initial Document Request (English)',
+      language: 'en',
+      purpose: 'first_request',
+      body: 'Good day {{contact}},\n\nThis is {{operator}} from Santos Tax Services. For the upcoming {{task}} covering {{period}}, kindly send over the following requirements on or before {{due}}:\n\n{{items}}\n\nThank you!',
+      active: true,
+      createdAt: now,
+      createdBy: 'user-ana',
+      updatedAt: now,
+      updatedBy: 'user-ana',
+      version: 1,
+    },
+    {
+      id: 'tmpl-msg-fil-first',
+      orgId,
+      name: 'Paunang Hiling ng Dokumento (Filipino)',
+      language: 'fil',
+      purpose: 'first_request',
+      body: 'Magandang araw po, {{contact}}.\n\nMula po ito kay {{operator}}. Para po sa darating na {{task}} ({{period}}), pakipasa po ang mga sumusunod na requirements bago mag-{{due}}:\n\n{{items}}\n\nMaraming salamat po!',
+      active: true,
+      createdAt: now,
+      createdBy: 'user-ana',
+      updatedAt: now,
+      updatedBy: 'user-ana',
+      version: 1,
+    },
+    {
+      id: 'tmpl-msg-en-correction',
+      orgId,
+      name: 'Correction Needed (English)',
+      language: 'en',
+      purpose: 'correction',
+      body: 'Good day {{contact}},\n\nUpon reviewing the submitted documents for {{task}} ({{period}}), the following items require correction or replacement:\n\n{{items}}\n\nKindly send updated copies on or before {{due}}. Thank you! — {{operator}}',
+      active: true,
+      createdAt: now,
+      createdBy: 'user-ana',
+      updatedAt: now,
+      updatedBy: 'user-ana',
+      version: 1,
+    },
+  ];
+}
+
+function buildStandardFollowUps(
+  orgId: string,
+  baseDate: string
+): { followUps: FollowUp[]; followUpAttempts: FollowUpAttempt[] } {
+  const overdueDate = addDaysToDate(baseDate, -2);
+  const futureDate = addDaysToDate(baseDate, 3);
+  const pastDate = addDaysToDate(baseDate, -5);
+
+  const followUps: FollowUp[] = [
+    {
+      id: 'fu-cruz-payroll',
+      orgId,
+      clientId: 'client-cruz',
+      taskId: 'task-cruz-1601c',
+      lineIds: ['line-cruz-1'],
+      contactId: 'contact-cruz-1',
+      channel: 'viber',
+      language: 'en',
+      expectedBy: baseDate,
+      attemptCount: 1,
+      status: 'sent',
+      createdAt: pastDate + 'T10:00:00+08:00',
+      createdBy: 'user-ben',
+      updatedAt: pastDate + 'T10:00:00+08:00',
+      updatedBy: 'user-ben',
+      version: 1,
+    },
+    {
+      id: 'fu-rsp-2307',
+      orgId,
+      clientId: 'client-rsp',
+      taskId: 'task-rsp-1601eq',
+      lineIds: ['line-rsp-2', 'line-rsp-3'],
+      contactId: 'contact-rsp-1',
+      channel: 'viber',
+      language: 'fil',
+      expectedBy: overdueDate,
+      attemptCount: 2,
+      status: 'sent',
+      createdAt: addDaysToDate(baseDate, -6) + 'T09:30:00+08:00',
+      createdBy: 'user-ana',
+      updatedAt: overdueDate + 'T09:30:00+08:00',
+      updatedBy: 'user-ana',
+      version: 2,
+    },
+    {
+      id: 'fu-horizon-invoices',
+      orgId,
+      clientId: 'client-horizon',
+      taskId: 'task-horizon-0619e',
+      lineIds: ['line-horizon-1'],
+      contactId: 'contact-horizon-1',
+      channel: 'email',
+      language: 'en',
+      expectedBy: futureDate,
+      attemptCount: 1,
+      status: 'sent',
+      createdAt: addDaysToDate(baseDate, -1) + 'T14:00:00+08:00',
+      createdBy: 'user-ana',
+      updatedAt: addDaysToDate(baseDate, -1) + 'T14:00:00+08:00',
+      updatedBy: 'user-ana',
+      version: 1,
+    },
+    {
+      id: 'fu-maria-resolved',
+      orgId,
+      clientId: 'client-maria',
+      taskId: 'task-maria-2550q',
+      lineIds: ['line-maria-1'],
+      contactId: 'contact-maria-1',
+      channel: 'messenger',
+      language: 'en',
+      expectedBy: overdueDate,
+      attemptCount: 1,
+      status: 'resolved',
+      response: 'All invoices sent over via email',
+      respondedAt: addDaysToDate(baseDate, -1) + 'T16:00:00+08:00',
+      resolvedAt: addDaysToDate(baseDate, -1) + 'T16:05:00+08:00',
+      resolvedReason: 'All requested lines received',
+      createdAt: addDaysToDate(baseDate, -4) + 'T11:00:00+08:00',
+      createdBy: 'user-ana',
+      updatedAt: addDaysToDate(baseDate, -1) + 'T16:05:00+08:00',
+      updatedBy: 'user-ana',
+      version: 2,
+    },
+  ];
+
+  const followUpAttempts: FollowUpAttempt[] = [
+    {
+      id: 'fua-cruz-1',
+      orgId,
+      followUpId: 'fu-cruz-payroll',
+      attemptNo: 1,
+      channel: 'viber',
+      sentAt: pastDate + 'T10:15:00+08:00',
+      sentBy: 'user-ben',
+      messageSnapshot: 'Hi Atty. Cruz, checking in on the September payroll sheet needed for Form 1601-C filing.',
+      expectedBy: baseDate,
+      createdAt: pastDate + 'T10:15:00+08:00',
+      createdBy: 'user-ben',
+      updatedAt: pastDate + 'T10:15:00+08:00',
+      updatedBy: 'user-ben',
+      version: 1,
+    },
+    {
+      id: 'fua-rsp-1',
+      orgId,
+      followUpId: 'fu-rsp-2307',
+      attemptNo: 1,
+      channel: 'viber',
+      sentAt: addDaysToDate(baseDate, -6) + 'T09:30:00+08:00',
+      sentBy: 'user-ana',
+      messageSnapshot: 'Magandang araw po Maria, pakisend po ang signed 2307s at Q3 payee schedule.',
+      expectedBy: addDaysToDate(baseDate, -3),
+      createdAt: addDaysToDate(baseDate, -6) + 'T09:30:00+08:00',
+      createdBy: 'user-ana',
+      updatedAt: addDaysToDate(baseDate, -6) + 'T09:30:00+08:00',
+      updatedBy: 'user-ana',
+      version: 1,
+    },
+    {
+      id: 'fua-rsp-2',
+      orgId,
+      followUpId: 'fu-rsp-2307',
+      attemptNo: 2,
+      channel: 'viber',
+      sentAt: addDaysToDate(baseDate, -2) + 'T09:30:00+08:00',
+      sentBy: 'user-ana',
+      messageSnapshot: 'Magandang araw po Maria, follow-up lang po ulit para sa signed 2307s para maihabol sa 1601-EQ.',
+      expectedBy: overdueDate,
+      createdAt: addDaysToDate(baseDate, -2) + 'T09:30:00+08:00',
+      createdBy: 'user-ana',
+      updatedAt: addDaysToDate(baseDate, -2) + 'T09:30:00+08:00',
+      updatedBy: 'user-ana',
+      version: 1,
+    },
+    {
+      id: 'fua-vtl-1',
+      orgId,
+      followUpId: 'fu-vtl-invoices',
+      attemptNo: 1,
+      channel: 'email',
+      sentAt: addDaysToDate(baseDate, -1) + 'T14:00:00+08:00',
+      sentBy: 'user-ben',
+      messageSnapshot: 'Good day Mr. Lim, requesting September sales and purchases summaries for Form 2550-M.',
+      expectedBy: futureDate,
+      createdAt: addDaysToDate(baseDate, -1) + 'T14:00:00+08:00',
+      createdBy: 'user-ben',
+      updatedAt: addDaysToDate(baseDate, -1) + 'T14:00:00+08:00',
+      updatedBy: 'user-ben',
+      version: 1,
+    },
+  ];
+
+  return { followUps, followUpAttempts };
+}
+
 function loadStore(): StoreData {
   const baseDate = todayInManila();
   try {
     const raw = getStorageItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
+      const orgId = parsed.org?.id || 'org-demo-01';
       if (!parsed.documents || parsed.documents.length === 0) {
-        parsed.documents = buildSampleDocuments(parsed.org?.id || 'org-demo-01', baseDate);
+        parsed.documents = buildSampleDocuments(orgId, baseDate);
+      }
+      if (!parsed.messageTemplates || parsed.messageTemplates.length === 0) {
+        parsed.messageTemplates = buildStandardMessageTemplates(orgId);
+      }
+      if (!parsed.followUps || parsed.followUps.length < 2) {
+        const sampleFu = buildStandardFollowUps(orgId, baseDate);
+        parsed.followUps = sampleFu.followUps;
+        parsed.followUpAttempts = sampleFu.followUpAttempts;
       }
       return parsed;
     }
@@ -271,9 +514,14 @@ function loadStore(): StoreData {
     console.error('Failed to load store from localStorage', e);
   }
   const seed = generateSeedData(baseDate);
+  const sampleFu = buildStandardFollowUps(seed.org.id, baseDate);
   const initialStore: StoreData = {
     ...seed,
     documents: buildSampleDocuments(seed.org.id, baseDate),
+    messageTemplates: buildStandardMessageTemplates(seed.org.id),
+    followUps: sampleFu.followUps,
+    followUpAttempts: sampleFu.followUpAttempts,
+
     notes: [],
     notifications: [
       {
@@ -1804,9 +2052,15 @@ export const mockRepositories: Repositories = {
     async list(f) {
       await simulateLatency();
       let list = store.followUps.filter((fu) => !fu.deletedAt && isClientAllowed(fu.clientId));
+      if (f?.clientId) {
+        list = list.filter((fu) => fu.clientId === f.clientId);
+      }
+      if (f?.taskId) {
+        list = list.filter((fu) => fu.taskId === f.taskId);
+      }
       const today = todayInManila();
-      const views: FollowUpView[] = list.map((fu) => {
-        const client = store.clients.find((c) => c.id === fu.clientId)!;
+      let views: FollowUpView[] = list.map((fu) => {
+        const client = store.clients.find((c) => c.id === fu.clientId) || store.clients[0];
         const task = store.tasks.find((t) => t.id === fu.taskId);
         const lines = store.taskLines.filter((l) => fu.lineIds.includes(l.id));
         const contact = store.contacts.find((c) => c.id === fu.contactId);
@@ -1814,6 +2068,9 @@ export const mockRepositories: Repositories = {
         const attempts = store.followUpAttempts.filter((a) => a.followUpId === fu.id);
         return { followUp: fu, client, task, lines, contact, state, attempts };
       });
+      if (f?.state && f.state.length > 0) {
+        views = views.filter((v) => f.state!.includes(v.state));
+      }
       return { items: views, total: views.length };
     },
 
@@ -1821,7 +2078,7 @@ export const mockRepositories: Repositories = {
       await simulateLatency();
       const fu = store.followUps.find((item) => item.id === id);
       if (!fu) throw new Error('Follow up not found');
-      const client = store.clients.find((c) => c.id === fu.clientId)!;
+      const client = store.clients.find((c) => c.id === fu.clientId) || store.clients[0];
       const task = store.tasks.find((t) => t.id === fu.taskId);
       const lines = store.taskLines.filter((l) => fu.lineIds.includes(l.id));
       const contact = store.contacts.find((c) => c.id === fu.contactId);
@@ -1864,6 +2121,7 @@ export const mockRepositories: Repositories = {
       fu.status = 'sent';
       fu.expectedBy = a.expectedBy;
       fu.attemptCount += 1;
+      fu.channel = a.channel;
 
       store.followUpAttempts.push({
         id: generateId(),
@@ -1903,6 +2161,30 @@ export const mockRepositories: Repositories = {
       fu.status = 'answered';
       fu.response = r.text;
       fu.respondedAt = todayInManila() + 'T00:00:00+08:00';
+
+      // Update ticked lines to 'received' status per Spec 11.8
+      if (r.receivedLineIds && r.receivedLineIds.length > 0) {
+        for (const lineId of r.receivedLineIds) {
+          const line = store.taskLines.find((l) => l.id === lineId);
+          if (line) {
+            line.status = 'received';
+            line.receivedAt = todayInManila() + 'T00:00:00+08:00';
+            line.receivedVia = r.via || fu.channel;
+          }
+        }
+      }
+
+      // Spec 11.8: Automatic resolve when every line in it is received or not applicable
+      const allLines = store.taskLines.filter((l) => fu.lineIds.includes(l.id));
+      const allComplete = allLines.every(
+        (l) => l.status === 'received' || l.status === 'accepted' || l.status === 'not_applicable'
+      );
+      if (allComplete && allLines.length > 0) {
+        fu.status = 'resolved';
+        fu.resolvedAt = todayInManila() + 'T00:00:00+08:00';
+        fu.resolvedReason = 'All requested lines received';
+      }
+
       saveStore();
       logActivity('response_logged', 'follow_up', id, `Response logged: ${r.text.slice(0, 30)}`, fu.clientId);
       return mockRepositories.followUps.get(id);
@@ -1910,6 +2192,9 @@ export const mockRepositories: Repositories = {
 
     async escalate(id, reason) {
       await simulateLatency();
+      if (!reason || reason.trim().length < 10) {
+        throw new Error('Escalation reason must be at least 10 characters');
+      }
       const fu = store.followUps.find((item) => item.id === id);
       if (!fu) throw new Error('Follow up not found');
       fu.status = 'escalated';
@@ -1924,7 +2209,7 @@ export const mockRepositories: Repositories = {
       const fu = store.followUps.find((item) => item.id === id);
       if (!fu) throw new Error('Follow up not found');
       fu.status = 'resolved';
-      fu.resolvedReason = reason;
+      fu.resolvedReason = reason || 'Resolved manually';
       fu.resolvedAt = todayInManila() + 'T00:00:00+08:00';
       saveStore();
       return mockRepositories.followUps.get(id);

@@ -113,3 +113,35 @@ export const OutcomeSchema = z.object({
   windowOrOfficer: z.string().optional(),
   nextActionText: z.string().optional(),
 });
+
+export const FollowUpSchema = z.object({
+  clientId: z.string().min(1, 'Client is required'),
+  taskId: z.string().optional(),
+  lineIds: z.array(z.string()).default([]),
+  contactId: z.string().min(1, 'Contact is required'),
+  channel: z.enum(['viber', 'messenger', 'sms', 'email', 'phone', 'in_person']).default('viber'),
+  expectedBy: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD').optional(),
+  note: z.string().optional(),
+});
+
+export const MarkSentSchema = z.object({
+  channel: z.enum(['viber', 'messenger', 'sms', 'email', 'phone', 'in_person']),
+  sentAt: z.string().min(1, 'Sent time is required'),
+  expectedBy: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected by date must be YYYY-MM-DD'),
+  message: z.string().min(1, 'Message snapshot is required'),
+});
+
+export const LogResponseSchema = z.object({
+  response: z.string().min(1, 'Response text is required').max(1000, 'Response cannot exceed 1000 characters'),
+  receivedLineIds: z.array(z.string()).default([]),
+  via: z.enum(['viber', 'messenger', 'sms', 'email', 'phone', 'in_person']).optional(),
+});
+
+export const EscalateSchema = z.object({
+  reason: z.string().min(10, 'Escalation reason must be at least 10 characters'),
+});
+
+export const ResolveFollowUpSchema = z.object({
+  reason: z.string().min(10, 'Resolution reason must be at least 10 characters'),
+});
+

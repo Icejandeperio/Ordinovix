@@ -124,3 +124,37 @@
   - Table view: Sticky header, 72px thumbnail, standardized name, client tab, category kind, file size, uploader, date, and inline quick actions.
   - Grid view: Responsive card grid rendering `FileTile` components with rich preview capabilities.
 - Verification: 38 unit tests green (`src/data/mock/documents.test.ts` exercising standardized naming, byte formatting, SHA-256 hash calculation, upload line transition to `received`, duplicate detection by SHA, helper access scoping, and soft delete with reason), TypeScript compilation clean (`0 errors`), full `verify.ps1` gate passed, and automated browser subagent QA verified all document workflows.
+## Session 2026-10-25 (M6 Follow-ups, Client Messaging & Queue Walk-through)
+- Implemented Section 11.8 & 12.13 Messaging Utilities (`src/lib/messaging.ts`):
+  - Interpolated template variables (`interpolatePlaceholders`): `{{contact}}`, `{{client}}`, `{{task}}`, `{{period}}`, `{{items}}`, `{{due}}`, `{{deadline}}`, and `{{operator}}`.
+  - Formatted numbered items checklist (`formatItemsList`) including copy form tag and flag notes (e.g. `1) Signed 2307s from payors (original)`).
+  - Accurate SMS length estimation and multi-part segmentation (`calculateSmsSegments`): 160 GSM-7 / 153 per part; 70 UCS-2 Unicode / 67 per part.
+  - Native communication intent URI builders (`buildChannelIntent`): SMS (`sms:?body=`), Email (`mailto:?subject=&body=`), and Viber (`viber://forward?text=`).
+- Implemented Section 11.8 `MessageComposer` Component (`src/components/follow-ups/composer.tsx`):
+  - Responsive sheet on desktop, full-screen on mobile.
+  - Contact selector showing preferred channel and language.
+  - Language toggle (`English` / `Filipino`) updating template selection and message copy.
+  - Template selector populated with statutory English and Filipino templates (Initial request, Reminder, Correction).
+  - Interactive requested lines checklist enabling selective inclusion of items in the generated message.
+  - Live editable textarea preview with real-time character count and SMS segment counter.
+  - Direct shortcut buttons for Viber, SMS, Email, and Messenger with automatic clipboard fallback and Sonner toast.
+  - "Mark as sent" button highlights after copying/dispatching, recording the attempt snapshot and moving follow-up to Waiting.
+- Implemented Section 12.13 Follow-up Action Modals (`src/components/follow-ups/follow-up-modals.tsx`):
+  - `LogResponseModal`: captures client response text, checkboxes for lines now received (updates task lines to `received`), and received channel. Automatically resolves follow-up when all requested lines are received.
+  - `EscalateModal`: enforces >=10 character escalation reason, updates status to `escalated`, moves follow-up to top of Overdue, and writes audit event.
+  - `ResolveModal`: manual resolution modal requiring >=10 character reason.
+  - `NewFollowUpModal`: client picker, task picker, contact picker, channel selector, and expected-by DateField.
+- Implemented Section 11.8 Follow-ups Directory Page (`src/routes/follow-ups/page.tsx`):
+  - Summary count strip button cards (`Due Today`, `Overdue`, `Waiting on Client`, `Resolved`).
+  - Filter tabs: `Due today` (default), `Overdue`, `Waiting (sent)`, `Resolved (30d)`, and `All follow-ups`.
+  - Filter strip: instant search by client, task, contact, or item; Client and Channel dropdowns.
+  - Follow-up cards: Client code tab, legal name, attempt counter badge ("1st request", "2nd reminder"), channel badge, outstanding requirements list with copy form chips, contact details, and quick inline actions (Compose, Log response, Escalate, Resolve).
+  - "Clear Due Today" button triggering the walk-through queue mode.
+- Implemented Section 11.8 Queue Walk-Through Stepper Mode (`src/routes/follow-ups/run.tsx`):
+  - Sequential walk-through cycling through due and overdue follow-ups one by one.
+  - Top visual progress bar ("Follow-up X of Y") with "Exit Queue".
+  - Dedicated focus card with outstanding items list, contact details, and inline MessageComposer.
+  - Stepper controls: "Previous", "Escalate", "Skip", and "Send & Next".
+  - Queue completion summary screen showing breakdown of items sent, escalated, and skipped with return CTA.
+- Verification: 44 unit tests green across 7 test files (`src/data/mock/follow-ups.test.ts` exercising template interpolation, SMS calculations, markSent state transitions, logResponse line status updates, escalation reason validation, and helper access scoping), TypeScript compilation clean (`0 errors`), full `verify.ps1` gate passed in 7.65s, and automated browser subagent QA verified the follow-ups directory, MessageComposer, copy toast, and queue walk-through mode.
+

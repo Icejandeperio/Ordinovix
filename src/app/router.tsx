@@ -9,6 +9,7 @@ import { ClientsPage } from '@/routes/clients/page';
 import { ClientDetailPage } from '@/routes/clients/detail';
 import { ClientImportPage } from '@/routes/clients/import';
 import { FollowUpsPage } from '@/routes/follow-ups/page';
+import { FollowUpsRunPage } from '@/routes/follow-ups/run';
 import { VisitsPage } from '@/routes/visits/page';
 import { VisitDetailPage } from '@/routes/visits/detail';
 import { CalendarPage } from '@/routes/calendar/page';
@@ -39,7 +40,9 @@ export const router = createBrowserRouter([
       { path: 'clients/import', element: <ClientImportPage /> },
       { path: 'clients/:clientId', element: <ClientDetailPage /> },
       { path: 'follow-ups', element: <FollowUpsPage /> },
+      { path: 'follow-ups/run', element: <FollowUpsRunPage /> },
       { path: 'visits', element: <VisitsPage /> },
+
       { path: 'visits/:visitId', element: <VisitDetailPage /> },
       { path: 'calendar', element: <CalendarPage /> },
       { path: 'documents', element: <DocumentsPage /> },
