@@ -858,19 +858,31 @@ export const mockRepositories: Repositories = {
       const batchId = generateId();
 
       rows.forEach((r, idx) => {
-        const code = r[mapping.code as string] || `IMP${idx + 1}`;
-        const displayName = r[mapping.displayName as string];
+        const rawCode = r[mapping.code as string];
+        const code = (rawCode ? String(rawCode).trim() : `IMP${idx + 1}`).toUpperCase();
+        const displayName = r[mapping.displayName as string] ? String(r[mapping.displayName as string]).trim() : '';
+        const tin = r[mapping.tin as string] ? String(r[mapping.tin as string]).trim() : undefined;
+
+        const codeDuplicate = store.clients.find((c) => !c.deletedAt && c.code.toUpperCase() === code);
+        const nameDuplicate = displayName ? store.clients.find((c) => !c.deletedAt && c.displayName.toLowerCase() === displayName.toLowerCase()) : undefined;
+
         if (!displayName) {
-          errors.push({ row: idx + 1, field: 'displayName', message: 'Name is required' });
+          errors.push({ row: idx + 1, field: 'displayName', message: 'Client name is required' });
+        } else if (codeDuplicate) {
+          errors.push({ row: idx + 1, field: 'code', message: `Duplicate client code: ${code}` });
+        } else if (nameDuplicate) {
+          errors.push({ row: idx + 1, field: 'displayName', message: `Duplicate client name: ${displayName}` });
         } else {
           valid.push({
             code,
             displayName,
-            entityType: 'solo',
-            vatStatus: 'unknown',
-            sizeClass: 'micro',
-            rdoCode: '039',
-            hasTin: true,
+            entityType: (r[mapping.entityType as string] as any) || 'solo',
+            vatStatus: (r[mapping.vatStatus as string] as any) || 'vat',
+            sizeClass: 'small',
+            rdoCode: r[mapping.rdoCode as string] || '039',
+            tinFull: tin,
+            tinMasked: tin ? `•••-•••-${tin.replace(/\D/g, '').slice(-3)}-00000` : undefined,
+            hasTin: Boolean(tin),
             status: 'active',
           });
         }
@@ -886,12 +898,29 @@ export const mockRepositories: Repositories = {
         const client = await mockRepositories.clients.upsert(row);
         createdIds.push(client.id);
       }
+      // Save batch mapping for undo
+      const batches = (store as any)._importBatches || {};
+      batches[preview.batchId] = createdIds;
+      (store as any)._importBatches = batches;
+
       return { created: createdIds, skipped: preview.errors.length, batchId: preview.batchId };
     },
 
     async importUndo(batchId) {
       await simulateLatency();
-      logActivity('deleted', 'client', batchId, 'Undid client import batch');
+      const batches = (store as any)._importBatches || {};
+      const ids: ID[] = batches[batchId] || [];
+      const now = todayInManila() + 'T00:00:00+08:00';
+      for (const id of ids) {
+        const cl = store.clients.find((c) => c.id === id);
+        if (cl) {
+          cl.deletedAt = now;
+          cl.deletedReason = 'Import batch undo rollback';
+        }
+      }
+      delete batches[batchId];
+      saveStore();
+      logActivity('deleted', 'client', batchId, `Undid client import batch (${ids.length} removed)`);
     },
   },
 

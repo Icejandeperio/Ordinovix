@@ -43,3 +43,27 @@
   - Full notifications center page with day grouping (`Today`), filter tabs (`All` / `Unread`), and read/unread status.
 - Verification: 20 unit tests green (rules, metrics, mock today queue with helper scoping), TypeScript compilation clean (`0 errors`), and automated browser subagent QA verified all 5 milestone criteria.
 
+## Session 2026-10-25 (M3 Clients: Directory, Profile Tabs, Forms & CSV Import)
+- Implemented full Section 11.7.1 Clients Directory List (`src/routes/clients/page.tsx`):
+  - Desktop table view with Code folder tab, Client Name, ClientFlags (Entity, VAT, Filing channel/group, RDO), Open Tasks count, Blocked Tasks count, Next Due badge (`DueBadge`), Authorization status (`AuthorizationBadge`), and Assigned user chips.
+  - Mobile card layout with client summary line (`"X open · Y blocked · next due Oct 28"`).
+  - Built-in view tabs: `Active` (default), `Has blocked tasks`, `Authorization needs attention`, `Archived`.
+  - Filter bar: instant search by name, code, contact, or TIN; entity type, VAT status, filing channel, eFPS group, and assigned user dropdowns.
+  - Export CSV trigger using `@/lib/export` with UTF-8 BOM encoding.
+- Implemented Section 11.7.2 Client Profile with full 9-tab architecture (`src/routes/clients/detail.tsx`):
+  - Header: folder tab with client code, legal registered name, ClientFlags, Masked TIN with 30s timed reveal toggle writing audit event, RDO office link, filing channel, ORUS access holder, and summary line.
+  - Attention strip: dynamic warnings for expiring authorizations (<30 days), missing signatories, unknown ORUS holder, or unassigned client.
+  - Full tab architecture: `Overview`, `Tasks`, `History`, `Documents`, `Follow-ups`, `Payments`, `Authorizations`, `Contacts`, `Notes`.
+  - Action buttons: "New Task", "Request Missing" (generates consolidated checklist message for Viber/SMS/Email), "Edit Client", "Archive Client" (with required reason modal), "Restore Client", and "Print Profile".
+- Implemented Section 11.7.3 & 12.2 Client Registration Form Sheet (`src/components/clients/client-form-sheet.tsx`):
+  - Slide-over sheet with initial-derived code suggestion ("Rivera Salonga & Partners" -> "RSP"), entity type radio cards (GPP, Solo, Other), RDO picker.
+  - Collapsible sections for BIR Registration parameters, Filing channels & ORUS access, and practice notes.
+  - Security policy banner prohibiting storage of eFPS, eBIRForms, and ORUS credentials.
+  - Live dynamic amber warning detector for notes containing password patterns.
+- Implemented Section 12.3 & 12.12 Contact & Authorization Modals:
+  - `ContactFormModal` (`src/components/clients/contact-form-modal.tsx`): Contact name, title, role suggestions, PhoneInput (E.164), EmailInput, preferred channel, language, and signatory switch.
+  - `AuthorizationFormModal` (`src/components/clients/authorization-form-modal.tsx`): Document type (SPA, Letter, Sec Cert, Resolution), grantee user, scope task kinds checkboxes, DateField issuance/validity, and notarized switch. Supports replacing an active document while preserving predecessor in history.
+- Implemented Section 11.7.4 CSV Client Import Wizard (`src/routes/clients/import.tsx`):
+  - 4-step wizard: Upload CSV with downloadable CSV sample template -> Intelligent column mapper -> Preview & validation table (Ready, Error, Duplicate code/name detection) -> Commit summary ("X added, Y skipped") with 5-minute undo rollback countdown.
+- Verification: 25 unit tests green (`src/data/mock/clients.test.ts` exercising listing, helper scoping, TIN reveal audit, archiving, duplicate validation, and batch undo), TypeScript compilation clean (`0 errors`), and automated browser subagent verified directory, profile tabs, and import wizard.
+

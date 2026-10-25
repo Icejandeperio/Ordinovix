@@ -7,6 +7,7 @@ import { TasksPage } from '@/routes/tasks/page';
 import { TaskDetailPage } from '@/routes/tasks/detail';
 import { ClientsPage } from '@/routes/clients/page';
 import { ClientDetailPage } from '@/routes/clients/detail';
+import { ClientImportPage } from '@/routes/clients/import';
 import { FollowUpsPage } from '@/routes/follow-ups/page';
 import { VisitsPage } from '@/routes/visits/page';
 import { VisitDetailPage } from '@/routes/visits/detail';
@@ -35,6 +36,7 @@ export const router = createBrowserRouter([
       { path: 'tasks', element: <TasksPage /> },
       { path: 'tasks/:taskId', element: <TaskDetailPage /> },
       { path: 'clients', element: <ClientsPage /> },
+      { path: 'clients/import', element: <ClientImportPage /> },
       { path: 'clients/:clientId', element: <ClientDetailPage /> },
       { path: 'follow-ups', element: <FollowUpsPage /> },
       { path: 'visits', element: <VisitsPage /> },
