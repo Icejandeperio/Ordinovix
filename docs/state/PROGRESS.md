@@ -93,3 +93,34 @@
 - Implemented Section 11.6 Open Period Wizard (`src/components/tasks/open-period-modal.tsx`):
   - 800px 3-step modal: Period selection -> Client scope multi-select -> Client × Template matrix with collision check skipping already open tasks -> Batch creation summary toast.
 - Verification: 31 unit tests green (`src/data/mock/tasks.test.ts` exercising derived status computation, `canSetStatus` blocker enforcement, owner status override, due date update with statutory reference, open period idempotence, and "Added late" detection), TypeScript compilation clean (`0 errors`), full `verify.ps1` gate passed, and automated browser subagent QA verified all task workflows.
+## Session 2026-10-25 (M5 Documents Library, Compression Pipeline & Preview Drawer)
+- Implemented Section 9.8 & 9.9 Document Pipeline & Compression Utilities (`src/lib/compression.ts`):
+  - SHA-256 integrity calculation using Web Crypto API (`crypto.subtle.digest`) for duplicate detection.
+  - Image compression pipeline via `browser-image-compression` targeting <= 600 KB WebP at 2000px longest side with aspect ratio and EXIF orientation preservation.
+  - Dynamic 320px WebP thumbnail generator (`createThumbnail`).
+  - Standardized naming convention (`formatStandardizedDocName`): `{CLIENTCODE}_{TEMPLATECODE}_{PERIOD}_{KIND}_v{N}.{ext}` with statutory kind slugs (`src`, `return`, `ack`, `payproof`, `stamped`, `ecar`, `auth`, `other`).
+- Implemented Section 9.8 `FileTile` Component (`src/components/documents/file-tile.tsx`):
+  - 72px thumbnail preview box with document type fallback icon and hover preview trigger.
+  - Standardized display name with version badge (`v1`, `v2`), category kind badge with color tone, optimization indicator, and file size formatting.
+  - Overflow action menu: Preview, Download, Replace with new version, Change file kind, and Remove (soft delete with reason).
+- Implemented Section 9.8 `PreviewDrawer` Component (`src/components/documents/preview-drawer.tsx`):
+  - 720px right-side sheet on desktop, full-screen on mobile.
+  - Pure white canvas background (never color-inverted in dark mode per Section 22.22).
+  - Viewer controls: Zoom in/out, fit-to-width, rotate 90°, print, and direct download.
+  - Side details panel: Category kind, file size, upload timestamp, uploader user, and SHA-256 integrity hash.
+  - Inline Review Footer: Directly renders "Stamp Accept" (primary, stamps line) and "Flag Issue" (secondary, logs correction note) when reviewing lines without leaving the preview.
+  - Keyboard navigation: Left/Right arrow keys for previous/next file in collection, Escape key to close.
+- Implemented Section 9.8 `FileDrop` Component (`src/components/documents/file-drop.tsx`):
+  - Drag-and-drop zone with file type/size validation (JPEG, PNG, WebP, HEIC, PDF up to 15 MB).
+  - Mobile/tablet environment camera capture trigger (`<input type="file" accept="image/*" capture="environment">`) with "Take photo / Add page".
+  - Live upload progress tray showing compression feedback ("Optimizing… 3.4 MB → 420 KB"), progress bar, Cancel, and Retry.
+  - SHA-256 duplicate warning alert notifying operator before attaching duplicate files to a client.
+  - Invariant rule strictly preserved: Uploading a file to a line sets line status to `received`, never to `accepted`.
+- Implemented Section 11.11 Documents Library Page (`src/routes/documents/page.tsx`):
+  - Responsive view mode toggle between Table (Section 9.10) and Grid (thumbnails).
+  - Header with document counter pill and "Upload Document" modal trigger.
+  - Built-in view tabs: `All documents`, `Needs review`, `Evidence files`, and `Recently added`.
+  - Filter strip: instant text search across document and client names; Client, Document Kind, and File Type (Image / PDF) dropdown filters with "Clear" action.
+  - Table view: Sticky header, 72px thumbnail, standardized name, client tab, category kind, file size, uploader, date, and inline quick actions.
+  - Grid view: Responsive card grid rendering `FileTile` components with rich preview capabilities.
+- Verification: 38 unit tests green (`src/data/mock/documents.test.ts` exercising standardized naming, byte formatting, SHA-256 hash calculation, upload line transition to `received`, duplicate detection by SHA, helper access scoping, and soft delete with reason), TypeScript compilation clean (`0 errors`), full `verify.ps1` gate passed, and automated browser subagent QA verified all document workflows.

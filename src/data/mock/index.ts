@@ -142,19 +142,138 @@ let failureRate: number = parseFloat(getStorageItem(FAILURE_RATE_KEY) || '0');
 let isOffline: boolean = getStorageItem(OFFLINE_KEY) === 'true';
 let store: StoreData = loadStore();
 
+function buildSampleDocuments(orgId: string, baseDate: string): DocumentFile[] {
+  const svgReturn = encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800"><rect width="600" height="800" fill="#ffffff"/><text x="50" y="80" font-family="sans-serif" font-size="20" font-weight="bold" fill="#111827">BIR Form No. 1601-EQ</text><text x="50" y="110" font-family="sans-serif" font-size="12" fill="#4b5563">Quarterly Remittance Return of Creditable Income Taxes</text><rect x="50" y="130" width="500" height="2" fill="#5A3DB8"/><text x="50" y="170" font-family="sans-serif" font-size="13" fill="#111827">Taxpayer: Rivera Salonga &amp; Partners</text><text x="50" y="195" font-family="sans-serif" font-size="13" fill="#111827">TIN: 123-456-789-00000 · RDO 039</text><rect x="50" y="225" width="500" height="150" fill="#f8fafc" stroke="#e2e8f0"/><text x="70" y="260" font-family="monospace" font-size="13" fill="#334155">Tax Withheld Due: PHP 12,345.50</text><text x="70" y="290" font-family="monospace" font-size="13" fill="#334155">Filing Channel: eBIRForms v7.9</text><circle cx="450" cy="480" r="45" fill="none" stroke="#5A3DB8" stroke-width="3" stroke-dasharray="4"/><text x="450" y="485" font-family="sans-serif" font-size="11" font-weight="bold" fill="#5A3DB8" text-anchor="middle">FILED</text></svg>');
+
+  const svgAck = encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800"><rect width="600" height="800" fill="#ffffff"/><text x="50" y="80" font-family="sans-serif" font-size="18" font-weight="bold" fill="#065f46">BUREAU OF INTERNAL REVENUE</text><text x="50" y="105" font-family="sans-serif" font-size="13" fill="#047857">Electronic Filing Confirmation Notification</text><rect x="50" y="125" width="500" height="2" fill="#10b981"/><text x="50" y="165" font-family="sans-serif" font-size="13" fill="#111827">Reference Number: eFPS-2026-98765432</text><text x="50" y="190" font-family="sans-serif" font-size="13" fill="#111827">Date Received: 2026-10-24 14:22:05 PHT</text><rect x="50" y="220" width="500" height="120" fill="#ecfdf5" stroke="#a7f3d0"/><text x="70" y="255" font-family="monospace" font-size="12" fill="#065f46">Status: Successfully Received &amp; Recorded</text></svg>');
+
+  return [
+    {
+      id: 'doc-rsp-1',
+      orgId,
+      clientId: 'client-rsp',
+      kind: 'filed_return',
+      displayName: 'RSP_1601EQ_2026Q3_return_v1.pdf',
+      originalName: '1601EQ_Signed_Final.pdf',
+      mimeType: 'image/svg+xml',
+      sizeBytes: 420 * 1024,
+      originalSizeBytes: 1200 * 1024,
+      compressed: true,
+      sha256: 'a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef0',
+      storageKey: `data:image/svg+xml;utf8,${svgReturn}`,
+      versionNo: 1,
+      source: 'upload',
+      createdAt: `${baseDate}T10:15:00+08:00`,
+      createdBy: 'user-ana',
+      updatedAt: `${baseDate}T10:15:00+08:00`,
+      updatedBy: 'user-ana',
+      version: 1,
+    },
+    {
+      id: 'doc-rsp-2',
+      orgId,
+      clientId: 'client-rsp',
+      kind: 'acknowledgment',
+      displayName: 'RSP_1601EQ_2026Q3_ack_v1.pdf',
+      originalName: 'eFPS_Confirmation_RSP.pdf',
+      mimeType: 'image/svg+xml',
+      sizeBytes: 180 * 1024,
+      originalSizeBytes: 450 * 1024,
+      compressed: true,
+      sha256: 'b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef01a',
+      storageKey: `data:image/svg+xml;utf8,${svgAck}`,
+      versionNo: 1,
+      source: 'upload',
+      createdAt: `${baseDate}T10:18:00+08:00`,
+      createdBy: 'user-ana',
+      updatedAt: `${baseDate}T10:18:00+08:00`,
+      updatedBy: 'user-ana',
+      version: 1,
+    },
+    {
+      id: 'doc-vtl-1',
+      orgId,
+      clientId: 'client-vtl',
+      kind: 'payment_proof',
+      displayName: 'VTL_0619E_2026-09_payproof_v1.jpg',
+      originalName: 'BPI_Deposit_Confirmation.jpg',
+      mimeType: 'image/svg+xml',
+      sizeBytes: 310 * 1024,
+      originalSizeBytes: 980 * 1024,
+      compressed: true,
+      sha256: 'c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef01a2b',
+      storageKey: `data:image/svg+xml;utf8,${svgAck}`,
+      versionNo: 1,
+      source: 'upload',
+      createdAt: `${baseDate}T11:00:00+08:00`,
+      createdBy: 'user-ben',
+      updatedAt: `${baseDate}T11:00:00+08:00`,
+      updatedBy: 'user-ben',
+      version: 1,
+    },
+    {
+      id: 'doc-cruz-1',
+      orgId,
+      clientId: 'client-cruz',
+      kind: 'stamped_copy',
+      displayName: 'CRUZ_1701Q_2026Q3_stamped_v1.jpg',
+      originalName: 'RDO_Stamped_Receiving_Copy.jpg',
+      mimeType: 'image/svg+xml',
+      sizeBytes: 540 * 1024,
+      originalSizeBytes: 1800 * 1024,
+      compressed: true,
+      sha256: 'd4e5f67890123456789abcdef0123456789abcdef0123456789abcdef01a2b3c',
+      storageKey: `data:image/svg+xml;utf8,${svgReturn}`,
+      versionNo: 1,
+      source: 'upload',
+      createdAt: `${baseDate}T12:30:00+08:00`,
+      createdBy: 'user-ben',
+      updatedAt: `${baseDate}T12:30:00+08:00`,
+      updatedBy: 'user-ben',
+      version: 1,
+    },
+    {
+      id: 'doc-rsp-3',
+      orgId,
+      clientId: 'client-rsp',
+      kind: 'authorization',
+      displayName: 'RSP_SPA_2026_auth_v1.pdf',
+      originalName: 'Notarized_Special_Power_of_Attorney.pdf',
+      mimeType: 'image/svg+xml',
+      sizeBytes: 620 * 1024,
+      originalSizeBytes: 1500 * 1024,
+      compressed: true,
+      sha256: 'e5f67890123456789abcdef0123456789abcdef0123456789abcdef01a2b3c4d',
+      storageKey: `data:image/svg+xml;utf8,${svgReturn}`,
+      versionNo: 1,
+      source: 'upload',
+      createdAt: `${baseDate}T09:30:00+08:00`,
+      createdBy: 'user-ana',
+      updatedAt: `${baseDate}T09:30:00+08:00`,
+      updatedBy: 'user-ana',
+      version: 1,
+    },
+  ];
+}
+
 function loadStore(): StoreData {
+  const baseDate = todayInManila();
   try {
     const raw = getStorageItem(STORAGE_KEY);
     if (raw) {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if (!parsed.documents || parsed.documents.length === 0) {
+        parsed.documents = buildSampleDocuments(parsed.org?.id || 'org-demo-01', baseDate);
+      }
+      return parsed;
     }
   } catch (e) {
     console.error('Failed to load store from localStorage', e);
   }
-  const seed = generateSeedData(todayInManila());
+  const seed = generateSeedData(baseDate);
   const initialStore: StoreData = {
     ...seed,
-    documents: [],
+    documents: buildSampleDocuments(seed.org.id, baseDate),
     notes: [],
     notifications: [
       {
@@ -1576,6 +1695,18 @@ export const mockRepositories: Repositories = {
       let list = store.documents.filter((d) => !d.deletedAt && isClientAllowed(d.clientId));
       if (f?.clientId) list = list.filter((d) => d.clientId === f.clientId);
       if (f?.taskId) list = list.filter((d) => d.taskId === f.taskId);
+      if (f?.lineId) list = list.filter((d) => d.lineId === f.lineId);
+      if (f?.kind && f.kind.length > 0) list = list.filter((d) => f.kind!.includes(d.kind));
+      if (f?.uploadedBy) list = list.filter((d) => d.createdBy === f.uploadedBy);
+      if (f?.search) {
+        const q = f.search.toLowerCase();
+        list = list.filter(
+          (d) =>
+            d.displayName.toLowerCase().includes(q) ||
+            d.originalName.toLowerCase().includes(q) ||
+            d.kind.toLowerCase().includes(q)
+        );
+      }
       return { items: list, total: list.length };
     },
 

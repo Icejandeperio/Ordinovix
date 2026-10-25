@@ -563,3 +563,74 @@ export function useDuplicateTaskForNextPeriod() {
   });
 }
 
+export function useUploadDocument() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      meta,
+      file,
+      thumb,
+      info,
+    }: {
+      meta: Parameters<typeof repositories.documents.upload>[0];
+      file: Blob;
+      thumb?: Blob;
+      info?: Parameters<typeof repositories.documents.upload>[3];
+    }) => repositories.documents.upload(meta, file, thumb, info),
+    onSuccess: (saved) => {
+      qc.invalidateQueries({ queryKey: ['documents'] });
+      if (saved.taskId) {
+        qc.invalidateQueries({ queryKey: ['task', saved.taskId] });
+      }
+      if (saved.clientId) {
+        qc.invalidateQueries({ queryKey: ['client', saved.clientId] });
+      }
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}
+
+export function useReplaceDocument() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      file,
+      thumb,
+      info,
+    }: {
+      id: string;
+      file: Blob;
+      thumb?: Blob;
+      info?: Parameters<typeof repositories.documents.replace>[3];
+    }) => repositories.documents.replace(id, file, thumb, info),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['documents'] });
+    },
+  });
+}
+
+export function useUpdateDocument() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Parameters<typeof repositories.documents.update>[1] }) =>
+      repositories.documents.update(id, updates),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['documents'] });
+    },
+  });
+}
+
+export function useRemoveDocument() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      repositories.documents.remove(id, reason),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['documents'] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+}
+
+
