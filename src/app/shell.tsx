@@ -89,9 +89,9 @@ export function AppShell() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-paper text-ink">
+    <div className="h-screen max-h-screen flex flex-col bg-paper text-ink overflow-hidden">
       {/* Sample data banner */}
-      <div className="bg-stamp-soft text-stamp-strong border-b border-rule px-4 py-1 text-center text-xs font-semibold flex items-center justify-center gap-2">
+      <div className="shrink-0 bg-stamp-soft text-stamp-strong border-b border-rule px-4 py-1 text-center text-xs font-semibold flex items-center justify-center gap-2 z-30">
         <span className="w-2 h-2 rounded-full bg-stamp animate-pulse" />
         <span>Sample Data Mode</span>
         <span className="text-ink-3">|</span>
@@ -100,10 +100,10 @@ export function AppShell() {
         </span>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Desktop Sidebar (>=1024px) / Tablet Rail (640px-1023px) */}
         <aside
-          className={`hidden sm:flex flex-col border-r border-rule bg-sheet transition-all duration-200 z-30 relative ${
+          className={`hidden sm:flex flex-col border-r border-rule bg-sheet transition-all duration-200 z-30 relative shrink-0 h-full overflow-hidden ${
             collapsed ? 'w-[72px]' : 'lg:w-[248px] sm:w-[72px]'
           }`}
         >
@@ -123,7 +123,7 @@ export function AppShell() {
           </button>
 
           {/* Logo & Brand Header */}
-          <div className={`h-14 border-b border-rule flex items-center ${collapsed ? 'px-2 justify-center' : 'px-4'}`}>
+          <div className={`h-14 shrink-0 border-b border-rule flex items-center ${collapsed ? 'px-2 justify-center' : 'px-4'}`}>
             <NavLink
               to="/"
               className={`flex items-center transition-opacity hover:opacity-90 ${collapsed ? 'justify-center' : 'gap-2.5 min-w-0'}`}
@@ -140,7 +140,7 @@ export function AppShell() {
           </div>
 
           {/* Navigation Links */}
-          <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-1">
+          <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-1 min-h-0">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.to || (item.to !== '/' && location.pathname.startsWith(item.to));
@@ -167,7 +167,7 @@ export function AppShell() {
           </nav>
 
           {/* User profile / Organization footer */}
-          <div className={`p-3 border-t border-rule bg-sheet-2 flex items-center ${collapsed ? 'justify-center' : 'gap-2.5'}`}>
+          <div className={`p-3 shrink-0 mt-auto border-t border-rule bg-sheet-2 flex items-center ${collapsed ? 'justify-center' : 'gap-2.5'}`}>
             <div
               className="w-8 h-8 rounded-full bg-stamp text-on-stamp flex items-center justify-center text-xs font-bold shrink-0 shadow-xs"
               title={currentPersona === 'owner' ? 'Ana Santos (Owner)' : 'Ben Morales (Helper)'}
@@ -188,9 +188,9 @@ export function AppShell() {
         </aside>
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden h-full min-h-0">
           {/* Top Bar (56px) */}
-          <header className="h-14 border-b border-rule bg-sheet/95 backdrop-blur-xs flex items-center justify-between px-4 sm:px-6 z-20">
+          <header className="h-14 shrink-0 border-b border-rule bg-sheet/95 backdrop-blur-xs flex items-center justify-between px-4 sm:px-6 z-20">
             {/* Left brand on mobile */}
             <div className="flex items-center gap-3 sm:hidden">
               <LogoMark className="w-7 h-7 text-stamp" />
@@ -229,7 +229,7 @@ export function AppShell() {
           </header>
 
           {/* Page Content Viewport */}
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 sm:pb-8 max-w-[1400px] w-full mx-auto">
+          <main className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 lg:p-8 pb-24 sm:pb-8 max-w-[1400px] w-full mx-auto">
             <Outlet />
           </main>
         </div>
