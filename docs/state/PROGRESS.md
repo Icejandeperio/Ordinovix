@@ -219,4 +219,32 @@
   - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 64 Vitest tests, Vite production build).
   - Browser subagent visual QA verified Calendar views (Month, Week, Agenda) and Payments register with modal form.
 
+## Session 2026-10-25 (M9 Insights & Reports)
+- Implemented Section 13 Insights Dashboards (`src/routes/insights/page.tsx`):
+  - Top filter row: Date range selector (Last 6 Months, Q3, YTD), Owner switcher (owner only), Client filter, and Template filter with reactive query updates.
+  - 6 KPI summary tiles on Overview: First-pass completion (86%, baseline ~55%), Avoidable repeat trips (1, baseline 4/month), Visits that left ready (92%), Follow-ups per task median (1.5), On-time filing rate (94%), and Tasks with owner and next action (97%).
+  - Full 6-tab architecture (`overview`, `trips`, `chasing`, `deadlines`, `workload`, `clients`):
+    - `Overview`: First-pass completion rate by month line chart with dashed baseline reference, Trips needing return stacked bars (Avoidable vs Not avoidable), Operator confidence trend, and Hours finding records per week.
+    - `Trips`: Visits per month bar chart, Items per visit line chart, Outcomes by month 100% stacked bars with status tones, Why trips needed a return horizontal bars with Avoidable tags, Out-of-pocket visit expenses bar chart, and Office Counter Performance table.
+    - `Chasing`: Follow-up messages sent per week, Follow-ups needed per completed task buckets (0, 1, 2, 3+), Client response turnaround days trend line, Late-discovered blockers bar chart, and Items most often missing table.
+    - `Deadlines`: On-time filing compliance line chart with 90% SLA reference line, Upcoming filings heat calendar (8 weeks × weekdays), Overdue by age buckets, and Administrative deadline extensions table.
+    - `Workload`: Tasks per operator horizontal bar chart, Tasks by status group stacked bar, Days to collect by template horizontal bar chart, and Tasks missing a next action table with direct navigation links.
+    - `Clients`: Neutral client response profile table with client code tabs, open task counts, average response times, quarterly follow-ups, and repeat trips linked.
+- Implemented Section 13.5 Reusable Chart Primitives & Container (`src/components/insights/chart-frame.tsx`, `src/components/insights/svg-charts.tsx`):
+  - Pure SVG chart primitives (`SvgLineChart`, `SvgBarChart`, `SvgStackedBarChart`, `SvgHorizontalBarChart`, `SvgHeatCalendar`) adhering strictly to Ordinovix design tokens (`--series-*`, `--seq-*`, `--chart-grid`, `--chart-axis`) without heavy external charting libraries.
+  - Accessible data table view toggle (`Show table` / `Hide table`) on every chart.
+  - One-click CSV download on every chart.
+  - Zero dual-axis charts anywhere in the application.
+- Implemented Section 11.14 Reports & Registry Exports Hub (`src/routes/reports/page.tsx`):
+  - Print format configuration controls: Paper size selector (A4, Letter, Long 8.5 × 13 in), Include masked TIN toggle, Include rule lines toggle.
+  - Formatted printable & PDF generators: Client Requirement Checklist (with English / Filipino language switch), Client Annual Compliance History (one client, one year retrospective), and Monthly Operations Summary.
+  - 7 Core Registry Exports with UTF-8 BOM encoding and formatted Excel: Clients Registry, Filing Tasks Log, Checklist Requirements, Follow-ups & Chasing, Visits & Outcomes, Tax Payments Summary, and Audit Activity Log.
+  - Full Practice Database Backup (JSON download) for owner persona.
+- Verification & Test Coverage:
+  - 73 unit tests green across 10 test files (`src/data/mock/insights-reports.test.ts` exercising KPI formulas matching `src/domain/metrics.ts` calculations, tab data structures, checklist report generation, annual history, monthly summary, and full JSON backup).
+  - Full TypeScript typecheck clean (`0 errors`).
+  - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 73 Vitest tests, Vite production build).
+  - Automated browser subagent visual QA verified all 6 Insights tabs, chart table toggles, and Reports export cards.
+
+
 
