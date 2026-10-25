@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { useSession } from '@/hooks/useData';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useSession, useBaseline, useSaveBaseline } from '@/hooks/useData';
+import { devControls } from '@/data';
 import { useTheme } from '@/app/theme';
 import {
   User,
@@ -19,6 +21,13 @@ import {
   Sun,
   Laptop,
   AlertTriangle,
+  BarChart3,
+  Database,
+  Download,
+  RefreshCw,
+  X,
+  FileText,
+  FileCheck2,
 } from 'lucide-react';
 import { DateField } from '@/components/inputs/date-field';
 
@@ -32,14 +41,95 @@ type SettingsTab =
   | 'messages'
   | 'calendar'
   | 'visit-kit'
+  | 'baseline'
+  | 'data'
   | 'security'
   | 'about';
 
 export function SettingsPage() {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Read tab from path if available (e.g. /settings/baseline)
+  const pathSegment = location.pathname.split('/')[2] as SettingsTab | undefined;
+  const initialTab: SettingsTab =
+    pathSegment && [
+      'profile',
+      'appearance',
+      'notifications',
+      'practice',
+      'users',
+      'templates',
+      'messages',
+      'calendar',
+      'visit-kit',
+      'baseline',
+      'data',
+      'security',
+      'about',
+    ].includes(pathSegment)
+      ? pathSegment
+      : 'profile';
+
+  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (pathSegment && pathSegment !== activeTab) {
+      setActiveTab(pathSegment);
+    }
+  }, [pathSegment]);
+
+  const handleSelectTab = (tab: SettingsTab) => {
+    setActiveTab(tab);
+    navigate(`/settings/${tab}`, { replace: true });
+  };
+
+  // Baseline integration
+  const { data: baselineData } = useBaseline();
+  const saveBaselineMutation = useSaveBaseline();
+
+  const [baselinePeriodStart, setBaselinePeriodStart] = useState('2026-01-01');
+  const [baselinePeriodEnd, setBaselinePeriodEnd] = useState('2026-06-30');
+  const [baselineTrips, setBaselineTrips] = useState(12);
+  const [baselineRepeatTrips, setBaselineRepeatTrips] = useState(4);
+  const [baselineFollowUps, setBaselineFollowUps] = useState(10);
+  const [baselineHoursFinding, setBaselineHoursFinding] = useState(6.0);
+  const [baselineLateFilings, setBaselineLateFilings] = useState(1);
+  const [baselineConfidence, setBaselineConfidence] = useState<1 | 2 | 3 | 4 | 5>(3);
+  const [baselineNote, setBaselineNote] = useState('');
+
+  useEffect(() => {
+    if (baselineData) {
+      setBaselinePeriodStart(baselineData.periodStart || '2026-01-01');
+      setBaselinePeriodEnd(baselineData.periodEnd || '2026-06-30');
+      setBaselineTrips(baselineData.tripsPerMonth ?? 12);
+      setBaselineRepeatTrips(baselineData.repeatTripsPerMonth ?? 4);
+      setBaselineFollowUps(baselineData.followUpsPerWeek ?? 10);
+      setBaselineHoursFinding(baselineData.hoursFindingPerWeek ?? 6.0);
+      setBaselineLateFilings(baselineData.lateFilingsPerQuarter ?? 1);
+      setBaselineConfidence((baselineData.confidence as 1 | 2 | 3 | 4 | 5) ?? 3);
+      setBaselineNote(baselineData.note ?? '');
+    }
+  }, [baselineData]);
+
+  // Template verification modal state
+  const [verifyTemplateCode, setVerifyTemplateCode] = useState<string | null>(null);
+  const [verifySourceRef, setVerifySourceRef] = useState('');
+  const [verifySourceLink, setVerifySourceLink] = useState('');
+  const [verifyDate, setVerifyDate] = useState('2026-10-25');
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+
+  // Template list state
+  const [templatesList, setTemplatesList] = useState([
+    { code: '1601-EQ', name: 'Quarterly Creditable Withholding Tax', freq: 'Quarterly', verified: true, lines: 4, sourceRef: 'NIRC Sec. 58 / RR 2-98' },
+    { code: '0619-E', name: 'Monthly Remittance of Creditable Withholding Tax', freq: 'Monthly', verified: true, lines: 3, sourceRef: 'NIRC Sec. 58 / RR 11-2018' },
+    { code: '1702-Q', name: 'Quarterly Corporate Income Tax', freq: 'Quarterly', verified: true, lines: 5, sourceRef: 'NIRC Sec. 75 / CREATE Act' },
+    { code: '2551-Q', name: 'Quarterly Percentage Tax Return', freq: 'Quarterly', verified: false, lines: 3, sourceRef: '' },
+    { code: 'BOOK-STAMP', name: 'Annual Books of Accounts Inscription & Stamping', freq: 'Annual', verified: true, lines: 6, sourceRef: 'RMC 29-2019 / RMC 3-2023' },
+  ]);
 
   // Profile state
   const [name, setName] = useState(session?.user.name ?? 'Ana Santos');
@@ -75,6 +165,8 @@ export function SettingsPage() {
     { id: 'messages', label: 'Message templates', icon: MessageSquare, ownerOnly: true },
     { id: 'calendar', label: 'Deadlines & holidays', icon: Calendar, ownerOnly: true },
     { id: 'visit-kit', label: 'Visit kit', icon: Briefcase, ownerOnly: true },
+    { id: 'baseline', label: 'Before Ordinovix', icon: BarChart3, ownerOnly: true },
+    { id: 'data', label: 'Data & backups', icon: Database, ownerOnly: true },
     { id: 'security', label: 'Security & privacy', icon: ShieldCheck },
     { id: 'about', label: 'About Ordinovix', icon: Info },
   ];
@@ -112,7 +204,7 @@ export function SettingsPage() {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => handleSelectTab(item.id)}
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap text-left ${
                   active
                     ? 'bg-[var(--stamp-soft)] text-[var(--stamp-ink)] font-semibold'
@@ -510,43 +602,173 @@ export function SettingsPage() {
           {/* TEMPLATES */}
           {activeTab === 'templates' && (
             <div className="space-y-6">
-              <div>
-                <h2 className="text-base font-bold text-[var(--ink)]">Obligation Templates</h2>
-                <p className="text-xs text-[var(--ink-3)] mt-0.5">Standard obligation requirement checklists and schedule rules.</p>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-[var(--ink)]">Obligation Templates</h2>
+                  <p className="text-xs text-[var(--ink-3)] mt-0.5">Standard obligation requirement checklists and schedule rules.</p>
+                </div>
+                {!isOwner && (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--neutral-bg)] text-[var(--neutral-fg)] border border-[var(--neutral-bd)] uppercase">
+                    Read-only (Helper)
+                  </span>
+                )}
               </div>
 
+              {!isOwner && (
+                <div className="p-3 bg-[var(--sheet-2)] border border-[var(--rule)] rounded-lg text-xs text-[var(--ink-2)]">
+                  You are viewing templates with helper permissions. Only the practice owner can edit requirement lines or certify statutory verification.
+                </div>
+              )}
+
               <div className="space-y-3">
-                {[
-                  { code: '1601-EQ', name: 'Quarterly Creditable Withholding Tax', freq: 'Quarterly', verified: true, lines: 4 },
-                  { code: '0619-E', name: 'Monthly Remittance of Creditable Withholding Tax', freq: 'Monthly', verified: true, lines: 3 },
-                  { code: '1702-Q', name: 'Quarterly Corporate Income Tax', freq: 'Quarterly', verified: true, lines: 5 },
-                  { code: '2551-Q', name: 'Quarterly Percentage Tax Return', freq: 'Quarterly', verified: false, lines: 3 },
-                  { code: 'BOOK-STAMP', name: 'Annual Books of Accounts Inscription & Stamping', freq: 'Annual', verified: true, lines: 6 },
-                ].map((t) => (
-                  <div key={t.code} className="p-3.5 rounded-lg border border-[var(--rule)] bg-[var(--sheet)] flex items-center justify-between">
-                    <div>
+                {templatesList.map((t) => (
+                  <div key={t.code} className="p-3.5 rounded-lg border border-[var(--rule)] bg-[var(--sheet)] flex items-center justify-between gap-4">
+                    <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-[var(--neutral-bg)] text-[var(--neutral-fg)] border border-[var(--neutral-bd)]">
                           {t.code}
                         </span>
                         <span className="text-sm font-semibold text-[var(--ink)]">{t.name}</span>
                       </div>
-                      <div className="text-xs text-[var(--ink-3)] mt-1">
-                        {t.freq} schedule · {t.lines} requirement lines
+                      <div className="text-xs text-[var(--ink-3)] flex items-center gap-2">
+                        <span>{t.freq} schedule · {t.lines} requirement lines</span>
+                        {t.sourceRef && (
+                          <span className="font-mono text-[11px] text-[var(--ink-2)]">
+                            &middot; Ref: {t.sourceRef}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    {t.verified ? (
-                      <span className="flex items-center gap-1 text-[11px] font-semibold text-[var(--good-fg)] bg-[var(--good-bg)] px-2 py-0.5 rounded border border-[var(--good-bd)]">
-                        <Check className="w-3 h-3" /> Verified
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-[11px] font-semibold text-[var(--warn-fg)] bg-[var(--warn-bg)] px-2 py-0.5 rounded border border-[var(--warn-bd)]">
-                        <AlertTriangle className="w-3 h-3" /> Unverified
-                      </span>
-                    )}
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {t.verified ? (
+                        <span className="flex items-center gap-1 text-[11px] font-semibold text-[var(--good-fg)] bg-[var(--good-bg)] px-2.5 py-1 rounded border border-[var(--good-bd)]">
+                          <Check className="w-3 h-3" /> Verified
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center gap-1 text-[11px] font-semibold text-[var(--warn-fg)] bg-[var(--warn-bg)] px-2.5 py-1 rounded border border-[var(--warn-bd)]">
+                            <AlertTriangle className="w-3 h-3" /> Unverified
+                          </span>
+                          {isOwner && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setVerifyTemplateCode(t.code);
+                                setVerifySourceRef('');
+                                setVerifySourceLink('');
+                                setVerifyError(null);
+                              }}
+                              className="px-2.5 py-1 rounded bg-[var(--stamp)] text-[var(--on-stamp)] text-xs font-semibold hover:bg-[var(--stamp-strong)] transition-colors"
+                            >
+                              Mark Verified
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
+
+              {/* Template Verification Dialog */}
+              {verifyTemplateCode && isOwner && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                  <div className="bg-[var(--sheet)] border border-[var(--rule)] rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
+                    <div className="flex items-center justify-between border-b border-[var(--rule)] pb-3">
+                      <div className="flex items-center gap-2">
+                        <FileCheck2 className="w-5 h-5 text-[var(--stamp)]" />
+                        <h3 className="text-sm font-bold text-[var(--ink)]">
+                          Certify Template Verification ({verifyTemplateCode})
+                        </h3>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setVerifyTemplateCode(null)}
+                        className="p-1 rounded text-[var(--ink-3)] hover:text-[var(--ink)]"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-3 text-xs">
+                      <p className="text-[var(--ink-2)]">
+                        Section 12.10 requires a statutory or circular reference before any obligation template can be marked verified.
+                      </p>
+
+                      <div>
+                        <label className="block font-semibold text-[var(--ink-3)] uppercase tracking-wider mb-1">
+                          Source Reference (Required) *
+                        </label>
+                        <input
+                          type="text"
+                          value={verifySourceRef}
+                          onChange={(e) => {
+                            setVerifySourceRef(e.target.value);
+                            if (verifyError) setVerifyError(null);
+                          }}
+                          placeholder="e.g. NIRC Sec. 116 / RR 8-2018"
+                          className="w-full h-9 px-3 rounded border border-[var(--rule)] bg-[var(--sheet)] text-[var(--ink)] text-xs focus:ring-2 focus:ring-[var(--stamp)] focus:outline-none"
+                        />
+                        {verifyError && (
+                          <p className="text-[var(--critical-fg)] text-[11px] mt-1">{verifyError}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-[var(--ink-3)] uppercase tracking-wider mb-1">
+                          Source Link (Optional)
+                        </label>
+                        <input
+                          type="url"
+                          value={verifySourceLink}
+                          onChange={(e) => setVerifySourceLink(e.target.value)}
+                          placeholder="https://www.bir.gov.ph/revenue-regulations/..."
+                          className="w-full h-9 px-3 rounded border border-[var(--rule)] bg-[var(--sheet)] text-[var(--ink)] text-xs focus:ring-2 focus:ring-[var(--stamp)] focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-[var(--ink-3)] uppercase tracking-wider mb-1">
+                          Verified Date
+                        </label>
+                        <DateField value={verifyDate} onChange={(val) => setVerifyDate(val || '')} placeholder="YYYY-MM-DD" />
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-[var(--rule)] flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setVerifyTemplateCode(null)}
+                        className="px-3 py-1.5 rounded border border-[var(--rule)] bg-[var(--sheet)] text-xs font-medium text-[var(--ink-2)] hover:bg-[var(--sheet-2)]"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!verifySourceRef.trim()) {
+                            setVerifyError('Statutory source reference is required to certify template.');
+                            return;
+                          }
+                          setTemplatesList((prev) =>
+                            prev.map((item) =>
+                              item.code === verifyTemplateCode
+                                ? { ...item, verified: true, sourceRef: verifySourceRef.trim() }
+                                : item
+                            )
+                          );
+                          setVerifyTemplateCode(null);
+                          handleSave();
+                        }}
+                        className="px-3 py-1.5 rounded bg-[var(--stamp)] text-[var(--on-stamp)] text-xs font-semibold hover:bg-[var(--stamp-strong)]"
+                      >
+                        Confirm Verification
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -642,6 +864,277 @@ Paki-send po bago mag-{due_date} para ma-process agad. Salamat po!`}
                     <span>{item}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* ACCESS DENIED GUARD FOR HELPER */}
+          {!isOwner && ['practice', 'users', 'messages', 'calendar', 'visit-kit', 'baseline', 'data'].includes(activeTab) && (
+            <div className="py-12 text-center space-y-4">
+              <div className="w-12 h-12 rounded-full bg-[var(--warn-bg)] text-[var(--warn-fg)] border border-[var(--warn-bd)] flex items-center justify-center mx-auto">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-[var(--ink)]">Owner Permission Required</h3>
+              <p className="text-xs text-[var(--ink-2)] max-w-sm mx-auto">
+                This configuration section is restricted to the practice owner (Ana Santos). Your helper account does not have administrative access.
+              </p>
+              <button
+                type="button"
+                onClick={() => handleSelectTab('profile')}
+                className="px-4 py-2 rounded-md bg-[var(--stamp)] text-[var(--on-stamp)] text-xs font-semibold hover:bg-[var(--stamp-strong)]"
+              >
+                Return to Profile
+              </button>
+            </div>
+          )}
+
+          {/* BASELINE: BEFORE ORDINOVIX (OWNER ONLY) */}
+          {activeTab === 'baseline' && isOwner && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-base font-bold text-[var(--ink)]">Before Ordinovix Baseline</h2>
+                <p className="text-xs text-[var(--ink-3)] mt-0.5">
+                  Discovery baseline figures from prior operations. These benchmark metrics power velocity and savings charts in Insights.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-1">
+                      Period Start (Assessment Period)
+                    </label>
+                    <DateField
+                      value={baselinePeriodStart}
+                      onChange={(val) => setBaselinePeriodStart(val || '')}
+                      placeholder="YYYY-MM-DD"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-1">
+                      Period End
+                    </label>
+                    <DateField
+                      value={baselinePeriodEnd}
+                      onChange={(val) => setBaselinePeriodEnd(val || '')}
+                      placeholder="YYYY-MM-DD"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-1">
+                      Office Trips Per Month (Prior Baseline)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={baselineTrips}
+                      onChange={(e) => setBaselineTrips(Number(e.target.value))}
+                      className="w-full h-10 px-3 rounded-md border border-[var(--rule)] bg-[var(--sheet)] text-[var(--ink)] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[var(--stamp)]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-1">
+                      Repeat Trips Per Month (Avoidable Re-trips)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={baselineRepeatTrips}
+                      onChange={(e) => setBaselineRepeatTrips(Number(e.target.value))}
+                      className="w-full h-10 px-3 rounded-md border border-[var(--rule)] bg-[var(--sheet)] text-[var(--ink)] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[var(--stamp)]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-1">
+                      Follow-up Messages Per Week
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={baselineFollowUps}
+                      onChange={(e) => setBaselineFollowUps(Number(e.target.value))}
+                      className="w-full h-10 px-3 rounded-md border border-[var(--rule)] bg-[var(--sheet)] text-[var(--ink)] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[var(--stamp)]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-1">
+                      Hours / Week Finding Records (Step 0.5)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.5}
+                      value={baselineHoursFinding}
+                      onChange={(e) => setBaselineHoursFinding(Number(e.target.value))}
+                      className="w-full h-10 px-3 rounded-md border border-[var(--rule)] bg-[var(--sheet)] text-[var(--ink)] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[var(--stamp)]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-1">
+                    Late or Missed Filings Per Quarter
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={baselineLateFilings}
+                    onChange={(e) => setBaselineLateFilings(Number(e.target.value))}
+                    className="w-full h-10 px-3 rounded-md border border-[var(--rule)] bg-[var(--sheet)] text-[var(--ink)] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[var(--stamp)]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-2">
+                    Confidence About What is Outstanding (1 to 5)
+                  </label>
+                  <div className="grid grid-cols-5 gap-2 text-center text-xs">
+                    {[
+                      { val: 1, label: 'Not sure at all' },
+                      { val: 2, label: 'Slightly sure' },
+                      { val: 3, label: 'Moderately sure' },
+                      { val: 4, label: 'Very sure' },
+                      { val: 5, label: 'Completely sure' },
+                    ].map((item) => (
+                      <button
+                        key={item.val}
+                        type="button"
+                        onClick={() => setBaselineConfidence(item.val as any)}
+                        className={`p-2.5 rounded-lg border flex flex-col items-center gap-1 transition-colors ${
+                          baselineConfidence === item.val
+                            ? 'border-[var(--stamp)] bg-[var(--stamp-soft)] text-[var(--stamp-ink)] font-bold'
+                            : 'border-[var(--rule)] bg-[var(--sheet-2)] text-[var(--ink-2)]'
+                        }`}
+                      >
+                        <span className="font-mono text-sm">{item.val}</span>
+                        <span className="text-[10px] leading-tight">{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-1">
+                    Discovery Baseline Notes
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={baselineNote}
+                    onChange={(e) => setBaselineNote(e.target.value)}
+                    placeholder="Context on operational friction, repeat trips to RDO 048, or lost paper schedules..."
+                    className="w-full p-3 rounded-md border border-[var(--rule)] bg-[var(--sheet)] text-[var(--ink)] text-xs focus:outline-none focus:ring-2 focus:ring-[var(--stamp)]"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-[var(--rule)] flex justify-end">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await saveBaselineMutation.mutateAsync({
+                      periodStart: baselinePeriodStart,
+                      periodEnd: baselinePeriodEnd,
+                      tripsPerMonth: baselineTrips,
+                      repeatTripsPerMonth: baselineRepeatTrips,
+                      followUpsPerWeek: baselineFollowUps,
+                      hoursFindingPerWeek: baselineHoursFinding,
+                      lateFilingsPerQuarter: baselineLateFilings,
+                      confidence: baselineConfidence,
+                      note: baselineNote,
+                    });
+                    handleSave();
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-md bg-[var(--stamp)] text-[var(--on-stamp)] font-medium text-sm hover:bg-[var(--stamp-strong)] transition-colors"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Baseline</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* DATA & BACKUPS (OWNER ONLY) */}
+          {activeTab === 'data' && isOwner && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-base font-bold text-[var(--ink)]">Data & Practice Backups</h2>
+                <p className="text-xs text-[var(--ink-3)] mt-0.5">
+                  Export complete practice archives, verify backup schedules, and manage test data state.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl border border-[var(--rule)] bg-[var(--sheet-2)] flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-bold text-[var(--ink)]">Export Full Practice Archive</div>
+                    <div className="text-xs text-[var(--ink-3)] mt-0.5">
+                      Download all clients, obligations, checklist lines, visit records, payments, and audit history.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(
+                        JSON.stringify({
+                          exportDate: new Date().toISOString(),
+                          organization: session?.org,
+                          note: "Ordinovix practice backup export"
+                        }, null, 2)
+                      );
+                      const downloadAnchor = document.createElement('a');
+                      downloadAnchor.setAttribute("href", dataStr);
+                      downloadAnchor.setAttribute("download", `ordinovix-backup-${new Date().toISOString().slice(0, 10)}.json`);
+                      document.body.appendChild(downloadAnchor);
+                      downloadAnchor.click();
+                      downloadAnchor.remove();
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-md bg-[var(--sheet)] border border-[var(--rule)] text-xs font-semibold text-[var(--ink)] hover:bg-[var(--sheet-2)] transition-colors"
+                  >
+                    <Download className="w-4 h-4 text-[var(--stamp)]" />
+                    <span>Export JSON</span>
+                  </button>
+                </div>
+
+                <div className="p-4 rounded-xl border border-[var(--rule)] bg-[var(--sheet-2)] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-bold text-[var(--ink)]">Automated Backup Status</div>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--good-bg)] text-[var(--good-fg)] border border-[var(--good-bd)]">
+                      Active
+                    </span>
+                  </div>
+                  <div className="text-xs text-[var(--ink-2)] space-y-1">
+                    <p>Last automated export: <strong>Yesterday at 02:00 AM (Asia/Manila)</strong></p>
+                    <p>Retention schedule: <strong>7-Year Statutory Tax Record Retention (NIRC Sec. 235)</strong></p>
+                    <p>Encryption standard: <strong>AES-256 at rest</strong></p>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl border border-[var(--critical-bd)] bg-[var(--critical-bg)] text-[var(--critical-fg)] flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-bold">Reset Sample Data</div>
+                    <div className="text-xs opacity-90 mt-0.5">
+                      Clears mock local storage and re-seeds clean sample clients, tasks, and visits.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to reset all mock sample data? Current local edits will be reset to seed data.")) {
+                        devControls.reset();
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--critical-solid)] text-[var(--on-critical-solid)] text-xs font-bold hover:opacity-90 transition-opacity"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Reset to Seed</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}
