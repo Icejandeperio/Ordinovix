@@ -351,7 +351,215 @@ export function useSetTaskStatus() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['task'] });
       qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['task-board'] });
       qc.invalidateQueries({ queryKey: ['today'] });
     },
   });
 }
+
+export function useTemplates(filters?: Parameters<typeof repositories.templates.list>[0]) {
+  return useQuery({
+    queryKey: ['templates', filters],
+    queryFn: () => repositories.templates.list(filters),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useTaskBoard(filters?: Parameters<typeof repositories.tasks.board>[0]) {
+  return useQuery({
+    queryKey: ['task-board', filters],
+    queryFn: () => repositories.tasks.board(filters),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useCreateTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      task,
+      lines,
+    }: {
+      task: Parameters<typeof repositories.tasks.create>[0];
+      lines: Parameters<typeof repositories.tasks.create>[1];
+    }) => repositories.tasks.create(task, lines),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['task-board'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+      qc.invalidateQueries({ queryKey: ['clients'] });
+    },
+  });
+}
+
+export function useMarkTaskSubmitted() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      submission,
+    }: {
+      id: string;
+      submission: Parameters<typeof repositories.tasks.markSubmitted>[1];
+    }) => repositories.tasks.markSubmitted(id, submission),
+    onSuccess: (saved) => {
+      qc.invalidateQueries({ queryKey: ['task', saved.id] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['task-board'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}
+
+export function useMarkTaskCompleted() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      completion,
+    }: {
+      id: string;
+      completion: Parameters<typeof repositories.tasks.markCompleted>[1];
+    }) => repositories.tasks.markCompleted(id, completion),
+    onSuccess: (saved) => {
+      qc.invalidateQueries({ queryKey: ['task', saved.id] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['task-board'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}
+
+export function useOverrideTaskStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status, reason }: { id: string; status: TaskStatus; reason: string }) =>
+      repositories.tasks.override(id, status, reason),
+    onSuccess: (saved) => {
+      qc.invalidateQueries({ queryKey: ['task', saved.id] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['task-board'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}
+
+export function useClearTaskOverride() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      repositories.tasks.clearOverride(id, reason),
+    onSuccess: (saved) => {
+      qc.invalidateQueries({ queryKey: ['task', saved.id] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['task-board'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}
+
+export function useChangeTaskDueDate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      dueDate,
+      ref,
+      reason,
+    }: {
+      id: string;
+      dueDate: string;
+      ref: string;
+      reason: string;
+    }) => repositories.tasks.changeDue(id, dueDate, ref, reason),
+    onSuccess: (saved) => {
+      qc.invalidateQueries({ queryKey: ['task', saved.id] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['task-board'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}
+
+export function useSetTaskNextAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, next }: { id: string; next: NextAction | null }) =>
+      repositories.tasks.setNextAction(id, next),
+    onSuccess: (saved) => {
+      qc.invalidateQueries({ queryKey: ['task', saved.id] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+}
+
+export function useArchiveTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      repositories.tasks.archive(id, reason),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['task', vars.id] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['task-board'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}
+
+export function useAddChecklistLine() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      taskId,
+      line,
+    }: {
+      taskId: string;
+      line: Parameters<typeof repositories.lines.addAdHoc>[1];
+    }) => repositories.lines.addAdHoc(taskId, line),
+    onSuccess: (saved) => {
+      qc.invalidateQueries({ queryKey: ['task', saved.taskId] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}
+
+export function useOpenPeriod() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (plan: Parameters<typeof repositories.tasks.openPeriod>[0]) =>
+      repositories.tasks.openPeriod(plan),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['task-board'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+      qc.invalidateQueries({ queryKey: ['clients'] });
+    },
+  });
+}
+
+export function useUpdateTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Parameters<typeof repositories.tasks.update>[1] }) =>
+      repositories.tasks.update(id, updates),
+    onSuccess: (saved) => {
+      qc.invalidateQueries({ queryKey: ['task', saved.id] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['task-board'] });
+    },
+  });
+}
+
+export function useDuplicateTaskForNextPeriod() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => repositories.tasks.duplicateForNextPeriod(id),
+    onSuccess: (saved) => {
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['task-board'] });
+    },
+  });
+}
+

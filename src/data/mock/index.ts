@@ -1430,7 +1430,16 @@ export const mockRepositories: Repositories = {
     async openPeriod(plan) {
       await simulateLatency();
       const createdIds: ID[] = [];
+      let skipped = 0;
       for (const item of plan.selections) {
+        const existing = store.tasks.find(
+          (t) => !t.deletedAt && t.clientId === item.clientId && t.templateId === item.templateId && t.period === plan.period
+        );
+        if (existing) {
+          skipped++;
+          continue;
+        }
+
         const tmpl = store.templates.find((t) => t.id === item.templateId);
         const reqs = store.reqTemplates.filter((r) => r.taskTemplateId === item.templateId);
         const task = await mockRepositories.tasks.create(
@@ -1446,7 +1455,7 @@ export const mockRepositories: Repositories = {
         );
         createdIds.push(task.id);
       }
-      return { created: createdIds, skipped: 0, lines: createdIds.length * 2 };
+      return { created: createdIds, skipped, lines: createdIds.length * 2 };
     },
 
     async board(f) {

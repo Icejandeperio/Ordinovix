@@ -67,3 +67,29 @@
   - 4-step wizard: Upload CSV with downloadable CSV sample template -> Intelligent column mapper -> Preview & validation table (Ready, Error, Duplicate code/name detection) -> Commit summary ("X added, Y skipped") with 5-minute undo rollback countdown.
 - Verification: 25 unit tests green (`src/data/mock/clients.test.ts` exercising listing, helper scoping, TIN reveal audit, archiving, duplicate validation, and batch undo), TypeScript compilation clean (`0 errors`), and automated browser subagent verified directory, profile tabs, and import wizard.
 
+## Session 2026-10-25 (M4 Tasks, Board & Open Period Wizard)
+- Implemented full Section 11.4 Tasks Directory & Kanban Board (`src/routes/tasks/page.tsx`):
+  - Header with task counter badge, responsive view switcher (`[List | Board]`), "Open Filing Period" button (opens `OpenPeriodModal`), and "New Task" button (opens `NewTaskSheet`).
+  - Built-in view tabs: `All open` (default), `My tasks`, `Overdue`, `Blocked by client`, `Needs my review`, `Ready for a visit`, `Ready for desk filing`, `Submitted — awaiting confirmation`, and `Completed this month`.
+  - Filter bar: instant text search by client name, code, or task title; dropdown filters for Client, Status Groups (`blocked`, `in_progress`, `ready`, `submitted`, `done`), Kinds (`filing`, `payment`, `registration`, `one_time_transaction`, `lgu`, `other`), Assigned user, and Period with "Clear filters" action.
+  - Table / List view: Columns for Client (folder tab code + name), Task (template code + title), Period, Status (`StatusChip` with override marker dot), Due (`DueBadge`), Ready progress mini-meter ("X of Y accepted" with percentage bar), Next action (line with owner and target date), Owner (`UserChip`), and action link.
+  - Kanban Board view (`?view=board`): 8 lifecycle columns (`Not started`, `Waiting on client`, `Needs review`, `Needs correction`, `In preparation`, `Ready for action`, `Submitted`, `Completed`). Derived columns feature lock icons explaining automatic derivation from lines; operator columns feature "Move to..." transition menus wired to `canSetStatus` rules. Transitions to Submitted trigger `MarkSubmittedDialog`; transitions to Completed trigger `MarkCompletedDialog`.
+- Implemented full Section 11.5 Task Detail View (`src/routes/tasks/detail.tsx`):
+  - Header: Client folder tab link, Task template code & title, Period, `StatusChip` with override explanation tooltip, `DueBadge` with statutory source note ("Due Oct 31 · template default" or "Moved to May 15 · RMC 30-2026"), and NextActionLine with quick inline edit modal.
+  - Large authentic `done` `ReviewStamp` rendered on completed tasks with evidence counts.
+  - Dynamic Primary Action Button (Section 11.5.2) adapting automatically based on task state (`Request missing`, `Review lines`, `Request corrections`, `Add to visit`, `Open visit`, `Mark submitted`, `Mark completed`, `Reopen`).
+  - Overflow Menu: `Override status` (owner only with >=10 char audit reason), `Change due date` (owner only with statutory ref & reason), `Reassign owner`, `Duplicate for next period`, `Print client checklist`, and `Archive task`.
+  - Left column: Unverified template warning banner, Blocking banner (with missing line count and blocker breakdown), Document Requirements Checklist (`ChecklistRow` with `LineChip`, "Bring to office" indicator, "Added late" pill for items added within 3 days of due date, interactive "Mark Received", and "Stamp Accept" playing authentic `-3°` physics bounce `ReviewStamp`), and Evidence Grid (tiles for Filed return, Acknowledgment, and Payment proof with upload triggers).
+  - Right rail: Obligation details (filing channel, owner, statutory RDO, office action flag, payment expected flag), Authorization coverage card (`AuthorizationBadge` with SPA validation), Office visits for this task with past outcomes, and Open follow-ups with attempt counters.
+- Implemented Task Action Modals (`src/components/tasks/task-modals.tsx`):
+  - `MarkSubmittedDialog` (submission date, filing channel, confirmation ref number, acknowledgment upload).
+  - `MarkCompletedDialog` (completion date, required evidence verification or non-evidence justification reason).
+  - `OverrideStatusDialog` (owner-only status override requiring >=10 character audit reason).
+  - `ChangeDueDateDialog` (owner-only due date adjustment requiring statutory reference and reason).
+  - `AddChecklistLineModal` (custom requirement label, copy form, copy count, supplied by, print & bring toggle).
+  - `ArchiveTaskDialog` (archive reason).
+- Implemented Section 11.5.6 & 12.4 New Task Drawer (`src/components/tasks/new-task-sheet.tsx`):
+  - Template selection vs One-off errand switcher, automatic statutory due date computation with source notes, and collision check detecting active duplicates (`client + template + period`) and preventing duplicate creation.
+- Implemented Section 11.6 Open Period Wizard (`src/components/tasks/open-period-modal.tsx`):
+  - 800px 3-step modal: Period selection -> Client scope multi-select -> Client × Template matrix with collision check skipping already open tasks -> Batch creation summary toast.
+- Verification: 31 unit tests green (`src/data/mock/tasks.test.ts` exercising derived status computation, `canSetStatus` blocker enforcement, owner status override, due date update with statutory reference, open period idempotence, and "Added late" detection), TypeScript compilation clean (`0 errors`), full `verify.ps1` gate passed, and automated browser subagent QA verified all task workflows.
