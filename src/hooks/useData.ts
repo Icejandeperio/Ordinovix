@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { repositories } from '@/data';
-import type { InsightsTab, InsightsFilter, TaskStatus, LineStatus, VisitAction, Outcome, OutcomeCause, NextAction } from '@/domain/types';
+import type { InsightsTab, InsightsFilter, TaskStatus, LineStatus, VisitAction, Outcome, OutcomeCause, NextAction, Baseline } from '@/domain/types';
 
 export function useSession() {
   return useQuery({
@@ -914,6 +914,25 @@ export function useChangeTaskDue() {
       qc.invalidateQueries({ queryKey: ['tasks'] });
       qc.invalidateQueries({ queryKey: ['calendar'] });
       qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}
+
+export function useBaseline() {
+  return useQuery({
+    queryKey: ['baseline'],
+    queryFn: () => repositories.baseline.get(),
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useSaveBaseline() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (b: Partial<Baseline>) => repositories.baseline.save(b),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['baseline'] });
+      qc.invalidateQueries({ queryKey: ['insights'] });
     },
   });
 }

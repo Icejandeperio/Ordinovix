@@ -3129,19 +3129,22 @@ export const mockRepositories: Repositories = {
       await simulateLatency();
       const { user } = getCurrentUser();
       store.baseline = {
-        id: generateId(),
+        id: store.baseline?.id || generateId(),
         orgId: store.org.id,
         periodStart: b.periodStart || '2026-01-01',
         periodEnd: b.periodEnd || '2026-06-30',
-        tripsPerMonth: b.tripsPerMonth || 12,
-        repeatTripsPerMonth: b.repeatTripsPerMonth || 4,
-        hoursFindingPerWeek: b.hoursFindingPerWeek || 6,
-        confidence: b.confidence || 3,
-        createdAt: todayInManila() + 'T00:00:00+08:00',
-        createdBy: user.id,
+        tripsPerMonth: b.tripsPerMonth ?? 12,
+        repeatTripsPerMonth: b.repeatTripsPerMonth ?? 4,
+        followUpsPerWeek: b.followUpsPerWeek ?? 10,
+        hoursFindingPerWeek: b.hoursFindingPerWeek ?? 6,
+        lateFilingsPerQuarter: b.lateFilingsPerQuarter ?? 1,
+        confidence: b.confidence ?? 3,
+        note: b.note ?? '',
+        createdAt: store.baseline?.createdAt || (todayInManila() + 'T00:00:00+08:00'),
+        createdBy: store.baseline?.createdBy || user.id,
         updatedAt: todayInManila() + 'T00:00:00+08:00',
         updatedBy: user.id,
-        version: 1,
+        version: (store.baseline?.version ?? 0) + 1,
       };
       saveStore();
       return store.baseline;
@@ -3226,9 +3229,17 @@ export const mockRepositories: Repositories = {
   activity: {
     async list(f) {
       await simulateLatency();
+      const { membership } = getCurrentUser();
+      if (!f?.clientId && !f?.entityId && membership.role !== 'owner') {
+        throw new Error('Access denied: Practice-wide audit log is restricted to practice owners');
+      }
       let list = store.activity;
+      if (membership.role === 'helper' && membership.clientIds) {
+        list = list.filter((a) => !a.clientId || membership.clientIds.includes(a.clientId));
+      }
       if (f?.entity) list = list.filter((a) => a.entity === f.entity);
       if (f?.clientId) list = list.filter((a) => a.clientId === f.clientId);
+      if ((f as any)?.entityId) list = list.filter((a) => (a as any).entityId === (f as any).entityId);
       return { items: list, total: list.length };
     },
   },
