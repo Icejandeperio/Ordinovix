@@ -727,5 +727,149 @@ export function useResolveFollowUp() {
   });
 }
 
+export function useOffice(id: string) {
+  return useQuery({
+    queryKey: ['office', id],
+    queryFn: () => repositories.offices.get(id),
+    enabled: Boolean(id),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useSaveOffice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (o: Parameters<typeof repositories.offices.save>[0]) =>
+      repositories.offices.save(o),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['offices'] });
+    },
+  });
+}
+
+export function useCreateVisit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      visit,
+      items,
+    }: {
+      visit: Parameters<typeof repositories.visits.create>[0];
+      items?: Parameters<typeof repositories.visits.create>[1];
+    }) => repositories.visits.create(visit, items),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['visits'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}
+
+export function useUpdateVisit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      updates,
+    }: {
+      id: string;
+      updates: Parameters<typeof repositories.visits.update>[1];
+    }) => repositories.visits.update(id, updates),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ['visits'] });
+      qc.invalidateQueries({ queryKey: ['visit', id] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}
+
+export function useSetVisitPacked() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      visitId,
+      ref,
+      packed,
+    }: {
+      visitId: string;
+      ref: Parameters<typeof repositories.visits.setPacked>[1];
+      packed: boolean;
+    }) => repositories.visits.setPacked(visitId, ref, packed),
+    onSuccess: (_, { visitId }) => {
+      qc.invalidateQueries({ queryKey: ['visit', visitId] });
+    },
+  });
+}
+
+export function useStartVisit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, leaveAnywayReason }: { id: string; leaveAnywayReason?: string }) =>
+      repositories.visits.start(id, leaveAnywayReason),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ['visits'] });
+      qc.invalidateQueries({ queryKey: ['visit', id] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}
+
+export function useRecordVisitOutcome() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      itemId,
+      outcome,
+    }: {
+      itemId: string;
+      outcome: Parameters<typeof repositories.visits.recordOutcome>[1];
+    }) => repositories.visits.recordOutcome(itemId, outcome),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['visits'] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}
+
+export function useFinishVisit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Parameters<typeof repositories.visits.finish>[1];
+    }) => repositories.visits.finish(id, data),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ['visits'] });
+      qc.invalidateQueries({ queryKey: ['visit', id] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}
+
+export function useCancelVisit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      repositories.visits.cancel(id, reason),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ['visits'] });
+      qc.invalidateQueries({ queryKey: ['visit', id] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
+  });
+}
+
+export function useSuggestVisitTasks(visitId: string) {
+  return useQuery({
+    queryKey: ['suggestVisitTasks', visitId],
+    queryFn: () => repositories.visits.suggestTasks(visitId),
+    enabled: Boolean(visitId),
+  });
+}
+
+
 
 

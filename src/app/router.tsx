@@ -12,6 +12,9 @@ import { FollowUpsPage } from '@/routes/follow-ups/page';
 import { FollowUpsRunPage } from '@/routes/follow-ups/run';
 import { VisitsPage } from '@/routes/visits/page';
 import { VisitDetailPage } from '@/routes/visits/detail';
+import { VisitRecordPage } from '@/routes/visits/record';
+import { VisitSummaryPage } from '@/routes/visits/summary';
+import { VisitPrintPage } from '@/routes/visits/print';
 import { CalendarPage } from '@/routes/calendar/page';
 import { DocumentsPage } from '@/routes/documents/page';
 import { PaymentsPage } from '@/routes/payments/page';
@@ -42,8 +45,10 @@ export const router = createBrowserRouter([
       { path: 'follow-ups', element: <FollowUpsPage /> },
       { path: 'follow-ups/run', element: <FollowUpsRunPage /> },
       { path: 'visits', element: <VisitsPage /> },
-
       { path: 'visits/:visitId', element: <VisitDetailPage /> },
+      { path: 'visits/:visitId/record', element: <VisitRecordPage /> },
+      { path: 'visits/:visitId/summary', element: <VisitSummaryPage /> },
+      { path: 'visits/:visitId/print', element: <VisitPrintPage /> },
       { path: 'calendar', element: <CalendarPage /> },
       { path: 'documents', element: <DocumentsPage /> },
       { path: 'payments', element: <PaymentsPage /> },

@@ -158,3 +158,41 @@
   - Queue completion summary screen showing breakdown of items sent, escalated, and skipped with return CTA.
 - Verification: 44 unit tests green across 7 test files (`src/data/mock/follow-ups.test.ts` exercising template interpolation, SMS calculations, markSent state transitions, logResponse line status updates, escalation reason validation, and helper access scoping), TypeScript compilation clean (`0 errors`), full `verify.ps1` gate passed in 7.65s, and automated browser subagent QA verified the follow-ups directory, MessageComposer, copy toast, and queue walk-through mode.
 
+## Session 2026-10-25 (M7 Visits, Office Directory & Trip Pack)
+- Implemented Section 11.9.1 Visits Directory Page (`src/routes/visits/page.tsx`):
+  - Tabs: `Upcoming` (planned, in_progress), `Done`, `Cancelled`, and `All` with reactive count badges.
+  - Search filter across office name, RDO code, and purpose.
+  - Cards per visit: Office name with type icon (`Building2`, `Landmark`, `Building`), planned date & arrive-by time, assignee chip, task count, `ReadinessMeter` ("1 of 3 items ready"), and status badges (`READY TO GO`, `NOT READY (N BLOCKERS)` with itemized blocker list, `IN PROGRESS`, `DONE`).
+  - Plan a Visit button triggering `PlanVisitSheet`.
+- Implemented Section 11.9.2 Plan a Visit Sheet (`src/components/visits/plan-visit-sheet.tsx`):
+  - Office Combobox populated from Offices directory with inline "+ Add office" trigger (`OfficeFormModal`).
+  - DateField with Philippine weekend and holiday warning (`nonWorkingDayNote`).
+  - Arrive-by time, assignee picker, and optional purpose text.
+  - Candidate tasks picker with intended action selector (`Submit`, `Pay`, `Claim`, `Inquire`, `Follow up`) and blocking status warnings.
+- Implemented Section 11.9.3 Visit Detail / Prepare View (`src/routes/visits/detail.tsx`):
+  - Readiness banner with blocking items accordion naming specific unaccepted documents and expired authorizations per client.
+  - Authentic `-3°` physics bounce `ReviewStamp` (`variant="ready"`) dynamically stamped on the header when 100% ready.
+  - Counter Errand Items list: Intended action badge, client code tab, authorization validity check, and questions textarea with auto-save.
+  - Physical Trip Pack Checklist (`packList`): Client-grouped physical documents with copy forms, copy counts, and `PackCheckbox` interacting with `useSetVisitPacked`; plus General Visit Kit items (Heavy-duty stapler, ballpoint pens, long brown folders, paperclips).
+  - Departure Override Flow: Mandatory modal requiring $\ge 10$ character reason ("Leave without everything ready?"), logging `departureOverrideReason`, setting `startedAt`, moving status to `in_progress`, and switching to Record view.
+- Implemented Section 11.9.5 Counter Record Screen (`src/routes/visits/record.tsx`):
+  - Mobile-first counter recording interface with large touch targets ($\ge 44$ px) for use at BIR RDO, AAB, or LGU counters.
+  - 7 RadioCard outcomes: `Completed`, `Submitted, waiting for processing`, `Paid, proof to follow`, `More documents requested`, `Correction required`, `Not accepted`, and `Follow-up visit needed`.
+  - Cause selector grouped into Avoidable and Not avoidable, reactive avoidable toggle, counter note (required for "Other"), and officer/window name.
+  - Dynamic sub-forms: "+ Add document" list for `more_documents_requested` creating new checklist lines; affected lines checkbox picker for `correction_required`.
+  - Next action triage (action description, due date, owner) and evidence attachment with camera/file upload simulation.
+  - Finish visit modal: Captures trip end time and out-of-pocket expenses (transport, parking, other in centavos) and redirects to Visit Summary.
+- Implemented Section 11.9.6 Visit Summary Page (`src/routes/visits/summary.tsx`):
+  - Large `done` stamp (`ReviewStamp variant="done"`) displaying attached evidence count.
+  - Summary metrics: Total trip duration ("1 h 45 min"), expense totals, and repeat trips created analysis ("X avoidable, Y not avoidable").
+  - Outcome per item review with next action links and navigation back to Today or Visits.
+- Implemented Section 11.9.4 Printable Trip Pack (`src/routes/visits/print.tsx`):
+  - Print-ready black-and-white portrait layout adhering to `print.css`, supporting A4, Letter, and Long 8.5 x 13 in legal paper size.
+  - Folder tab client outlines, drawn 4mm square checkboxes (`[ ]`), copy counts, masked TINs only (never full TIN), and 3 blank ruled lines for counter notes.
+- Implemented Section 11.13 Offices Directory Page (`src/routes/offices/page.tsx`):
+  - Full directory with tabs: `All`, `BIR RDOs`, `Agent Banks (AAB)`, `City Halls (LGU)`, `SEC`.
+  - Search filter by office name, RDO code, address, and counter tips.
+  - Prominent "Operator Counter Tip" callout box on each card, map links, operating hours, and telephone.
+  - Add / Edit Office modal (`OfficeFormModal`) supporting full CRUD on office entities.
+- Verification: 53 unit tests green across 8 test files (`src/data/mock/visits.test.ts` exercising readiness determination, physical pack list generation, pack state toggling, departure override logging, Spec 16.6 outcome mappings, expense handling, and office directory management), TypeScript compilation clean (`0 errors`), full `verify.ps1` gate passed in 11.28s, and automated browser subagent QA verified all visits and offices workflows.
+

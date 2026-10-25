@@ -2276,6 +2276,23 @@ export const mockRepositories: Repositories = {
     async save(o) {
       await simulateLatency();
       const { user } = getCurrentUser();
+      const existing = o.id ? store.offices.find((item) => item.id === o.id) : undefined;
+      if (existing) {
+        if (o.type) existing.type = o.type;
+        if (o.name) existing.name = o.name;
+        existing.rdoCode = o.rdoCode;
+        existing.address = o.address;
+        existing.mapUrl = o.mapUrl;
+        existing.hours = o.hours;
+        existing.phoneE164 = o.phoneE164;
+        existing.tips = o.tips;
+        existing.updatedAt = todayInManila() + 'T00:00:00+08:00';
+        existing.updatedBy = user.id;
+        existing.version += 1;
+        saveStore();
+        return existing;
+      }
+
       const office: Office = {
         id: o.id || generateId(),
         orgId: store.org.id,
@@ -2283,6 +2300,10 @@ export const mockRepositories: Repositories = {
         name: o.name || 'Office',
         rdoCode: o.rdoCode,
         address: o.address,
+        mapUrl: o.mapUrl,
+        hours: o.hours,
+        phoneE164: o.phoneE164,
+        tips: o.tips,
         isSample: false,
         createdAt: todayInManila() + 'T00:00:00+08:00',
         createdBy: user.id,
@@ -2508,53 +2529,100 @@ export const mockRepositories: Repositories = {
       const task = store.tasks.find((t) => t.id === item.taskId);
       if (!task) throw new Error('Task not found');
 
+      // Check whether this is the first visit outcome recorded for this task
+      const earlierOutcomeCount = store.visitItems.filter(
+        (vi) => vi.taskId === task.id && vi.id !== item.id && vi.outcome
+      ).length;
+      item.isFirstVisitForTask = earlierOutcomeCount === 0;
+
       item.outcome = o.outcome;
       item.outcomeCause = o.cause;
       item.avoidable = o.avoidable;
       item.outcomeNote = o.note;
       item.windowOrOfficer = o.windowOrOfficer;
       item.nextAction = o.nextAction;
-      item.evidenceDocumentIds = o.evidenceDocumentIds;
+      item.evidenceDocumentIds = o.evidenceDocumentIds || [];
       item.outcomeAt = todayInManila() + 'T' + new Date().toTimeString().slice(0, 8) + '+08:00';
       item.recordedBy = user.id;
 
-      // Apply outcome mapping (16.6)
+      // Apply outcome mapping (Spec 16.6)
       if (o.outcome === 'completed') {
-        if (o.evidenceDocumentIds.length > 0) {
+        if (o.evidenceDocumentIds && o.evidenceDocumentIds.length > 0) {
           task.status = 'completed';
           task.completedAt = item.outcomeAt;
         } else {
           task.status = 'awaiting_follow_up';
-          task.nextAction = { text: 'Attach evidence document', owner: 'operator', due: todayInManila() };
+          task.nextAction = o.nextAction || {
+            text: 'Attach evidence document',
+            owner: 'operator',
+            due: addDaysToDate(todayInManila(), 2),
+          };
         }
       } else if (o.outcome === 'submitted_pending') {
         task.status = 'submitted';
-        task.submittedAt = item.outcomeAt;
+        if (!task.submittedAt) task.submittedAt = item.outcomeAt;
         if (o.nextAction) task.nextAction = o.nextAction;
-      } else if (o.outcome === 'more_documents_requested' && o.requestedDocuments) {
+      } else if (o.outcome === 'paid_proof_pending') {
+        task.status = 'awaiting_follow_up';
+        task.nextAction = o.nextAction || {
+          text: 'Attach payment proof',
+          owner: 'operator',
+          due: addDaysToDate(todayInManila(), 2),
+        };
+      } else if (o.outcome === 'more_documents_requested') {
         task.status = 'in_preparation';
-        for (const docName of o.requestedDocuments) {
-          store.taskLines.push({
-            id: generateId(),
-            orgId: store.org.id,
-            taskId: task.id,
-            clientId: task.clientId,
-            label: docName,
-            required: true,
-            copyForm: 'photocopy',
-            suppliedBy: 'client',
-            printAndBring: true,
-            status: 'not_requested',
-            sortOrder: store.taskLines.filter((l) => l.taskId === task.id).length + 1,
-            lateDiscovered: true,
-            documentIds: [],
-            createdAt: todayInManila() + 'T00:00:00+08:00',
-            createdBy: user.id,
-            updatedAt: todayInManila() + 'T00:00:00+08:00',
-            updatedBy: user.id,
-            version: 1,
-          });
+        if (o.requestedDocuments && o.requestedDocuments.length > 0) {
+          for (const docName of o.requestedDocuments) {
+            store.taskLines.push({
+              id: generateId(),
+              orgId: store.org.id,
+              taskId: task.id,
+              clientId: task.clientId,
+              label: docName,
+              required: true,
+              copyForm: 'photocopy',
+              suppliedBy: 'client',
+              printAndBring: true,
+              status: 'not_requested',
+              sortOrder: store.taskLines.filter((l) => l.taskId === task.id).length + 1,
+              lateDiscovered: true,
+              documentIds: [],
+              createdAt: todayInManila() + 'T00:00:00+08:00',
+              createdBy: user.id,
+              updatedAt: todayInManila() + 'T00:00:00+08:00',
+              updatedBy: user.id,
+              version: 1,
+            });
+          }
         }
+        if (o.nextAction) task.nextAction = o.nextAction;
+      } else if (o.outcome === 'correction_required') {
+        task.status = 'in_preparation';
+        if (o.affectedLineIds && o.affectedLineIds.length > 0) {
+          for (const lineId of o.affectedLineIds) {
+            const line = store.taskLines.find((l) => l.id === lineId);
+            if (line) {
+              line.status = 'needs_correction';
+              if (o.note) line.flagNote = o.note;
+            }
+          }
+        }
+        if (o.nextAction) task.nextAction = o.nextAction;
+      } else if (o.outcome === 'not_accepted') {
+        task.status = 'in_preparation';
+        if (o.affectedLineIds && o.affectedLineIds.length > 0) {
+          for (const lineId of o.affectedLineIds) {
+            const line = store.taskLines.find((l) => l.id === lineId);
+            if (line) {
+              line.status = 'needs_correction';
+              if (o.note) line.flagNote = o.note;
+            }
+          }
+        }
+        if (o.nextAction) task.nextAction = o.nextAction;
+      } else if (o.outcome === 'follow_up_required') {
+        task.status = 'awaiting_follow_up';
+        if (o.nextAction) task.nextAction = o.nextAction;
       }
 
       saveStore();

@@ -145,3 +145,15 @@ export const ResolveFollowUpSchema = z.object({
   reason: z.string().min(10, 'Resolution reason must be at least 10 characters'),
 });
 
+export const OfficeSchema = z.object({
+  name: z.string().min(2, 'Office name is required'),
+  type: z.enum(['rdo', 'bank', 'lgu', 'sec', 'client_office', 'other']),
+  rdoCode: z.string().optional(),
+  address: z.string().optional(),
+  mapUrl: z.string().url('Invalid map URL').optional().or(z.literal('')),
+  hours: z.string().optional(),
+  phoneE164: z.string().optional(),
+  tips: z.string().max(1000, 'Tips cannot exceed 1000 characters').optional(),
+});
+
+
