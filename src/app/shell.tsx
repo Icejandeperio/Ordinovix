@@ -229,8 +229,10 @@ export function AppShell() {
           </header>
 
           {/* Page Content Viewport */}
-          <main className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 lg:p-8 pb-24 sm:pb-8 max-w-[1400px] w-full mx-auto">
-            <Outlet />
+          <main className="flex-1 overflow-y-auto min-h-0 w-full">
+            <div className="max-w-[1400px] w-full mx-auto p-4 sm:p-6 lg:p-8 pb-24 sm:pb-8">
+              <Outlet />
+            </div>
           </main>
         </div>
       </div>

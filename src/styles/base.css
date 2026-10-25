@@ -26,4 +26,29 @@
     outline: none;
     box-shadow: var(--focus);
   }
+
+  /* Spec 8.9: Scrollbars: Thin (8 px), thumb --rule-strong at 50%, track transparent */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--rule-strong) 40%, transparent) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--rule-strong) 40%, transparent);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--rule-strong);
+  }
 }
+
