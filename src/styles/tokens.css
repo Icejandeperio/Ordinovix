@@ -301,3 +301,242 @@ html {
   opacity: 0.5;
   border-radius: 4px;
 }
+
+/* ========================================================
+   CURATED MULTI-TONAL COLOR PALETTES
+   ======================================================== */
+
+/* 1. Terracotta (Warm Clay & Slate Navy) */
+[data-palette="terracotta"] {
+  --stamp: #C2410C;
+  --stamp-strong: #9A3412;
+  --stamp-soft: #FFEDD5;
+  --stamp-ink: #9A3412;
+  --on-stamp: #FFFFFF;
+  --focus: 0 0 0 2px var(--sheet), 0 0 0 4px #C2410C;
+  --series-1: #C2410C;
+  --series-2: #1E40AF;
+  --series-3: #D97706;
+  --series-4: #047857;
+  --series-5: #9333EA;
+  --series-6: #475569;
+  --seq-100: #FFF7ED;
+  --seq-200: #FED7AA;
+  --seq-300: #FDBA74;
+  --seq-400: #FB923C;
+  --seq-500: #F97316;
+  --seq-600: #EA580C;
+  --seq-700: #C2410C;
+}
+
+.dark[data-palette="terracotta"],
+[data-palette="terracotta"].dark,
+[data-palette="terracotta"] .dark {
+  --stamp: #FB923C;
+  --stamp-strong: #FDBA74;
+  --stamp-soft: #3A1E11;
+  --stamp-ink: #FDBA74;
+  --on-stamp: #2A1005;
+  --focus: 0 0 0 2px var(--sheet), 0 0 0 4px #FB923C;
+  --series-1: #FB923C;
+  --series-2: #60A5FA;
+  --series-3: #FBBF24;
+  --series-4: #34D399;
+  --series-5: #C084FC;
+  --series-6: #94A3B8;
+  --seq-100: #2E160C;
+  --seq-200: #4B2412;
+  --seq-300: #743615;
+  --seq-400: #A34C1A;
+  --seq-500: #D26723;
+  --seq-600: #FB923C;
+  --seq-700: #FDBA74;
+}
+
+/* 2. Pine & Brass (Forest Pine & Warm Brass) */
+[data-palette="pine"] {
+  --stamp: #0F766E;
+  --stamp-strong: #115E59;
+  --stamp-soft: #CCFBF1;
+  --stamp-ink: #0F766E;
+  --on-stamp: #FFFFFF;
+  --focus: 0 0 0 2px var(--sheet), 0 0 0 4px #0F766E;
+  --series-1: #0F766E;
+  --series-2: #B45309;
+  --series-3: #2563EB;
+  --series-4: #7C3AED;
+  --series-5: #DB2777;
+  --series-6: #64748B;
+  --seq-100: #F0FDFA;
+  --seq-200: #99F6E4;
+  --seq-300: #5EEAD4;
+  --seq-400: #2DD4BF;
+  --seq-500: #14B8A6;
+  --seq-600: #0D9488;
+  --seq-700: #0F766E;
+}
+
+.dark[data-palette="pine"],
+[data-palette="pine"].dark,
+[data-palette="pine"] .dark {
+  --stamp: #2DD4BF;
+  --stamp-strong: #5EEAD4;
+  --stamp-soft: #112C28;
+  --stamp-ink: #5EEAD4;
+  --on-stamp: #042F2E;
+  --focus: 0 0 0 2px var(--sheet), 0 0 0 4px #2DD4BF;
+  --series-1: #2DD4BF;
+  --series-2: #FBBF24;
+  --series-3: #60A5FA;
+  --series-4: #A78BFA;
+  --series-5: #F472B6;
+  --series-6: #94A3B8;
+  --seq-100: #0E2320;
+  --seq-200: #143C36;
+  --seq-300: #19584E;
+  --seq-400: #19786A;
+  --seq-500: #1CB09C;
+  --seq-600: #2DD4BF;
+  --seq-700: #5EEAD4;
+}
+
+/* 3. Pacific Cobalt & Copper */
+[data-palette="cobalt"] {
+  --stamp: #1D4ED8;
+  --stamp-strong: #1E40AF;
+  --stamp-soft: #DBEAFE;
+  --stamp-ink: #1E40AF;
+  --on-stamp: #FFFFFF;
+  --focus: 0 0 0 2px var(--sheet), 0 0 0 4px #1D4ED8;
+  --series-1: #1D4ED8;
+  --series-2: #EA580C;
+  --series-3: #059669;
+  --series-4: #7C3AED;
+  --series-5: #E11D48;
+  --series-6: #475569;
+  --seq-100: #EFF6FF;
+  --seq-200: #BFDBFE;
+  --seq-300: #93C5FD;
+  --seq-400: #60A5FA;
+  --seq-500: #3B82F6;
+  --seq-600: #2563EB;
+  --seq-700: #1D4ED8;
+}
+
+.dark[data-palette="cobalt"],
+[data-palette="cobalt"].dark,
+[data-palette="cobalt"] .dark {
+  --stamp: #60A5FA;
+  --stamp-strong: #93C5FD;
+  --stamp-soft: #152747;
+  --stamp-ink: #93C5FD;
+  --on-stamp: #0B1936;
+  --focus: 0 0 0 2px var(--sheet), 0 0 0 4px #60A5FA;
+  --series-1: #60A5FA;
+  --series-2: #FB923C;
+  --series-3: #34D399;
+  --series-4: #A78BFA;
+  --series-5: #FB7185;
+  --series-6: #94A3B8;
+  --seq-100: #101E35;
+  --seq-200: #16325C;
+  --seq-300: #1C4B8C;
+  --seq-400: #2566BE;
+  --seq-500: #3B86E8;
+  --seq-600: #60A5FA;
+  --seq-700: #93C5FD;
+}
+
+/* 4. Bureau Vermilion & Sand */
+[data-palette="vermilion"] {
+  --stamp: #BE123C;
+  --stamp-strong: #9F1239;
+  --stamp-soft: #FFE4E6;
+  --stamp-ink: #9F1239;
+  --on-stamp: #FFFFFF;
+  --focus: 0 0 0 2px var(--sheet), 0 0 0 4px #BE123C;
+  --series-1: #BE123C;
+  --series-2: #A16207;
+  --series-3: #0284C7;
+  --series-4: #059669;
+  --series-5: #7C3AED;
+  --series-6: #475569;
+  --seq-100: #FFF1F2;
+  --seq-200: #FECDD3;
+  --seq-300: #FDA4AF;
+  --seq-400: #FB7185;
+  --seq-500: #F43F5E;
+  --seq-600: #E11D48;
+  --seq-700: #BE123C;
+}
+
+.dark[data-palette="vermilion"],
+[data-palette="vermilion"].dark,
+[data-palette="vermilion"] .dark {
+  --stamp: #FB7185;
+  --stamp-strong: #FDA4AF;
+  --stamp-soft: #3E151E;
+  --stamp-ink: #FDA4AF;
+  --on-stamp: #26070E;
+  --focus: 0 0 0 2px var(--sheet), 0 0 0 4px #FB7185;
+  --series-1: #FB7185;
+  --series-2: #FACC15;
+  --series-3: #38BDF8;
+  --series-4: #34D399;
+  --series-5: #A78BFA;
+  --series-6: #94A3B8;
+  --seq-100: #2E0F16;
+  --seq-200: #4C1723;
+  --seq-300: #741F34;
+  --seq-400: #A22645;
+  --seq-500: #CE3056;
+  --seq-600: #FB7185;
+  --seq-700: #FDA4AF;
+}
+
+/* 5. Monolith Obsidian & Gold */
+[data-palette="obsidian"] {
+  --stamp: #334155;
+  --stamp-strong: #1E293B;
+  --stamp-soft: #F1F5F9;
+  --stamp-ink: #1E293B;
+  --on-stamp: #FFFFFF;
+  --focus: 0 0 0 2px var(--sheet), 0 0 0 4px #334155;
+  --series-1: #334155;
+  --series-2: #D97706;
+  --series-3: #0284C7;
+  --series-4: #059669;
+  --series-5: #7C3AED;
+  --series-6: #64748B;
+  --seq-100: #F8FAFC;
+  --seq-200: #E2E8F0;
+  --seq-300: #CBD5E1;
+  --seq-400: #94A3B8;
+  --seq-500: #64748B;
+  --seq-600: #475569;
+  --seq-700: #334155;
+}
+
+.dark[data-palette="obsidian"],
+[data-palette="obsidian"].dark,
+[data-palette="obsidian"] .dark {
+  --stamp: #94A3B8;
+  --stamp-strong: #CBD5E1;
+  --stamp-soft: #1E293B;
+  --stamp-ink: #E2E8F0;
+  --on-stamp: #0F172A;
+  --focus: 0 0 0 2px var(--sheet), 0 0 0 4px #94A3B8;
+  --series-1: #94A3B8;
+  --series-2: #F59E0B;
+  --series-3: #38BDF8;
+  --series-4: #34D399;
+  --series-5: #A78BFA;
+  --series-6: #64748B;
+  --seq-100: #141C29;
+  --seq-200: #1F2937;
+  --seq-300: #374151;
+  --seq-400: #4B5563;
+  --seq-500: #6B7280;
+  --seq-600: #94A3B8;
+  --seq-700: #CBD5E1;
+}

@@ -4,10 +4,94 @@ export type Theme = 'system' | 'light' | 'dark';
 export type TextScale = '100' | '112.5' | '125';
 export type Density = 'comfortable' | 'compact';
 export type WeekStartsOn = 'monday' | 'sunday';
+export type PaletteId = 'amethyst' | 'terracotta' | 'pine' | 'cobalt' | 'vermilion' | 'obsidian';
+
+export interface PaletteDefinition {
+  id: PaletteId;
+  name: string;
+  tagline: string;
+  primaryLight: string;
+  primaryDark: string;
+  secondaryLight: string;
+  secondaryDark: string;
+  previewBgLight: string;
+  previewBgDark: string;
+}
+
+export const PALETTES: PaletteDefinition[] = [
+  {
+    id: 'amethyst',
+    name: 'Classic Amethyst',
+    tagline: 'Royal violet & deep teal — Original tax seal heritage',
+    primaryLight: '#5A3DB8',
+    primaryDark: '#A794F5',
+    secondaryLight: '#00928A',
+    secondaryDark: '#14A89E',
+    previewBgLight: '#EFEAFB',
+    previewBgDark: '#251E44',
+  },
+  {
+    id: 'terracotta',
+    name: 'Manila Terracotta',
+    tagline: 'Warm clay & slate navy — Low blue-light eye comfort',
+    primaryLight: '#C2410C',
+    primaryDark: '#FB923C',
+    secondaryLight: '#1E3A8A',
+    secondaryDark: '#60A5FA',
+    previewBgLight: '#FFEDD5',
+    previewBgDark: '#3A1E11',
+  },
+  {
+    id: 'pine',
+    name: 'Pine & Brass',
+    tagline: 'Forest pine & warm brass — Classic banking ledger calm',
+    primaryLight: '#0F766E',
+    primaryDark: '#2DD4BF',
+    secondaryLight: '#B45309',
+    secondaryDark: '#FBBF24',
+    previewBgLight: '#CCFBF1',
+    previewBgDark: '#112C28',
+  },
+  {
+    id: 'cobalt',
+    name: 'Maritime Cobalt',
+    tagline: 'Pacific cobalt & copper — High-contrast institutional clarity',
+    primaryLight: '#1D4ED8',
+    primaryDark: '#60A5FA',
+    secondaryLight: '#EA580C',
+    secondaryDark: '#FB923C',
+    previewBgLight: '#DBEAFE',
+    previewBgDark: '#152747',
+  },
+  {
+    id: 'vermilion',
+    name: 'Bureau Vermilion',
+    tagline: 'Carmine seal & golden sand — Decisive BIR stamp tradition',
+    primaryLight: '#BE123C',
+    primaryDark: '#FB7185',
+    secondaryLight: '#A16207',
+    secondaryDark: '#FACC15',
+    previewBgLight: '#FFE4E6',
+    previewBgDark: '#3E151E',
+  },
+  {
+    id: 'obsidian',
+    name: 'Monolith Obsidian',
+    tagline: 'Graphite slate & honey gold — Minimalist neutral architectural focus',
+    primaryLight: '#334155',
+    primaryDark: '#94A3B8',
+    secondaryLight: '#D97706',
+    secondaryDark: '#F59E0B',
+    previewBgLight: '#F1F5F9',
+    previewBgDark: '#1E293B',
+  },
+];
 
 interface ThemeContextType {
   theme: Theme;
   setTheme: (t: Theme) => void;
+  palette: PaletteId;
+  setPalette: (p: PaletteId) => void;
   isDark: boolean;
   textScale: TextScale;
   setTextScale: (s: TextScale) => void;
@@ -24,6 +108,10 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     return (localStorage.getItem('ox-theme') as Theme) || 'system';
+  });
+
+  const [palette, setPaletteState] = useState<PaletteId>(() => {
+    return (localStorage.getItem('ox-palette') as PaletteId) || 'amethyst';
   });
 
   const [textScale, setTextScaleState] = useState<TextScale>(() => {
@@ -103,9 +191,24 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     root.setAttribute('data-density', density);
   }, [density]);
 
+  // Apply color palette
+  useEffect(() => {
+    const root = document.documentElement;
+    if (palette === 'amethyst') {
+      root.removeAttribute('data-palette');
+    } else {
+      root.setAttribute('data-palette', palette);
+    }
+  }, [palette]);
+
   const setTheme = (newTheme: Theme) => {
     localStorage.setItem('ox-theme', newTheme);
     setThemeState(newTheme);
+  };
+
+  const setPalette = (newPalette: PaletteId) => {
+    localStorage.setItem('ox-palette', newPalette);
+    setPaletteState(newPalette);
   };
 
   const setTextScale = (newScale: TextScale) => {
@@ -133,6 +236,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       value={{
         theme,
         setTheme,
+        palette,
+        setPalette,
         isDark,
         textScale,
         setTextScale,

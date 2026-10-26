@@ -33,6 +33,10 @@
           if (density) {
             document.documentElement.setAttribute('data-density', density);
           }
+          var palette = localStorage.getItem('ox-palette');
+          if (palette && palette !== 'amethyst') {
+            document.documentElement.setAttribute('data-palette', palette);
+          }
         } catch (e) {}
       })();
     </script>

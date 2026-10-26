@@ -11,7 +11,7 @@ import {
   useClients,
 } from '@/hooks/useData';
 import { devControls } from '@/data';
-import { useTheme } from '@/app/theme';
+import { useTheme, PALETTES } from '@/app/theme';
 import {
   User,
   Palette,
@@ -70,6 +70,8 @@ export function SettingsPage() {
   const {
     theme,
     setTheme,
+    palette,
+    setPalette,
     textScale,
     setTextScale,
     density,
@@ -78,6 +80,7 @@ export function SettingsPage() {
     setReducedMotion,
     weekStartsOn,
     setWeekStartsOn,
+    isDark,
   } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
@@ -469,6 +472,85 @@ export function SettingsPage() {
                         >
                           <Icon className="w-5 h-5" />
                           <span>{mode.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Color Palette Selector */}
+                <div>
+                  <div className="mb-2.5">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)]">
+                      Color Palette & Visual Tone
+                    </label>
+                    <p className="text-xs text-[var(--ink-2)] mt-0.5">
+                      Curated multi-tonal dual-accent color schemes engineered for long-session eye comfort and high data clarity.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {PALETTES.map((p) => {
+                      const active = palette === p.id;
+                      const primary = isDark ? p.primaryDark : p.primaryLight;
+                      const secondary = isDark ? p.secondaryDark : p.secondaryLight;
+                      const previewBg = isDark ? p.previewBgDark : p.previewBgLight;
+
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setPalette(p.id)}
+                          className={`p-3.5 rounded-panel border text-left transition-all select-none cursor-pointer flex flex-col justify-between gap-3 group relative ${
+                            active
+                              ? 'border-[var(--stamp)] ring-2 ring-[var(--stamp)]/30 bg-[var(--sheet)] shadow-xs'
+                              : 'border-[var(--rule)] bg-[var(--sheet-2)] hover:border-[var(--rule-strong)] hover:bg-[var(--sheet)]'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="text-xs font-bold text-[var(--ink)] flex items-center gap-1.5">
+                                <span>{p.name}</span>
+                                {active && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--stamp)]" />
+                                )}
+                              </div>
+                              <div className="text-[11px] text-[var(--ink-3)] mt-0.5 leading-relaxed line-clamp-2">
+                                {p.tagline}
+                              </div>
+                            </div>
+                            {active && (
+                              <Check className="w-4 h-4 text-[var(--stamp)] shrink-0 mt-0.5" />
+                            )}
+                          </div>
+
+                          {/* Swatch & Pill Preview Strip */}
+                          <div
+                            className="p-2 rounded-control border border-[var(--rule)] flex items-center justify-between gap-2"
+                            style={{ backgroundColor: previewBg }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="w-4 h-4 rounded-full shadow-xs shrink-0 ring-1 ring-black/10"
+                                style={{ backgroundColor: primary }}
+                                title="Primary Brand Accent"
+                              />
+                              <span
+                                className="w-3.5 h-3.5 rounded-full shadow-2xs shrink-0 ring-1 ring-black/10"
+                                style={{ backgroundColor: secondary }}
+                                title="Secondary Harmonic Accent"
+                              />
+                            </div>
+                            <span
+                              className="px-2 py-0.5 rounded text-[10px] font-bold tracking-tight shadow-2xs"
+                              style={{
+                                backgroundColor: primary,
+                                color: '#FFFFFF',
+                              }}
+                            >
+                              Sample
+                            </span>
+                          </div>
                         </button>
                       );
                     })}

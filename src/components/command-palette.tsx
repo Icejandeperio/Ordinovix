@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Command } from 'cmdk';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { useClients, useTasks } from '@/hooks/useData';
-import { useTheme } from '@/app/theme';
+import { useTheme, PALETTES } from '@/app/theme';
 import { devControls } from '@/data';
 import { centerModalStore } from '@/lib/modal-store';
 import {
@@ -26,6 +26,7 @@ import {
   Sparkles,
   ShieldCheck,
   LogOut,
+  Palette,
 } from 'lucide-react';
 
 interface CommandPaletteProps {
@@ -35,7 +36,7 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, isDark, palette, setPalette } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
     try {
@@ -323,6 +324,36 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 </div>
                 <span className="text-[10px] text-ink-3 font-mono">/sign-in</span>
               </Command.Item>
+            </Command.Group>
+
+            {/* Color Palettes */}
+            <Command.Group heading="Color Palettes" className="space-y-1">
+              {PALETTES.map((p) => {
+                const isSelected = palette === p.id;
+                return (
+                  <Command.Item
+                    key={p.id}
+                    value={`palette theme color appearance ${p.id} ${p.name} ${p.tagline}`}
+                    onSelect={() => handleSelect(() => setPalette(p.id))}
+                    className="px-3 py-1.5 text-xs rounded-control flex items-center justify-between cursor-pointer data-[selected=true]:bg-stamp-soft data-[selected=true]:text-stamp-strong hover:bg-sheet-2 text-ink"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className="w-3 h-3 rounded-full border border-rule/60 shrink-0"
+                        style={{ backgroundColor: isDark ? p.primaryDark : p.primaryLight }}
+                        aria-hidden="true"
+                      />
+                      <span className="font-medium">{p.name}</span>
+                      {isSelected && (
+                        <span className="px-1.5 py-0.2 rounded-chip bg-stamp-soft text-stamp-strong text-[10px] font-bold">
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-ink-3 truncate max-w-[140px]">{p.tagline}</span>
+                  </Command.Item>
+                );
+              })}
             </Command.Group>
 
             {/* Navigation Pages */}

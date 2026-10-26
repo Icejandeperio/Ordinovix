@@ -1,5 +1,30 @@
 # Progress Log
 
+## Session 2026-10-27 (Curated Multi-Tonal Color Palettes & Appearance Settings)
+- Researched and implemented 6 dual/triadic harmonic color palettes tailored for tax compliance, accounting, and long-session eye comfort:
+  - `Classic Amethyst`: Royal violet & deep sea teal (original heritage tax seal).
+  - `Manila Terracotta`: Warm Intramuros clay & slate navy (warm spectrum, low blue-light eye strain).
+  - `Pine & Brass`: Emerald pine & warm amber brass (traditional ledger book calm).
+  - `Maritime Cobalt`: Deep Pacific cobalt & burnished copper (high-contrast institutional clarity).
+  - `Bureau Vermilion`: Official BIR carmine & warm golden sand (documentary seal authority).
+  - `Monolith Obsidian`: Architectural graphite & solar honey gold (minimalist neutral focus).
+- Tokenized CSS systems (`src/styles/tokens.css`):
+  - Added dedicated token sets for `[data-palette="terracotta"]`, `[data-palette="pine"]`, `[data-palette="cobalt"]`, `[data-palette="vermilion"]`, and `[data-palette="obsidian"]`.
+  - Configured complete light and dark mode variants with calibrated contrast for `--stamp`, `--stamp-strong`, `--stamp-soft`, `--stamp-ink`, `--on-stamp`, `--focus`, categorical chart tokens `--series-1` through `--series-6`, and sequential heatmap tokens `--seq-100` through `--seq-700`.
+- System theme integration and zero-flash persistence (`src/app/theme.tsx`, `index.html`):
+  - Defined `PaletteId` union, `PaletteDefinition` interface, and exported `PALETTES` specification.
+  - Added `palette` state, `setPalette` dispatcher, and `ox-palette` localStorage persistence with DOM `data-palette` attribute synchronization.
+  - Added pre-paint script restoration in `index.html` to eliminate any visual flash of unstyled theme on load or refresh.
+- Settings Appearance UI (`src/routes/settings/page.tsx`):
+  - Built interactive "Color Palette & Visual Tone" grid in the Appearance tab featuring dual-swatch preview bars, palette titles, descriptions, and active check indicators.
+- Command Palette quick-switch (`src/components/command-palette.tsx`):
+  - Integrated dedicated "Color Palettes" command group in `Ctrl+K` palette with live swatch dots, search keywords, active badges, and instant keyboard selection.
+- Verification & QA:
+  - TypeScript type check (`npx.cmd tsc --noEmit`) clean with 0 errors.
+  - 16 test files passed (118 tests passed) via `npm.cmd run test:run`.
+  - Automated browser subagent verified visual switching across all 6 palettes, light/dark modes, dashboard accents, and Command Palette shortcuts.
+  - Full verification gate passed via `scripts/verify.ps1`.
+
 ## Session 2026-10-27 (Responsive Layout & Multi-Scale Hardening)
 - Resolved sidebar text bleed and clipping when compacted or viewed on tablet/narrow viewports (`src/app/shell.tsx`):
   - Fixed aside width ternary to strictly reflect `collapsed ? 'w-[72px]' : 'w-[248px]'`, eliminating the mismatch where `sm:w-[72px]` forced 72px rail width while React rendered full text labels and expanded layout.
