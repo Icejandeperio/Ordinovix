@@ -1,6 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useSession, useBaseline, useSaveBaseline } from '@/hooks/useData';
+import {
+  useSession,
+  useBaseline,
+  useSaveBaseline,
+  useMemberships,
+  useInviteMembership,
+  useUpdateMembership,
+  useRevokeMembership,
+  useClients,
+} from '@/hooks/useData';
 import { devControls } from '@/data';
 import { useTheme } from '@/app/theme';
 import {
@@ -28,8 +37,17 @@ import {
   X,
   FileText,
   FileCheck2,
+  UserPlus,
+  Shield,
+  Edit2,
+  RotateCcw,
+  Search,
+  KeyRound,
 } from 'lucide-react';
 import { DateField } from '@/components/inputs/date-field';
+import { UserFormModal } from '@/components/settings/user-form-modal';
+import { RevokeUserDialog } from '@/components/settings/revoke-user-dialog';
+import type { Membership, Role, ID } from '@/domain/types';
 
 type SettingsTab =
   | 'profile'
@@ -160,6 +178,109 @@ export function SettingsPage() {
   const [privacyOnStart, setPrivacyOnStart] = useState(false);
 
   const isOwner = session?.membership.role === 'owner';
+
+  // Super Admin: Users & Access Management
+  const { data: rawMemberships = [], isLoading: isMembershipsLoading } = useMemberships();
+  const { data: clientsPage } = useClients();
+  const clientItems = useMemo(() => clientsPage?.items || [], [clientsPage]);
+  const inviteMembershipMutation = useInviteMembership();
+  const updateMembershipMutation = useUpdateMembership();
+  const revokeMembershipMutation = useRevokeMembership();
+
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [editingMembership, setEditingMembership] = useState<(Membership & { name?: string; initials?: string }) | null>(null);
+  const [revokingMembership, setRevokingMembership] = useState<(Membership & { name?: string }) | null>(null);
+  const [userFilterRole, setUserFilterRole] = useState<'all' | 'owner' | 'helper'>('all');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userActionNotice, setUserActionNotice] = useState<string | null>(null);
+  const [helpersCanAccept, setHelpersCanAccept] = useState(true);
+
+  const clientNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    clientItems.forEach((c) => {
+      map.set(c.client.id, c.client.displayName || c.client.registeredName || c.client.code);
+    });
+    return map;
+  }, [clientItems]);
+
+  const showUserNotice = (msg: string) => {
+    setUserActionNotice(msg);
+    setTimeout(() => setUserActionNotice(null), 3500);
+  };
+
+  const handleOpenAddOperator = () => {
+    setEditingMembership(null);
+    setUserModalOpen(true);
+  };
+
+  const handleOpenEditOperator = (m: Membership & { name?: string; initials?: string }) => {
+    setEditingMembership(m);
+    setUserModalOpen(true);
+  };
+
+  const handleSaveOperator = async (formData: {
+    email: string;
+    name: string;
+    role: Role;
+    clientIds: ID[];
+    note?: string;
+  }) => {
+    if (editingMembership) {
+      await updateMembershipMutation.mutateAsync({
+        id: editingMembership.id,
+        data: {
+          role: formData.role,
+          clientIds: formData.clientIds,
+          name: formData.name,
+        },
+      });
+      showUserNotice(`Updated operator access for ${formData.name || formData.email}.`);
+    } else {
+      await inviteMembershipMutation.mutateAsync({
+        email: formData.email,
+        name: formData.name,
+        role: formData.role,
+        clientIds: formData.clientIds,
+        note: formData.note,
+      });
+      showUserNotice(`Added operator ${formData.name || formData.email} to practice allowlist.`);
+    }
+    setUserModalOpen(false);
+  };
+
+  const handleConfirmRevokeOperator = async () => {
+    if (!revokingMembership) return;
+    await revokeMembershipMutation.mutateAsync(revokingMembership.id);
+    showUserNotice(`Revoked practice access for ${revokingMembership.name || revokingMembership.email}.`);
+    setRevokingMembership(null);
+  };
+
+  const handleReactivateOperator = async (m: Membership & { name?: string }) => {
+    await updateMembershipMutation.mutateAsync({
+      id: m.id,
+      data: { active: true },
+    });
+    showUserNotice(`Reactivated operator access for ${m.name || m.email}.`);
+  };
+
+  const filteredMemberships = useMemo(() => {
+    return (rawMemberships as Array<Membership & { name?: string; initials?: string; lastSignInAt?: string }>).filter((m) => {
+      if (userFilterRole !== 'all' && m.role !== userFilterRole) return false;
+      if (userSearchQuery.trim()) {
+        const q = userSearchQuery.toLowerCase();
+        const matchesEmail = m.email.toLowerCase().includes(q);
+        const matchesName = (m.name || '').toLowerCase().includes(q);
+        return matchesEmail || matchesName;
+      }
+      return true;
+    });
+  }, [rawMemberships, userFilterRole, userSearchQuery]);
+
+  const totalMemberships = rawMemberships.length;
+  const ownerCount = rawMemberships.filter((m) => m.role === 'owner').length;
+  const helperCount = rawMemberships.filter((m) => m.role === 'helper').length;
+  const activeCount = rawMemberships.filter((m) => m.active).length;
+  const revokedCount = rawMemberships.filter((m) => !m.active).length;
 
   const navItems: Array<{ id: SettingsTab; label: string; icon: React.ElementType; ownerOnly?: boolean }> = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -560,48 +681,349 @@ export function SettingsPage() {
             </div>
           )}
 
-          {/* USERS & ACCESS (OWNER ONLY) */}
+          {/* SUPER ADMIN: USERS & ACCESS CONTROL (OWNER ONLY) */}
           {activeTab === 'users' && isOwner && (
             <div className="space-y-6">
-              <div>
-                <h2 className="text-base font-bold text-[var(--ink)]">Users & Access Control</h2>
-                <p className="text-xs text-[var(--ink-3)] mt-0.5">Manage operator allowlist and client assignment scopes.</p>
-              </div>
-
-              <div className="divide-y divide-[var(--rule)] border border-[var(--rule)] rounded-lg overflow-hidden">
-                <div className="p-4 bg-[var(--sheet-2)] flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-bold text-[var(--ink)]">Ana Santos (You)</div>
-                    <div className="text-xs text-[var(--ink-3)] font-mono">ana@ordinovix.ph</div>
+              {/* Header */}
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[var(--stamp-soft)] text-[var(--stamp)] uppercase tracking-wider border border-[var(--stamp)]/20">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Super Admin Console
+                    </span>
                   </div>
-                  <span className="px-2 py-0.5 rounded text-xs font-bold bg-[var(--stamp-soft)] text-[var(--stamp-ink)]">
-                    Owner (Full Access)
-                  </span>
+                  <h2 className="text-xl font-bold text-[var(--ink)] tracking-tight">
+                    Operator Accounts & Access Control
+                  </h2>
+                  <p className="text-xs text-[var(--ink-3)] max-w-xl">
+                    Manage authorized Google accounts allowlisted for this practice. Configure role privileges (Owner vs Helper) and assign client matter scopes.
+                  </p>
                 </div>
 
-                <div className="p-4 bg-[var(--sheet)] flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-bold text-[var(--ink)]">Ben Morales</div>
-                    <div className="text-xs text-[var(--ink-3)] font-mono">ben@ordinovix.ph</div>
-                    <div className="text-[11px] text-[var(--ink-2)] mt-1">
-                      Assigned clients: <span className="font-semibold text-[var(--stamp)]">RSP Law Firm, Cruz Litigation</span>
+                <button
+                  type="button"
+                  onClick={handleOpenAddOperator}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[var(--stamp)] text-[var(--on-stamp)] font-semibold text-xs hover:bg-[var(--stamp-strong)] transition-all shadow-xs hover:shadow cursor-pointer active:scale-95"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>Invite / Add Operator</span>
+                </button>
+              </div>
+
+              {/* Action Notice */}
+              {userActionNotice && (
+                <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-[var(--good-bg)] text-[var(--good-fg)] border border-[var(--good-bd)] text-xs font-semibold animate-in fade-in">
+                  <Check className="w-4 h-4 shrink-0" />
+                  <span>{userActionNotice}</span>
+                </div>
+              )}
+
+              {/* KPI Summary Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-3.5 rounded-lg border border-[var(--rule)] bg-[var(--sheet)]">
+                  <div className="text-[11px] font-medium text-[var(--ink-3)] uppercase tracking-wider">Total Accounts</div>
+                  <div className="text-2xl font-bold text-[var(--ink)] mt-1">{totalMemberships}</div>
+                  <div className="text-[11px] text-[var(--ink-3)] mt-0.5">Practice allowlist</div>
+                </div>
+
+                <div className="p-3.5 rounded-lg border border-[var(--rule)] bg-[var(--sheet)]">
+                  <div className="text-[11px] font-medium text-[var(--stamp)] uppercase tracking-wider">Super Admins</div>
+                  <div className="text-2xl font-bold text-[var(--ink)] mt-1">{ownerCount}</div>
+                  <div className="text-[11px] text-[var(--ink-3)] mt-0.5">Full authority</div>
+                </div>
+
+                <div className="p-3.5 rounded-lg border border-[var(--rule)] bg-[var(--sheet)]">
+                  <div className="text-[11px] font-medium text-[var(--info-fg)] uppercase tracking-wider">Scoped Helpers</div>
+                  <div className="text-2xl font-bold text-[var(--ink)] mt-1">{helperCount}</div>
+                  <div className="text-[11px] text-[var(--ink-3)] mt-0.5">Assigned matters</div>
+                </div>
+
+                <div className="p-3.5 rounded-lg border border-[var(--rule)] bg-[var(--sheet)]">
+                  <div className="text-[11px] font-medium text-[var(--ink-3)] uppercase tracking-wider">Status</div>
+                  <div className="text-2xl font-bold text-[var(--good-fg)] mt-1">{activeCount}</div>
+                  <div className="text-[11px] text-[var(--ink-3)] mt-0.5">
+                    {revokedCount > 0 ? `${revokedCount} revoked` : 'All active'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Filter and Search Bar */}
+              <div className="p-3 rounded-lg bg-[var(--sheet)] border border-[var(--rule)] flex flex-wrap items-center justify-between gap-3">
+                <div className="relative flex-1 min-w-[200px] max-w-sm">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-3)]" />
+                  <input
+                    type="text"
+                    value={userSearchQuery}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                    placeholder="Search by name or email..."
+                    className="w-full h-8 pl-9 pr-3 rounded-md border border-[var(--rule)] bg-[var(--sheet-2)] text-xs text-[var(--ink)] placeholder:text-[var(--ink-3)] focus:outline-none focus:ring-1 focus:ring-[var(--stamp)]"
+                  />
+                  {userSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setUserSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--ink-3)] hover:text-[var(--ink)]"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 text-xs">
+                  <span className="text-[var(--ink-3)] mr-1">Role:</span>
+                  {(['all', 'owner', 'helper'] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setUserFilterRole(r)}
+                      className={`px-2.5 py-1 rounded-md font-medium capitalize transition-colors ${
+                        userFilterRole === r
+                          ? 'bg-[var(--stamp)] text-[var(--on-stamp)]'
+                          : 'bg-[var(--sheet-2)] text-[var(--ink-2)] hover:bg-[var(--rule)]'
+                      }`}
+                    >
+                      {r === 'all' ? `All (${totalMemberships})` : r === 'owner' ? `Owners (${ownerCount})` : `Helpers (${helperCount})`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Operator Cards List */}
+              <div className="space-y-3">
+                {isMembershipsLoading ? (
+                  <div className="p-8 text-center text-xs text-[var(--ink-3)] border border-[var(--rule)] rounded-lg">
+                    Loading operator accounts...
+                  </div>
+                ) : filteredMemberships.length === 0 ? (
+                  <div className="p-8 text-center border border-[var(--rule)] rounded-lg bg-[var(--sheet-2)]">
+                    <p className="text-sm font-semibold text-[var(--ink)]">No operators found</p>
+                    <p className="text-xs text-[var(--ink-3)] mt-1">
+                      No operator accounts match the active search or role filter.
+                    </p>
+                  </div>
+                ) : (
+                  filteredMemberships.map((m) => {
+                    const isSelf = session?.user?.email?.toLowerCase() === m.email.toLowerCase();
+                    const isUserActive = m.active !== false;
+                    const assignedCount = m.clientIds?.length || 0;
+
+                    return (
+                      <div
+                        key={m.id}
+                        className={`p-4 rounded-lg border transition-all ${
+                          isUserActive
+                            ? 'bg-[var(--sheet)] border-[var(--rule)] hover:border-[var(--stamp)]/40'
+                            : 'bg-[var(--sheet-2)] border-[var(--rule)] opacity-75'
+                        }`}
+                      >
+                        {/* Top Row: User Avatar, Name, Email, Role, Status, and Actions */}
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="flex items-start gap-3 min-w-0">
+                            {/* Initials Avatar */}
+                            <div
+                              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shrink-0 relative ${
+                                m.role === 'owner'
+                                  ? 'bg-[var(--stamp-soft)] text-[var(--stamp)]'
+                                  : 'bg-[var(--info-bg)] text-[var(--info-fg)] border border-[var(--info-bd)]'
+                              }`}
+                            >
+                              {m.initials || m.name?.slice(0, 2).toUpperCase() || m.email.slice(0, 2).toUpperCase()}
+                              {/* Status dot */}
+                              <span
+                                className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[var(--sheet)] ${
+                                  isUserActive ? 'bg-[var(--good-solid, #16a34a)]' : 'bg-[var(--destructive, #dc2626)]'
+                                }`}
+                                title={isUserActive ? 'Active' : 'Revoked'}
+                              />
+                            </div>
+
+                            {/* Details */}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-bold text-[var(--ink)]">
+                                  {m.name || m.email.split('@')[0]}
+                                </span>
+                                {isSelf && (
+                                  <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-[var(--rule)] text-[var(--ink-2)]">
+                                    You
+                                  </span>
+                                )}
+                                <span
+                                  className={`px-2 py-0.5 rounded text-xs font-bold inline-flex items-center gap-1 ${
+                                    m.role === 'owner'
+                                      ? 'bg-[var(--stamp-soft)] text-[var(--stamp-ink)]'
+                                      : 'bg-[var(--info-bg)] text-[var(--info-fg)] border border-[var(--info-bd)]'
+                                  }`}
+                                >
+                                  {m.role === 'owner' ? (
+                                    <>
+                                      <Shield className="w-3 h-3" />
+                                      <span>Owner (Super Admin)</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <User className="w-3 h-3" />
+                                      <span>Helper (Scoped)</span>
+                                    </>
+                                  )}
+                                </span>
+                                <span
+                                  className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                                    isUserActive
+                                      ? 'bg-[var(--good-bg)] text-[var(--good-fg)] border border-[var(--good-bd)]'
+                                      : 'bg-[var(--destructive-light, #fee2e2)] text-[var(--destructive, #dc2626)] border border-[var(--destructive, #dc2626)]/20'
+                                  }`}
+                                >
+                                  {isUserActive ? 'Active' : 'Access Revoked'}
+                                </span>
+                              </div>
+
+                              <div className="text-xs text-[var(--ink-3)] font-mono mt-0.5">
+                                {m.email}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditOperator(m)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--rule)] bg-[var(--sheet)] hover:bg-[var(--sheet-2)] text-xs font-medium text-[var(--ink)] transition-colors cursor-pointer"
+                              title="Edit role and client scopes"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                              <span>Edit</span>
+                            </button>
+
+                            {isUserActive ? (
+                              isSelf ? (
+                                <span className="text-[11px] text-[var(--ink-3)] italic px-2">
+                                  Current session
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setRevokingMembership(m)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--destructive, #dc2626)]/30 text-[var(--destructive, #dc2626)] hover:bg-[var(--destructive-light, #fee2e2)] text-xs font-medium transition-colors cursor-pointer"
+                                  title="Revoke operator access"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                  <span>Revoke</span>
+                                </button>
+                              )
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleReactivateOperator(m)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--good-bd)] text-[var(--good-fg)] hover:bg-[var(--good-bg)] text-xs font-medium transition-colors cursor-pointer"
+                                title="Reactivate operator access"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                <span>Reactivate</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Middle Row: Client Scope Summary */}
+                        <div className="mt-3 pt-3 border-t border-[var(--rule)]/60 text-xs">
+                          {m.role === 'owner' ? (
+                            <div className="flex items-center gap-2 text-[var(--ink-2)]">
+                              <ShieldCheck className="w-4 h-4 text-[var(--stamp)] shrink-0" />
+                              <span>
+                                <strong>Full Practice Scope:</strong> Full administrative authority across all client files, BIR forms, counter representation, and firm settings.
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between text-[var(--ink-2)]">
+                                <span className="font-medium">
+                                  Assigned Client Matters ({assignedCount}):
+                                </span>
+                                {assignedCount === 0 && (
+                                  <span className="text-[var(--warn-fg)] font-semibold">
+                                    Zero clients assigned (Helper cannot access client files)
+                                  </span>
+                                )}
+                              </div>
+                              {assignedCount > 0 && (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {m.clientIds?.map((cId) => (
+                                    <span
+                                      key={cId}
+                                      className="px-2 py-0.5 rounded text-[11px] font-medium bg-[var(--sheet-2)] border border-[var(--rule)] text-[var(--ink)]"
+                                    >
+                                      {clientNameMap.get(cId) || cId}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Bottom Row: Metadata */}
+                        <div className="mt-2.5 flex items-center justify-between text-[11px] text-[var(--ink-3)] font-mono">
+                          <span>Invited: {m.invitedAt || 'Initial setup'}</span>
+                          {m.lastSignInAt && <span>Last Sign-In: {m.lastSignInAt}</span>}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Practice Operator Policies Card */}
+              <div className="p-4 rounded-lg bg-[var(--sheet-2)] border border-[var(--rule)] space-y-4">
+                <h3 className="text-xs font-bold text-[var(--ink)] uppercase tracking-wider">
+                  Practice Security & Scoping Policies
+                </h3>
+
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-0.5">
+                    <label htmlFor="helpers-accept-toggle" className="text-sm font-semibold text-[var(--ink)] cursor-pointer">
+                      Helpers Can Accept Requirements
+                    </label>
+                    <div className="text-xs text-[var(--ink-3)]">
+                      Allow scoped helpers to mark checklist requirements as Accepted. If disabled, helpers can only mark items as Received.
                     </div>
                   </div>
-                  <span className="px-2 py-0.5 rounded text-xs font-bold bg-[var(--info-bg)] text-[var(--info-fg)] border border-[var(--info-bd)]">
-                    Helper (Scoped)
-                  </span>
+                  <input
+                    id="helpers-accept-toggle"
+                    type="checkbox"
+                    checked={helpersCanAccept}
+                    onChange={(e) => setHelpersCanAccept(e.target.checked)}
+                    className="w-4 h-4 mt-1 accent-[var(--stamp)] rounded cursor-pointer"
+                  />
+                </div>
+
+                <div className="p-3 rounded-md bg-[var(--sheet)] border border-[var(--rule)] text-xs text-[var(--ink-2)] flex items-start gap-2.5">
+                  <KeyRound className="w-4 h-4 text-[var(--stamp)] shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <strong>Zero-Knowledge Credentials & Google Allowlist:</strong>
+                    <p className="text-[var(--ink-3)]">
+                      Ordinovix never stores operator passwords or portal credentials (eFPS, eBIRForms, ORUS). Operator authentication is strictly enforced via Google Workspace OAuth against the active allowlist above.
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="p-4 rounded-lg bg-[var(--sheet-2)] border border-[var(--rule)] space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-semibold text-[var(--ink)]">Helpers Can Accept Lines</div>
-                    <div className="text-xs text-[var(--ink-3)]">Allow helpers to mark requirements as Accepted. If disabled, they can only mark Received.</div>
-                  </div>
-                  <input type="checkbox" defaultChecked={true} className="w-4 h-4 accent-[var(--stamp)] rounded" />
-                </div>
-              </div>
+              {/* Modals */}
+              <UserFormModal
+                open={userModalOpen}
+                onClose={() => setUserModalOpen(false)}
+                membership={editingMembership}
+                clients={clientItems}
+                onSave={handleSaveOperator}
+              />
+
+              <RevokeUserDialog
+                open={Boolean(revokingMembership)}
+                onClose={() => setRevokingMembership(null)}
+                membership={revokingMembership}
+                onConfirm={handleConfirmRevokeOperator}
+              />
             </div>
           )}
 
