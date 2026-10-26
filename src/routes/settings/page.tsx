@@ -43,6 +43,7 @@ import {
   RotateCcw,
   Search,
   KeyRound,
+  LogOut,
 } from 'lucide-react';
 import { DateField } from '@/components/inputs/date-field';
 import { UserFormModal } from '@/components/settings/user-form-modal';
@@ -414,11 +415,20 @@ export function SettingsPage() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-[var(--rule)] flex justify-end">
+              <div className="pt-4 border-t border-[var(--rule)] flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => navigate('/sign-in')}
+                  className="flex items-center gap-2 px-3.5 py-2 rounded-md border border-[var(--critical-bd)] bg-[var(--sheet)] hover:bg-[var(--critical-bg)] text-[var(--critical-fg)] font-medium text-xs sm:text-sm transition-colors cursor-pointer"
+                  title="Sign out of your active session"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign out of session</span>
+                </button>
                 <button
                   type="button"
                   onClick={handleSave}
-                  className="flex items-center gap-2 px-4 py-2 rounded-md bg-[var(--stamp)] text-[var(--on-stamp)] font-medium text-sm hover:bg-[var(--stamp-strong)] transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 rounded-md bg-[var(--stamp)] text-[var(--on-stamp)] font-medium text-sm hover:bg-[var(--stamp-strong)] transition-colors cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
                   <span>Save changes</span>
@@ -1621,8 +1631,11 @@ Paki-send po bago mag-{due_date} para ma-process agad. Salamat po!`}
                   </div>
                   <button
                     type="button"
-                    onClick={() => alert('Signed out of all devices')}
-                    className="px-3 py-1.5 rounded-md bg-[var(--critical-solid)] text-[var(--on-critical-solid)] text-xs font-bold hover:opacity-90 transition-opacity"
+                    onClick={() => {
+                      alert('Signed out of all devices');
+                      navigate('/sign-in');
+                    }}
+                    className="px-3 py-1.5 rounded-md bg-[var(--critical-solid)] text-[var(--on-critical-solid)] text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer"
                   >
                     Sign Out All
                   </button>

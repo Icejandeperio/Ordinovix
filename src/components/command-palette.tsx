@@ -25,6 +25,7 @@ import {
   Clock,
   Sparkles,
   ShieldCheck,
+  LogOut,
 } from 'lucide-react';
 
 interface CommandPaletteProps {
@@ -309,6 +310,18 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     Switch to {currentPersona === 'owner' ? 'Ben Morales (Helper)' : 'Ana Santos (Owner)'}
                   </span>
                 </div>
+              </Command.Item>
+
+              <Command.Item
+                value="action sign out logout leave session"
+                onSelect={() => handleSelect(() => navigate('/sign-in'))}
+                className="px-3 py-2 text-xs font-semibold rounded-control flex items-center justify-between cursor-pointer data-[selected=true]:bg-critical-bg data-[selected=true]:text-critical-fg hover:bg-sheet-2 text-ink hover:text-critical-fg transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <LogOut className="w-3.5 h-3.5 text-critical-solid" />
+                  <span>Sign Out (Log Out)</span>
+                </div>
+                <span className="text-[10px] text-ink-3 font-mono">/sign-in</span>
               </Command.Item>
             </Command.Group>
 

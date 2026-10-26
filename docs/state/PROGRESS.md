@@ -457,4 +457,25 @@
   - Full TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
   - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 110 Vitest tests, Vite production build).
 
+## Session 2026-10-26 (Sign-Out / Logout Triggers & Login Page Audit)
+- Authentication & Login Page Status:
+  - Verified that Section 11.1 Sign-in Page was already built at `src/routes/sign-in/page.tsx` and routed to `/sign-in` in `src/app/router.tsx`.
+  - Features: 48px Ordinovix brand logo, Google Sign In simulation ("Continue with Google"), mock mode persona switchers ("Continue as Ana — Owner" and "Continue as Ben — Helper"), and unauthorized account simulation ("Simulate unauthorized Google account" routing to `/access-pending`).
+  - Identified gap: Because the application defaulted into sample data mode (`/` -> `TodayPage`), and there were no sign-out buttons in the shell or settings, users had no accessible way to log out or reach the login page during normal operation.
+- Implementation of Universal Sign-Out Triggers:
+  - Sidebar User Footer (`src/app/shell.tsx`):
+    - Expanded view: Added dedicated `LogOut` action button next to operator display name and role (`Ana Santos` / `Ben Morales`) with `title="Sign out (Log out)"` and `aria-label="Sign out"`, smoothly navigating to `/sign-in`.
+    - Collapsed view: Wired the avatar button (`AS` / `BM`) to navigate to `/sign-in` with `title="Sign out (Ana Santos)"`.
+  - Top Bar Header (`src/app/shell.tsx`):
+    - Added dedicated `LogOut` icon button next to the practice organization name (`Santos Tax Services`) with tooltip and ARIA label for direct header logouts.
+  - Global Command Palette (`src/components/command-palette.tsx`):
+    - Added `Sign Out / Log Out` quick action (`action sign out logout leave session`) in `cmdk` (`Ctrl+K`), routing immediately to `/sign-in`.
+  - Settings Profile & Security (`src/routes/settings/page.tsx`):
+    - Added a prominent "Sign out of session" button (`border border-critical-bd text-critical-fg hover:bg-critical-bg`) in the `Profile` tab footer.
+    - Wired "Sign Out All" in `Security & privacy` tab to alert and redirect to `/sign-in`.
+- Automated Verification:
+  - 110 unit tests green across 14 test files (`npm.cmd run test:run`).
+  - TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
+  - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 110 Vitest tests, Vite production build).
+
 

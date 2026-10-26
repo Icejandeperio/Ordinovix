@@ -26,6 +26,7 @@ import {
   Lock,
   WifiOff,
   Download,
+  LogOut,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DevMenu } from './dev-menu';
@@ -279,21 +280,36 @@ export function AppShell() {
 
           {/* User profile / Organization footer */}
           <div className={`p-3 shrink-0 mt-auto border-t border-rule bg-sheet-2 flex items-center overflow-hidden ${collapsed ? 'justify-center' : 'gap-2.5'}`}>
-            <div
-              className="w-8 h-8 rounded-full bg-stamp text-on-stamp flex items-center justify-center text-xs font-bold shrink-0 shadow-xs"
-              title={currentPersona === 'owner' ? 'Ana Santos (Owner)' : 'Ben Morales (Helper)'}
+            <button
+              type="button"
+              onClick={() => {
+                if (collapsed) navigate('/sign-in');
+              }}
+              className="w-8 h-8 rounded-full bg-stamp text-on-stamp flex items-center justify-center text-xs font-bold shrink-0 shadow-xs cursor-pointer hover:opacity-90"
+              title={collapsed ? `Sign out (${currentPersona === 'owner' ? 'Ana Santos' : 'Ben Morales'})` : (currentPersona === 'owner' ? 'Ana Santos (Owner)' : 'Ben Morales (Helper)')}
             >
               {currentPersona === 'owner' ? 'AS' : 'BM'}
-            </div>
+            </button>
             {!collapsed && (
-              <div className="overflow-hidden min-w-0">
-                <div className="text-xs font-bold text-ink truncate">
-                  {currentPersona === 'owner' ? 'Ana Santos' : 'Ben Morales'}
+              <>
+                <div className="overflow-hidden min-w-0 flex-1">
+                  <div className="text-xs font-bold text-ink truncate">
+                    {currentPersona === 'owner' ? 'Ana Santos' : 'Ben Morales'}
+                  </div>
+                  <div className="text-[11px] text-ink-3 truncate">
+                    {currentPersona === 'owner' ? 'Preparer / Owner' : 'Helper Account'}
+                  </div>
                 </div>
-                <div className="text-[11px] text-ink-3 truncate">
-                  {currentPersona === 'owner' ? 'Preparer / Owner' : 'Helper Account'}
-                </div>
-              </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/sign-in')}
+                  className="p-1.5 rounded-control text-ink-3 hover:text-critical-fg hover:bg-sheet-3 transition-colors cursor-pointer shrink-0"
+                  title="Sign out (Log out)"
+                  aria-label="Sign out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </>
             )}
           </div>
         </aside>
@@ -388,6 +404,15 @@ export function AppShell() {
 
               <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-rule text-xs text-ink-2">
                 <span className="font-semibold">{session?.org.name || 'Santos Tax Services'}</span>
+                <button
+                  type="button"
+                  onClick={() => navigate('/sign-in')}
+                  className="p-1.5 rounded-control text-ink-3 hover:text-critical-fg hover:bg-sheet-2 transition-colors cursor-pointer ml-1"
+                  title="Sign out (Log out)"
+                  aria-label="Sign out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
               </div>
             </div>
           </header>
