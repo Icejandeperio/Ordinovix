@@ -3,6 +3,7 @@ import type { Office, OfficeType } from '@/domain/types';
 import { useSaveOffice } from '@/hooks/useData';
 import { X, Building2, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { ModalDialog } from '@/components/ui/modal-dialog';
 
 interface OfficeFormModalProps {
   office?: Office | null;
@@ -28,7 +29,6 @@ export function OfficeFormModal({
   const [phoneE164, setPhoneE164] = useState(office?.phoneE164 || '');
   const [tips, setTips] = useState(office?.tips || '');
 
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,8 +59,14 @@ export function OfficeFormModal({
   };
 
   return (
-    <div className="fixed inset-0 z-modal flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-      <div className="relative w-full max-w-lg bg-paper border border-rule rounded-panel shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150">
+    <ModalDialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="max-w-lg"
+      zIndex="z-modal"
+      ariaLabel={office ? 'Edit Office' : 'Add New Office'}
+      panelClassName="p-5 space-y-4"
+    >
         <div className="flex items-center justify-between border-b border-rule pb-3">
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-stamp" />
@@ -184,7 +190,6 @@ export function OfficeFormModal({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalDialog>
   );
 }

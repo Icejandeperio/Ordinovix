@@ -3,6 +3,7 @@ import { devControls } from '@/data';
 import { useTheme } from './theme';
 import { Settings, RefreshCw, UserCheck, WifiOff, AlertTriangle, Calendar, Palette, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ModalDialog } from '@/components/ui/modal-dialog';
 import { DateField } from '@/components/inputs/date-field';
 
 export function DevMenu() {
@@ -48,9 +49,14 @@ export function DevMenu() {
       </button>
 
       {/* Dev Menu Modal */}
-      {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-scrim backdrop-blur-xs">
-          <div className="w-full max-w-md bg-sheet border border-rule rounded-overlay shadow-dialog p-6 space-y-5 text-ink animate-in fade-in zoom-in-95">
+      <ModalDialog
+        open={isOpen}
+        onClose={() => setIsOpen(false)}
+        maxWidth="max-w-md"
+        zIndex="z-[100]"
+        ariaLabel="Ordinovix Dev Menu"
+        panelClassName="p-6 space-y-5"
+      >
             <div className="flex items-center justify-between border-b border-rule pb-3">
               <div className="flex items-center gap-2">
                 <Settings className="w-5 h-5 text-stamp" />
@@ -238,9 +244,7 @@ export function DevMenu() {
                 <span>Reset Sample Data</span>
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          </ModalDialog>
     </>
   );
 }

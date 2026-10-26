@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import { ModalDialog } from '@/components/ui/modal-dialog';
 import type { Membership } from '@/domain/types';
 
 interface RevokeUserDialogProps {
@@ -17,45 +18,22 @@ export function RevokeUserDialog({
   onConfirm,
   isPending = false,
 }: RevokeUserDialogProps) {
-  if (!open || !membership) return null;
-
-  const displayName = membership.name || membership.email;
+  const lastMembershipRef = useRef(membership);
+  if (membership) {
+    lastMembershipRef.current = membership;
+  }
+  const activeMembership = membership || lastMembershipRef.current;
+  const displayName = activeMembership ? activeMembership.name || activeMembership.email : '';
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="revoke-dialog-title"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(15, 23, 42, 0.6)',
-        backdropFilter: 'blur(4px)',
-        zIndex: 'var(--z-modal, 1000)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 'var(--space-4)',
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !isPending) {
-          onClose();
-        }
-      }}
+    <ModalDialog
+      open={Boolean(open && membership)}
+      onClose={onClose}
+      maxWidth="max-w-[460px]"
+      ariaLabel="Revoke Operator Access"
     >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: '460px',
-          backgroundColor: 'var(--surface-primary, #ffffff)',
-          borderRadius: 'var(--radius-lg, 12px)',
-          boxShadow: 'var(--shadow-xl)',
-          border: '1px solid var(--border-color)',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
+      {activeMembership && (
+        <>
         {/* Header */}
         <div
           style={{
@@ -137,7 +115,7 @@ export function RevokeUserDialog({
           >
             Are you sure you want to revoke access for{' '}
             <strong style={{ color: 'var(--text-primary)' }}>{displayName}</strong> (
-            <code>{membership.email}</code>)?
+            <code>{activeMembership.email}</code>)?
           </p>
 
           <div
@@ -210,7 +188,8 @@ export function RevokeUserDialog({
             {isPending ? 'Revoking...' : 'Revoke Access'}
           </button>
         </div>
-      </div>
-    </div>
+        </>
+      )}
+    </ModalDialog>
   );
 }

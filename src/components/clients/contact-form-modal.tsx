@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUpsertContact } from '@/hooks/useData';
 import { Button } from '@/components/ui/button';
+import { ModalDialog } from '@/components/ui/modal-dialog';
 import { PhoneInput, EmailInput } from '@/components/inputs/identity-inputs';
 import { X, UserCheck, ShieldCheck } from 'lucide-react';
 import type { Contact, Channel, Language } from '@/domain/types';
@@ -54,7 +55,6 @@ export function ContactFormModal({ open, onClose, clientId, contact }: ContactFo
     setError(null);
   }, [contact, open]);
 
-  if (!open) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,10 +90,13 @@ export function ContactFormModal({ open, onClose, clientId, contact }: ContactFo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-      <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
-
-      <div className="relative w-full max-w-lg bg-sheet rounded-modal border border-rule shadow-2xl overflow-hidden z-10 flex flex-col max-h-[90vh]">
+    <ModalDialog
+      open={open}
+      onClose={onClose}
+      maxWidth="max-w-lg"
+      ariaLabel={isEditing ? 'Edit Client Contact' : 'Add Client Contact'}
+      panelClassName="flex flex-col max-h-[90vh]"
+    >
         {/* Header */}
         <div className="p-4 border-b border-rule flex items-center justify-between shrink-0 bg-sheet">
           <div className="flex items-center gap-2">
@@ -271,7 +274,6 @@ export function ContactFormModal({ open, onClose, clientId, contact }: ContactFo
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalDialog>
   );
 }

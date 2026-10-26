@@ -17,6 +17,7 @@ import {
   Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ModalDialog } from '@/components/ui/modal-dialog';
 
 interface RecordPaymentSheetProps {
   payment?: Payment | null;
@@ -83,7 +84,6 @@ export function RecordPaymentSheet({
     return tasks.filter((t) => t.task.clientId === clientId);
   }, [tasks, clientId]);
 
-  if (!isOpen) return null;
 
   const handleSimulateProofUpload = () => {
     const mockId = `doc-proof-${Date.now()}`;
@@ -160,8 +160,14 @@ export function RecordPaymentSheet({
   ];
 
   return (
-    <div className="fixed inset-0 z-modal flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs">
-      <div className="relative w-full max-w-lg bg-paper border border-rule rounded-panel shadow-2xl p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150">
+    <ModalDialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="max-w-lg"
+      zIndex="z-modal"
+      ariaLabel={payment ? 'Edit Payment Record' : 'Record Tax Payment'}
+      panelClassName="p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto"
+    >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-rule pb-3">
           <div className="flex items-center gap-2">
@@ -423,7 +429,6 @@ export function RecordPaymentSheet({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalDialog>
   );
 }

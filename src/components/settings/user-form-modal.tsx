@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Shield, User, Check, Search, AlertCircle } from 'lucide-react';
+import { ModalDialog } from '@/components/ui/modal-dialog';
 import type { Membership, Role, ID } from '@/domain/types';
 import type { ClientSummary } from '@/domain/types';
 
@@ -53,7 +54,6 @@ export function UserFormModal({
     setClientSearch('');
   }, [membership, open]);
 
-  if (!open) return null;
 
   const toggleClient = (clientId: string) => {
     setSelectedClientIds((prev) =>
@@ -111,8 +111,12 @@ export function UserFormModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-scrim backdrop-blur-xs">
-      <div className="w-full max-w-lg bg-[var(--sheet)] border border-[var(--rule)] rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95">
+    <ModalDialog
+      open={open}
+      onClose={onClose}
+      maxWidth="max-w-lg"
+      ariaLabel={isEditing ? 'Edit Operator Permissions' : 'Add Practice Operator'}
+    >
         <div className="flex items-center justify-between p-4 border-b border-[var(--rule)] bg-[var(--sheet-2)]">
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-[var(--stamp)]" />
@@ -317,7 +321,6 @@ export function UserFormModal({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalDialog>
   );
 }

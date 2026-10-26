@@ -6,6 +6,7 @@ import { DateField } from '@/components/inputs/date-field';
 import { todayInManila, addDaysToDate } from '@/lib/dates';
 import { toast } from 'sonner';
 import { X, CheckCircle2, AlertOctagon, CheckCheck, Plus } from 'lucide-react';
+import { ModalDialog } from '@/components/ui/modal-dialog';
 
 interface LogResponseModalProps {
   followUpView: FollowUpView;
@@ -20,7 +21,6 @@ export function LogResponseModal({ followUpView, isOpen, onClose }: LogResponseM
   const [receivedVia, setReceivedVia] = useState<Channel>(followUp.channel);
   const logMutation = useLogFollowUpResponse();
 
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,8 +49,14 @@ export function LogResponseModal({ followUpView, isOpen, onClose }: LogResponseM
   };
 
   return (
-    <div className="fixed inset-0 z-modal flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-      <div className="relative w-full max-w-lg bg-paper border border-rule rounded-panel shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150">
+    <ModalDialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="max-w-lg"
+      zIndex="z-modal"
+      ariaLabel="Log Client Response"
+      panelClassName="p-5 space-y-4"
+    >
         <div className="flex items-center justify-between border-b border-rule pb-3">
           <div>
             <h3 className="text-base font-bold text-ink">Log Client Response</h3>
@@ -144,8 +150,7 @@ export function LogResponseModal({ followUpView, isOpen, onClose }: LogResponseM
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalDialog>
   );
 }
 
@@ -160,7 +165,6 @@ export function EscalateModal({ followUpView, isOpen, onClose }: EscalateModalPr
   const [reason, setReason] = useState('');
   const escalateMutation = useEscalateFollowUp();
 
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,8 +185,14 @@ export function EscalateModal({ followUpView, isOpen, onClose }: EscalateModalPr
   };
 
   return (
-    <div className="fixed inset-0 z-modal flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-      <div className="relative w-full max-w-md bg-paper border border-rule rounded-panel shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150">
+    <ModalDialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="max-w-md"
+      zIndex="z-modal"
+      ariaLabel="Escalate Follow-up"
+      panelClassName="p-5 space-y-4"
+    >
         <div className="flex items-center justify-between border-b border-rule pb-3">
           <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
             <AlertOctagon className="w-5 h-5" />
@@ -227,8 +237,7 @@ export function EscalateModal({ followUpView, isOpen, onClose }: EscalateModalPr
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalDialog>
   );
 }
 
@@ -243,7 +252,6 @@ export function ResolveModal({ followUpView, isOpen, onClose }: ResolveModalProp
   const [reason, setReason] = useState('');
   const resolveMutation = useResolveFollowUp();
 
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -264,8 +272,14 @@ export function ResolveModal({ followUpView, isOpen, onClose }: ResolveModalProp
   };
 
   return (
-    <div className="fixed inset-0 z-modal flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-      <div className="relative w-full max-w-md bg-paper border border-rule rounded-panel shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150">
+    <ModalDialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="max-w-md"
+      zIndex="z-modal"
+      ariaLabel="Resolve Follow-up Manually"
+      panelClassName="p-5 space-y-4"
+    >
         <div className="flex items-center justify-between border-b border-rule pb-3">
           <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
             <CheckCheck className="w-5 h-5" />
@@ -310,8 +324,7 @@ export function ResolveModal({ followUpView, isOpen, onClose }: ResolveModalProp
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalDialog>
   );
 }
 
@@ -339,7 +352,6 @@ export function NewFollowUpModal({ isOpen, onClose, defaultClientId }: NewFollow
 
   const createMutation = useCreateFollowUp();
 
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -364,8 +376,14 @@ export function NewFollowUpModal({ isOpen, onClose, defaultClientId }: NewFollow
   };
 
   return (
-    <div className="fixed inset-0 z-modal flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-      <div className="relative w-full max-w-md bg-paper border border-rule rounded-panel shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150">
+    <ModalDialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="max-w-md"
+      zIndex="z-modal"
+      ariaLabel="New Client Follow-up"
+      panelClassName="p-5 space-y-4"
+    >
         <div className="flex items-center justify-between border-b border-rule pb-3">
           <div className="flex items-center gap-2">
             <Plus className="w-5 h-5 text-stamp" />
@@ -466,7 +484,6 @@ export function NewFollowUpModal({ isOpen, onClose, defaultClientId }: NewFollow
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalDialog>
   );
 }

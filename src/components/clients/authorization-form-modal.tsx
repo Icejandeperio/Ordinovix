@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useMemberships, useUpsertAuthorization, useReplaceAuthorization } from '@/hooks/useData';
 import { Button } from '@/components/ui/button';
+import { ModalDialog } from '@/components/ui/modal-dialog';
 import { DateField } from '@/components/inputs/date-field';
 import { X, FileCheck2, Stamp, Calendar, AlertCircle } from 'lucide-react';
 import type { Authorization, TaskKind } from '@/domain/types';
@@ -66,7 +67,6 @@ export function AuthorizationFormModal({
     setError(null);
   }, [authorization, open, memberships]);
 
-  if (!open) return null;
 
   const toggleScope = (kind: TaskKind) => {
     if (scope.includes(kind)) {
@@ -121,10 +121,13 @@ export function AuthorizationFormModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-      <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
-
-      <div className="relative w-full max-w-lg bg-sheet rounded-modal border border-rule shadow-2xl overflow-hidden z-10 flex flex-col max-h-[90vh]">
+    <ModalDialog
+      open={open}
+      onClose={onClose}
+      maxWidth="max-w-lg"
+      ariaLabel={isReplacing ? 'Replace Authorization' : isEditing ? 'Edit Authorization' : 'Grant Power of Attorney'}
+      panelClassName="flex flex-col max-h-[90vh]"
+    >
         {/* Header */}
         <div className="p-4 border-b border-rule flex items-center justify-between shrink-0 bg-sheet">
           <div className="flex items-center gap-2">
@@ -307,7 +310,6 @@ export function AuthorizationFormModal({
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalDialog>
   );
 }

@@ -11,6 +11,7 @@ import {
   FileCheck2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ModalDialog } from '@/components/ui/modal-dialog';
 import { useClients, useTemplates, useTasks, useOpenPeriod } from '@/hooks/useData';
 
 interface OpenPeriodModalProps {
@@ -44,7 +45,6 @@ export function OpenPeriodModal({ open, onClose }: OpenPeriodModalProps) {
     }
   }, [clients]);
 
-  if (!open) return null;
 
   const toggleClient = (id: string) => {
     if (selectedClientIds.includes(id)) {
@@ -139,9 +139,13 @@ export function OpenPeriodModal({ open, onClose }: OpenPeriodModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-      <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
-      <div className="relative w-full max-w-3xl bg-sheet rounded-modal border border-rule shadow-2xl overflow-hidden z-10 flex flex-col max-h-[90vh]">
+    <ModalDialog
+      open={open}
+      onClose={onClose}
+      maxWidth="max-w-3xl"
+      ariaLabel="Open Filing Period Wizard"
+      panelClassName="flex flex-col max-h-[90vh]"
+    >
         {/* Header */}
         <div className="p-4 border-b border-rule flex items-center justify-between shrink-0 bg-sheet">
           <div className="flex items-center gap-2">
@@ -388,7 +392,6 @@ export function OpenPeriodModal({ open, onClose }: OpenPeriodModalProps) {
             )}
           </div>
         )}
-      </div>
-    </div>
+    </ModalDialog>
   );
 }

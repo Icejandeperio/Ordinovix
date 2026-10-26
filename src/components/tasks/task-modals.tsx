@@ -14,6 +14,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ModalDialog } from '@/components/ui/modal-dialog';
 import { DateField } from '@/components/inputs/date-field';
 import { NumberStepper } from '@/components/inputs/money-input';
 import {
@@ -43,7 +44,9 @@ export function MarkSubmittedDialog({ open, onClose, task }: MarkSubmittedDialog
   const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  if (!open) return null;
+  const lastTaskRef = React.useRef(task);
+  if (task) lastTaskRef.current = task;
+  const activeTask = task || lastTaskRef.current;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,9 +60,10 @@ export function MarkSubmittedDialog({ open, onClose, task }: MarkSubmittedDialog
       return;
     }
 
+    if (!activeTask) return;
     markSubmitted.mutate(
       {
-        id: task.id,
+        id: activeTask.id,
         submission: {
           on: submittedOn,
           via: channel,
@@ -75,9 +79,13 @@ export function MarkSubmittedDialog({ open, onClose, task }: MarkSubmittedDialog
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-      <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
-      <div className="relative w-full max-w-md bg-sheet rounded-modal border border-rule shadow-2xl p-5 space-y-4 z-10">
+    <ModalDialog
+      open={Boolean(open && task)}
+      onClose={onClose}
+      maxWidth="max-w-md"
+      ariaLabel="Mark Return as Submitted"
+      panelClassName="p-5 space-y-4"
+    >
         <div className="flex items-center justify-between border-b border-rule pb-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-stamp-soft text-stamp flex items-center justify-center">
@@ -145,8 +153,7 @@ export function MarkSubmittedDialog({ open, onClose, task }: MarkSubmittedDialog
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalDialog>
   );
 }
 
@@ -171,7 +178,9 @@ export function MarkCompletedDialog({
   const [noEvidenceReason, setNoEvidenceReason] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  if (!open) return null;
+  const lastTaskRef = React.useRef(task);
+  if (task) lastTaskRef.current = task;
+  const activeTask = task || lastTaskRef.current;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,9 +193,10 @@ export function MarkCompletedDialog({
       return;
     }
 
+    if (!activeTask) return;
     markCompleted.mutate(
       {
-        id: task.id,
+        id: activeTask.id,
         completion: {
           on: completedOn,
           noEvidenceReason: hasEvidence ? undefined : noEvidenceReason.trim(),
@@ -201,9 +211,13 @@ export function MarkCompletedDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-      <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
-      <div className="relative w-full max-w-md bg-sheet rounded-modal border border-rule shadow-2xl p-5 space-y-4 z-10">
+    <ModalDialog
+      open={Boolean(open && task)}
+      onClose={onClose}
+      maxWidth="max-w-md"
+      ariaLabel="Mark Task Completed"
+      panelClassName="p-5 space-y-4"
+    >
         <div className="flex items-center justify-between border-b border-rule pb-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-good-bg text-good-fg flex items-center justify-center">
@@ -266,8 +280,7 @@ export function MarkCompletedDialog({
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalDialog>
   );
 }
 
@@ -286,7 +299,9 @@ export function OverrideStatusDialog({ open, onClose, task }: OverrideStatusDial
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  if (!open) return null;
+  const lastTaskRef = React.useRef(task);
+  if (task) lastTaskRef.current = task;
+  const activeTask = task || lastTaskRef.current;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -295,9 +310,10 @@ export function OverrideStatusDialog({ open, onClose, task }: OverrideStatusDial
       return;
     }
 
+    if (!activeTask) return;
     overrideMutation.mutate(
       {
-        id: task.id,
+        id: activeTask.id,
         status: newStatus,
         reason: reason.trim(),
       },
@@ -310,9 +326,13 @@ export function OverrideStatusDialog({ open, onClose, task }: OverrideStatusDial
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-      <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
-      <div className="relative w-full max-w-md bg-sheet rounded-modal border border-rule shadow-2xl p-5 space-y-4 z-10">
+    <ModalDialog
+      open={Boolean(open && task)}
+      onClose={onClose}
+      maxWidth="max-w-md"
+      ariaLabel="Override Status"
+      panelClassName="p-5 space-y-4"
+    >
         <div className="flex items-center justify-between border-b border-rule pb-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-warn-bg text-warn-fg flex items-center justify-center">
@@ -375,8 +395,7 @@ export function OverrideStatusDialog({ open, onClose, task }: OverrideStatusDial
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalDialog>
   );
 }
 
@@ -396,7 +415,9 @@ export function ChangeDueDateDialog({ open, onClose, task }: ChangeDueDateDialog
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  if (!open) return null;
+  const lastTaskRef = React.useRef(task);
+  if (task) lastTaskRef.current = task;
+  const activeTask = task || lastTaskRef.current;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -413,9 +434,10 @@ export function ChangeDueDateDialog({ open, onClose, task }: ChangeDueDateDialog
       return;
     }
 
+    if (!activeTask) return;
     changeDueMutation.mutate(
       {
-        id: task.id,
+        id: activeTask.id,
         dueDate,
         ref: ref.trim(),
         reason: reason.trim(),
@@ -429,9 +451,13 @@ export function ChangeDueDateDialog({ open, onClose, task }: ChangeDueDateDialog
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-      <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
-      <div className="relative w-full max-w-md bg-sheet rounded-modal border border-rule shadow-2xl p-5 space-y-4 z-10">
+    <ModalDialog
+      open={Boolean(open && task)}
+      onClose={onClose}
+      maxWidth="max-w-md"
+      ariaLabel="Change Due Date"
+      panelClassName="p-5 space-y-4"
+    >
         <div className="flex items-center justify-between border-b border-rule pb-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-stamp-soft text-stamp flex items-center justify-center">
@@ -496,8 +522,7 @@ export function ChangeDueDateDialog({ open, onClose, task }: ChangeDueDateDialog
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalDialog>
   );
 }
 
@@ -521,7 +546,6 @@ export function AddChecklistLineModal({ open, onClose, taskId }: AddChecklistLin
   const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  if (!open) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -552,9 +576,13 @@ export function AddChecklistLineModal({ open, onClose, taskId }: AddChecklistLin
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-      <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
-      <div className="relative w-full max-w-md bg-sheet rounded-modal border border-rule shadow-2xl p-5 space-y-4 z-10">
+    <ModalDialog
+      open={open}
+      onClose={onClose}
+      maxWidth="max-w-md"
+      ariaLabel="Add Requirement Line"
+      panelClassName="p-5 space-y-4"
+    >
         <div className="flex items-center justify-between border-b border-rule pb-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-stamp-soft text-stamp flex items-center justify-center">
@@ -668,8 +696,7 @@ export function AddChecklistLineModal({ open, onClose, taskId }: AddChecklistLin
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalDialog>
   );
 }
 
@@ -687,7 +714,9 @@ export function ArchiveTaskDialog({ open, onClose, task }: ArchiveTaskDialogProp
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  if (!open) return null;
+  const lastTaskRef = React.useRef(task);
+  if (task) lastTaskRef.current = task;
+  const activeTask = task || lastTaskRef.current;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -696,9 +725,10 @@ export function ArchiveTaskDialog({ open, onClose, task }: ArchiveTaskDialogProp
       return;
     }
 
+    if (!activeTask) return;
     archiveMutation.mutate(
       {
-        id: task.id,
+        id: activeTask.id,
         reason: reason.trim(),
       },
       {
@@ -710,9 +740,13 @@ export function ArchiveTaskDialog({ open, onClose, task }: ArchiveTaskDialogProp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-      <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
-      <div className="relative w-full max-w-md bg-sheet rounded-modal border border-rule shadow-2xl p-5 space-y-4 z-10">
+    <ModalDialog
+      open={Boolean(open && task)}
+      onClose={onClose}
+      maxWidth="max-w-md"
+      ariaLabel="Archive Task"
+      panelClassName="p-5 space-y-4"
+    >
         <div className="flex items-center justify-between border-b border-rule pb-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-critical-bg text-critical flex items-center justify-center">
@@ -757,7 +791,6 @@ export function ArchiveTaskDialog({ open, onClose, task }: ArchiveTaskDialogProp
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalDialog>
   );
 }
