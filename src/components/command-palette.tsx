@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Command } from 'cmdk';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { useClients, useTasks } from '@/hooks/useData';
 import { useTheme } from '@/app/theme';
 import { devControls } from '@/data';
@@ -98,17 +99,53 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   const currentPersona = devControls.getPersona();
 
-  if (!open) return null;
+  const systemReducedMotion = useReducedMotion();
+  const htmlReduceMotion =
+    typeof document !== 'undefined' &&
+    document.documentElement.getAttribute('data-reduce-motion') === 'true';
+  const shouldReduceMotion = systemReducedMotion || htmlReduceMotion;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 p-4 bg-ink/40 backdrop-blur-xs">
-      <div
-        className="fixed inset-0"
-        onClick={() => onOpenChange(false)}
-        aria-hidden="true"
-      />
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 p-4 overflow-hidden">
+          <motion.div
+            key="cmd-backdrop"
+            initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+            animate={{ opacity: 1, backdropFilter: 'blur(6px)' }}
+            exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+            transition={{
+              duration: shouldReduceMotion ? 0 : 0.22,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            className="fixed inset-0 bg-ink/40"
+            onClick={() => onOpenChange(false)}
+            aria-hidden="true"
+          />
 
-      <div className="relative w-full max-w-xl bg-sheet border border-rule rounded-panel shadow-2xl overflow-hidden z-10 flex flex-col max-h-[80vh]">
+          <motion.div
+            key="cmd-panel"
+            initial={{
+              opacity: shouldReduceMotion ? 1 : 0,
+              scale: shouldReduceMotion ? 1 : 0.96,
+              y: shouldReduceMotion ? 0 : -14,
+            }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              y: 0,
+            }}
+            exit={{
+              opacity: shouldReduceMotion ? 1 : 0,
+              scale: shouldReduceMotion ? 1 : 0.96,
+              y: shouldReduceMotion ? 0 : -10,
+            }}
+            transition={{
+              duration: shouldReduceMotion ? 0 : 0.2,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            className="relative w-full max-w-xl bg-sheet border border-rule rounded-panel shadow-2xl overflow-hidden z-10 flex flex-col max-h-[80vh]"
+          >
         <Command
           filter={(value, search) => {
             if (value.toLowerCase().includes(search.toLowerCase())) return 1;
@@ -490,7 +527,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             </span>
           </div>
         </Command>
-      </div>
+      </motion.div>
     </div>
+      )}
+    </AnimatePresence>
   );
 }

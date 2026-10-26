@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useNotifications, useMarkNotificationsRead } from '@/hooks/useData';
 import { formatTime, formatRelative } from '@/lib/format';
@@ -44,7 +45,6 @@ export function NotificationsPopover({ open, onClose }: NotificationsPopoverProp
     return () => document.removeEventListener('keydown', handleEscape);
   }, [open, onClose]);
 
-  if (!open) return null;
 
   const handleItemClick = (n: Notification) => {
     if (!n.readAt) {
@@ -61,12 +61,18 @@ export function NotificationsPopover({ open, onClose }: NotificationsPopoverProp
   };
 
   return (
-    <div
-      ref={popoverRef}
-      className="absolute right-0 top-full mt-2 w-[380px] sm:w-[400px] bg-sheet border border-rule rounded-panel shadow-2xl z-50 overflow-hidden flex flex-col max-h-[500px]"
-      role="dialog"
-      aria-label="Notifications"
-    >
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          ref={popoverRef}
+          initial={{ opacity: 0, scale: 0.95, y: -6 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: -6 }}
+          transition={{ duration: 0.16, ease: 'easeOut' }}
+          className="absolute right-0 top-full mt-2 w-[380px] sm:w-[400px] bg-sheet border border-rule rounded-panel shadow-2xl z-50 overflow-hidden flex flex-col max-h-[500px]"
+          role="dialog"
+          aria-label="Notifications"
+        >
       {/* Header */}
       <div className="p-3.5 border-b border-rule flex items-center justify-between shrink-0 bg-sheet">
         <div className="flex items-center gap-2">
@@ -148,6 +154,8 @@ export function NotificationsPopover({ open, onClose }: NotificationsPopoverProp
           See all notifications &rarr;
         </Link>
       </div>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

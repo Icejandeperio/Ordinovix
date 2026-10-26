@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -207,8 +208,15 @@ export function DateField({
       )}
 
       {/* Custom Designed Calendar Popover */}
-      {open && (
-        <div className="absolute left-0 mt-1.5 w-[310px] rounded-xl bg-[var(--sheet)] border border-[var(--rule)] shadow-2xl p-3.5 z-50 animate-in fade-in zoom-in-95 select-none">
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -4 }}
+            transition={{ duration: 0.16, ease: 'easeOut' }}
+            className="absolute left-0 mt-1.5 w-[310px] rounded-xl bg-[var(--sheet)] border border-[var(--rule)] shadow-2xl p-3.5 z-50 select-none"
+          >
           {/* Header Month / Navigation */}
           <div className="flex items-center justify-between pb-3 border-b border-[var(--rule)]">
             <button
@@ -353,8 +361,9 @@ export function DateField({
               </button>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
+    </AnimatePresence>
     </div>
   );
 }

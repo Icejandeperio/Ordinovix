@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Download, ChevronDown, FileSpreadsheet, FileText, Printer, Check } from 'lucide-react';
 import { exportData, type ExportData } from '@/lib/export';
 
@@ -70,8 +71,15 @@ export function ExportMenu({
         <ChevronDown className={`w-3.5 h-3.5 text-[var(--ink-3)] transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {open && (
-        <div className="absolute right-0 mt-1.5 w-56 rounded-lg bg-[var(--sheet)] border border-[var(--rule)] shadow-lg py-1.5 z-50 animate-in fade-in zoom-in-95">
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -4 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="absolute right-0 mt-1.5 w-56 rounded-lg bg-[var(--sheet)] border border-[var(--rule)] shadow-lg py-1.5 z-50"
+          >
           <div className="px-3 py-1 border-b border-[var(--rule)] mb-1">
             <span className="text-[10px] font-bold text-[var(--ink-3)] uppercase tracking-wider">Choose Export Format</span>
           </div>
@@ -129,8 +137,9 @@ export function ExportMenu({
             </div>
             {lastExported === 'csv' && <Check className="w-3.5 h-3.5 text-[var(--good-solid)]" />}
           </button>
-        </div>
+        </motion.div>
       )}
+    </AnimatePresence>
     </div>
   );
 }
