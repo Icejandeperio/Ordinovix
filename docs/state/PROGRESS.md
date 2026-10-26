@@ -505,6 +505,26 @@
   - Added test suite `src/components/ui/select.test.ts` (3 tests) validating option parsing, case-insensitive search filtering, and description matching.
   - 15 test files passed, 113 tests green (`npm.cmd run test:run`).
   - Full TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
-  - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 113 Vitest tests, Vite production build).
+- Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 113 Vitest tests, Vite production build).
+
+## Session 2026-10-26 (Compacted Sidebar Hover Autoscroll & Scrollbar Concealment)
+- Problem Analysis:
+  - On viewports <= 768px height, the 13 navigation items in the compacted (72px) rail triggered an ugly, persistent vertical scrollbar track and thumb directly beside the navigation icons and collapse notch.
+  - The narrow 72px rail width made interacting with a native vertical scrollbar cramped and prone to accidental misclicks.
+- Engineered Hover Locked Autoscroll Engine (`src/lib/sidebar-autoscroll.ts`, `src/app/shell.tsx`):
+  - Completely concealed the permanent native scrollbar in compacted mode using `.no-scrollbar` utility (`scrollbar-width: none`, `-ms-overflow-style: none`, `::-webkit-scrollbar: hidden`).
+  - Implemented middle-click style locked autoscroll on mouse hover over the compacted rail:
+    - Upper zone (`ratio < 0.35`): Smoothly scrolls UP with non-linear quadratic acceleration as the cursor approaches the top edge (`velocity` up to -14px/frame).
+    - Lower zone (`ratio > 0.65`): Smoothly scrolls DOWN with quadratic acceleration as the cursor approaches the bottom edge (`velocity` up to +14px/frame).
+    - Neutral center deadzone (`0.35 <= ratio <= 0.65`): Velocity is exactly 0, allowing stable, drift-free hovering and clicking of navigation icons.
+  - Interactive tactile cursor styling (`cursor-n-resize` when moving up, `cursor-s-resize` when moving down, `cursor-ns-resize` in neutral zone).
+  - Floating Autoscroll Compass HUD Indicator: Renders a compact floating badge following mouse Y movement with active up/down direction indicators and center stamp dot.
+  - Driven by `requestAnimationFrame` for 60/120fps fluid scrolling; automatically cancels on mouse leave.
+  - Standard mouse wheel scrolling remains fully functional simultaneously.
+- Automated Verification:
+  - Added unit test suite `src/lib/sidebar-autoscroll.test.ts` (5 tests) validating center deadzone, upward/downward velocity curves, clamping bounds, and DOM scrollability checks.
+  - 16 test files passed, 118 tests green (`npm.cmd run test:run`).
+  - Full TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
+  - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 118 Vitest tests, Vite production build).
 
 

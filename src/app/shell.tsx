@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useSession, useUnreadNotificationsCount } from '@/hooks/useData';
 import { devControls } from '@/data';
@@ -20,6 +20,8 @@ import {
   Menu,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   ShieldAlert,
   Eye,
   EyeOff,
@@ -33,6 +35,7 @@ import { DevMenu } from './dev-menu';
 import { CommandPalette } from '@/components/command-palette';
 import { NotificationsPopover } from '@/components/notifications-popover';
 import { useIsCenterModalOpen } from '@/lib/modal-store';
+import { calculateAutoscrollVelocity, isElementScrollable } from '@/lib/sidebar-autoscroll';
 
 // Logomark SVG component
 export function LogoMark({ className = 'w-7 h-7 text-stamp' }: { className?: string }) {
@@ -96,6 +99,86 @@ export function AppShell() {
       return next;
     });
   };
+
+  // Compacted Sidebar Autoscroll Engine (locked autoscroll on hover)
+  const navRef = useRef<HTMLElement>(null);
+  const velocityRef = useRef(0);
+  const animFrameRef = useRef<number | null>(null);
+  const [autoscrollState, setAutoscrollState] = useState<{
+    active: boolean;
+    direction: 'up' | 'down' | 'idle';
+    mouseY: number;
+    isScrollable: boolean;
+  }>({
+    active: false,
+    direction: 'idle',
+    mouseY: 0,
+    isScrollable: false,
+  });
+
+  const stopAutoscroll = useCallback(() => {
+    if (animFrameRef.current !== null) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    velocityRef.current = 0;
+    setAutoscrollState((prev) => (prev.active ? { ...prev, active: false, direction: 'idle' } : prev));
+  }, []);
+
+  const startAutoscrollLoop = useCallback(() => {
+    if (animFrameRef.current !== null) return;
+
+    const scrollLoop = () => {
+      if (velocityRef.current !== 0 && navRef.current) {
+        navRef.current.scrollTop += velocityRef.current;
+      }
+      animFrameRef.current = requestAnimationFrame(scrollLoop);
+    };
+
+    animFrameRef.current = requestAnimationFrame(scrollLoop);
+  }, []);
+
+  const handleNavMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLElement>) => {
+      if (!collapsed || !navRef.current) return;
+      const scrollable = isElementScrollable(navRef.current);
+      if (!scrollable) {
+        if (autoscrollState.active) stopAutoscroll();
+        return;
+      }
+
+      const rect = navRef.current.getBoundingClientRect();
+      const relativeY = e.clientY - rect.top;
+      const result = calculateAutoscrollVelocity(relativeY, rect.height);
+
+      velocityRef.current = result.velocity;
+      setAutoscrollState({
+        active: true,
+        direction: result.direction,
+        mouseY: relativeY,
+        isScrollable: true,
+      });
+
+      startAutoscrollLoop();
+    },
+    [collapsed, autoscrollState.active, stopAutoscroll, startAutoscrollLoop]
+  );
+
+  const handleNavMouseLeave = useCallback(() => {
+    stopAutoscroll();
+  }, [stopAutoscroll]);
+
+  // Clean up autoscroll when collapsing/uncollapsing or unmounting
+  useEffect(() => {
+    if (!collapsed) {
+      stopAutoscroll();
+    }
+    return () => {
+      if (animFrameRef.current !== null) {
+        cancelAnimationFrame(animFrameRef.current);
+      }
+    };
+  }, [collapsed, stopAutoscroll]);
 
   // Listeners: Ctrl+[ for sidebar, Shift+P for privacy mode
   useEffect(() => {
@@ -252,7 +335,23 @@ export function AppShell() {
           </div>
 
           {/* Navigation Links */}
-          <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-1 min-h-0">
+          <nav
+            ref={navRef}
+            onMouseMove={handleNavMouseMove}
+            onMouseEnter={handleNavMouseMove}
+            onMouseLeave={handleNavMouseLeave}
+            className={`flex-1 overflow-y-auto py-3 px-2 space-y-1 min-h-0 relative ${
+              collapsed ? 'no-scrollbar' : ''
+            } ${
+              collapsed && autoscrollState.active && autoscrollState.isScrollable
+                ? autoscrollState.direction === 'up'
+                  ? 'cursor-n-resize'
+                  : autoscrollState.direction === 'down'
+                  ? 'cursor-s-resize'
+                  : 'cursor-ns-resize'
+                : ''
+            }`}
+          >
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.to || (item.to !== '/' && location.pathname.startsWith(item.to));
@@ -276,6 +375,39 @@ export function AppShell() {
                 </NavLink>
               );
             })}
+
+            {/* Middle-click style autoscroll HUD indicator when hovering compacted scrollable sidebar */}
+            {collapsed && autoscrollState.active && autoscrollState.isScrollable && (
+              <div
+                className="absolute right-0.5 w-4 h-6 rounded-full bg-[var(--sheet)]/95 border border-[var(--stamp)]/40 shadow-xs flex flex-col items-center justify-between py-0.5 pointer-events-none z-30 transition-transform duration-75 ease-out"
+                style={{
+                  top: Math.max(8, Math.min(navRef.current ? navRef.current.clientHeight - 32 : 200, autoscrollState.mouseY - 12)),
+                }}
+                aria-hidden="true"
+              >
+                <ChevronUp
+                  className={`w-2.5 h-2.5 transition-colors ${
+                    autoscrollState.direction === 'up'
+                      ? 'text-[var(--stamp)] stroke-[3]'
+                      : 'text-[var(--ink-3)]/40'
+                  }`}
+                />
+                <div
+                  className={`w-1 h-1 rounded-full transition-colors ${
+                    autoscrollState.direction === 'idle'
+                      ? 'bg-[var(--stamp)]'
+                      : 'bg-[var(--ink-3)]/30'
+                  }`}
+                />
+                <ChevronDown
+                  className={`w-2.5 h-2.5 transition-colors ${
+                    autoscrollState.direction === 'down'
+                      ? 'text-[var(--stamp)] stroke-[3]'
+                      : 'text-[var(--ink-3)]/40'
+                  }`}
+                />
+              </div>
+            )}
           </nav>
 
           {/* User profile / Organization footer */}

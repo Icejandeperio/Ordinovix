@@ -65,6 +65,17 @@
     background: var(--rule-strong);
   }
 
+  /* Concealed Scrollbar Utility */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
   /* Section 19.1 WCAG 2.2 AA scroll padding */
   html, body, main {
     scroll-padding-top: 72px;
