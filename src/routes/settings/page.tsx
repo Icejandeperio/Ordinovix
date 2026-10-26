@@ -330,7 +330,7 @@ export function SettingsPage() {
                           key={mode.id}
                           type="button"
                           onClick={() => setTheme(mode.id as 'system' | 'light' | 'dark')}
-                          className={`flex flex-col items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors ${
+                          className={`flex flex-col items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors select-none cursor-pointer ${
                             active
                               ? 'border-[var(--stamp)] bg-[var(--stamp-soft)] text-[var(--stamp-ink)] font-semibold'
                               : 'border-[var(--rule)] bg-[var(--sheet-2)] text-[var(--ink-2)] hover:border-[var(--rule-strong)]'
@@ -355,7 +355,7 @@ export function SettingsPage() {
                         key={d.id}
                         type="button"
                         onClick={() => setDensity(d.id as 'comfortable' | 'compact')}
-                        className={`p-3 rounded-lg border text-left transition-colors ${
+                        className={`p-3 rounded-lg border text-left transition-colors select-none cursor-pointer ${
                           density === d.id
                             ? 'border-[var(--stamp)] bg-[var(--stamp-soft)] text-[var(--stamp-ink)]'
                             : 'border-[var(--rule)] bg-[var(--sheet-2)] text-[var(--ink-2)]'
@@ -376,7 +376,7 @@ export function SettingsPage() {
                         key={size}
                         type="button"
                         onClick={() => setTextScale(size)}
-                        className={`px-4 py-2 rounded-md border text-sm font-mono font-medium transition-colors ${
+                        className={`px-4 py-2 rounded-md border text-sm font-mono font-medium transition-colors select-none cursor-pointer ${
                           textScale === size
                             ? 'border-[var(--stamp)] bg-[var(--stamp-soft)] text-[var(--stamp-ink)] font-bold'
                             : 'border-[var(--rule)] bg-[var(--sheet-2)] text-[var(--ink-2)]'
@@ -412,7 +412,7 @@ export function SettingsPage() {
                         key={w.id}
                         type="button"
                         onClick={() => setWeekStartsOn(w.id as 'monday' | 'sunday')}
-                        className={`px-4 py-2 rounded-md border text-sm font-medium transition-colors ${
+                        className={`px-4 py-2 rounded-md border text-sm font-medium transition-colors select-none cursor-pointer ${
                           weekStartsOn === w.id
                             ? 'border-[var(--stamp)] bg-[var(--stamp-soft)] text-[var(--stamp-ink)] font-bold'
                             : 'border-[var(--rule)] bg-[var(--sheet-2)] text-[var(--ink-2)]'

@@ -27,6 +27,20 @@
     box-shadow: var(--focus);
   }
 
+  /* Prevent accidental text selection and highlight artifacts on interactive controls */
+  button,
+  [role="button"],
+  [role="tab"] {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  button::selection,
+  [role="button"]::selection,
+  [role="tab"]::selection {
+    background: transparent;
+  }
+
   /* Spec 8.9: Scrollbars: Thin (8 px), thumb --rule-strong at 50%, track transparent */
   * {
     scrollbar-width: thin;
