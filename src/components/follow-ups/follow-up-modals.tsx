@@ -53,21 +53,28 @@ export function LogResponseModal({ followUpView, isOpen, onClose }: LogResponseM
       open={isOpen}
       onClose={onClose}
       maxWidth="max-w-lg"
-      zIndex="z-modal"
+      zIndex="z-50"
       ariaLabel="Log Client Response"
-      panelClassName="p-5 space-y-4"
+      panelClassName="flex flex-col max-h-[calc(100vh-3rem)]"
     >
-        <div className="flex items-center justify-between border-b border-rule pb-3">
-          <div>
-            <h3 className="text-base font-bold text-ink">Log Client Response</h3>
-            <p className="text-xs text-ink-2">{client.displayName}</p>
-          </div>
-          <button onClick={onClose} className="p-1 rounded text-ink-3 hover:text-ink">
-            <X className="w-5 h-5" />
-          </button>
+      {/* Pinned Header */}
+      <div className="flex items-center justify-between border-b border-rule p-4 sm:p-5 shrink-0 bg-sheet">
+        <div>
+          <h3 className="text-base font-bold text-ink">Log Client Response</h3>
+          <p className="text-xs text-ink-2">{client.displayName}</p>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-1 rounded text-ink-3 hover:text-ink cursor-pointer"
+          aria-label="Close dialog"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-5 space-y-4">
           <div className="space-y-1">
             <label className="text-xs font-bold text-ink">What did the client say / provide?</label>
             <textarea
@@ -132,24 +139,27 @@ export function LogResponseModal({ followUpView, isOpen, onClose }: LogResponseM
             </select>
           </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-rule">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3 py-1.5 text-xs font-semibold text-ink-2 hover:text-ink"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={logMutation.isPending}
-              className="px-4 py-1.5 text-xs font-bold rounded-control bg-stamp text-on-stamp hover:bg-stamp-strong flex items-center gap-1.5"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              {logMutation.isPending ? 'Saving…' : 'Record Response'}
-            </button>
-          </div>
-        </form>
+        </div>
+
+        {/* Pinned Action Buttons Footer */}
+        <div className="flex justify-end gap-2 p-3 sm:p-4 border-t border-rule shrink-0 bg-sheet">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3 py-1.5 text-xs font-semibold text-ink-2 hover:text-ink cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={logMutation.isPending}
+            className="px-4 py-1.5 text-xs font-bold rounded-control bg-stamp text-on-stamp hover:bg-stamp-strong flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>{logMutation.isPending ? 'Saving…' : 'Record Response'}</span>
+          </button>
+        </div>
+      </form>
     </ModalDialog>
   );
 }
@@ -380,21 +390,28 @@ export function NewFollowUpModal({ isOpen, onClose, defaultClientId }: NewFollow
       open={isOpen}
       onClose={onClose}
       maxWidth="max-w-md"
-      zIndex="z-modal"
+      zIndex="z-50"
       ariaLabel="New Client Follow-up"
-      panelClassName="p-5 space-y-4"
+      panelClassName="flex flex-col max-h-[calc(100vh-3rem)]"
     >
-        <div className="flex items-center justify-between border-b border-rule pb-3">
-          <div className="flex items-center gap-2">
-            <Plus className="w-5 h-5 text-stamp" />
-            <h3 className="text-base font-bold text-ink">New Client Follow-up</h3>
-          </div>
-          <button onClick={onClose} className="p-1 rounded text-ink-3 hover:text-ink">
-            <X className="w-5 h-5" />
-          </button>
+      {/* Pinned Header */}
+      <div className="flex items-center justify-between border-b border-rule p-4 sm:p-5 shrink-0 bg-sheet">
+        <div className="flex items-center gap-2">
+          <Plus className="w-5 h-5 text-stamp" />
+          <h3 className="text-base font-bold text-ink">New Client Follow-up</h3>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-1 rounded text-ink-3 hover:text-ink cursor-pointer"
+          aria-label="Close dialog"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-5 space-y-4">
           <div className="space-y-1">
             <label className="text-xs font-bold text-ink">Client (Required)</label>
             <select
@@ -467,23 +484,26 @@ export function NewFollowUpModal({ isOpen, onClose, defaultClientId }: NewFollow
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-rule">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3 py-1.5 text-xs font-semibold text-ink-2 hover:text-ink"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={createMutation.isPending}
-              className="px-4 py-1.5 text-xs font-bold rounded-control bg-stamp text-on-stamp hover:bg-stamp-strong"
-            >
-              {createMutation.isPending ? 'Creating…' : 'Create Follow-up'}
-            </button>
-          </div>
-        </form>
+        </div>
+
+        {/* Pinned Action Buttons Footer */}
+        <div className="flex justify-end gap-2 p-3 sm:p-4 border-t border-rule shrink-0 bg-sheet">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3 py-1.5 text-xs font-semibold text-ink-2 hover:text-ink cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={createMutation.isPending}
+            className="px-4 py-1.5 text-xs font-bold rounded-control bg-stamp text-on-stamp hover:bg-stamp-strong cursor-pointer disabled:opacity-50"
+          >
+            {createMutation.isPending ? 'Creating…' : 'Create Follow-up'}
+          </button>
+        </div>
+      </form>
     </ModalDialog>
   );
 }

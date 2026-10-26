@@ -63,23 +63,30 @@ export function OfficeFormModal({
       open={isOpen}
       onClose={onClose}
       maxWidth="max-w-lg"
-      zIndex="z-modal"
+      zIndex="z-50"
       ariaLabel={office ? 'Edit Office' : 'Add New Office'}
-      panelClassName="p-5 space-y-4"
+      panelClassName="flex flex-col max-h-[calc(100vh-3rem)]"
     >
-        <div className="flex items-center justify-between border-b border-rule pb-3">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-stamp" />
-            <h3 className="text-base font-bold text-ink">
-              {office ? 'Edit Office' : 'Add New Office'}
-            </h3>
-          </div>
-          <button onClick={onClose} className="p-1 rounded text-ink-3 hover:text-ink">
-            <X className="w-5 h-5" />
-          </button>
+      {/* Pinned Header */}
+      <div className="flex items-center justify-between border-b border-rule p-4 sm:p-5 shrink-0 bg-sheet">
+        <div className="flex items-center gap-2">
+          <Building2 className="w-5 h-5 text-stamp" />
+          <h3 className="text-base font-bold text-ink">
+            {office ? 'Edit Office' : 'Add New Office'}
+          </h3>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-1 rounded text-ink-3 hover:text-ink cursor-pointer"
+          aria-label="Close dialog"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden text-xs">
+        <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-5 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="font-bold text-ink">Office Type (Required)</label>
@@ -144,8 +151,7 @@ export function OfficeFormModal({
                 value={hours}
                 onChange={(e) => setHours(e.target.value)}
                 className="w-full bg-sheet border border-rule rounded-control px-2.5 py-1.5 text-ink focus:outline-none focus:border-stamp"
-              >
-              </input>
+              />
             </div>
 
             <div className="space-y-1">
@@ -171,25 +177,27 @@ export function OfficeFormModal({
               className="w-full bg-sheet border border-rule rounded-control p-2 text-ink focus:outline-none focus:border-stamp"
             />
           </div>
+        </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-rule">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3 py-1.5 font-semibold text-ink-2 hover:text-ink"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saveMutation.isPending}
-              className="px-4 py-1.5 font-bold rounded-control bg-stamp text-on-stamp hover:bg-stamp-strong flex items-center gap-1.5 shadow-xs"
-            >
-              <Save className="w-3.5 h-3.5" />
-              {saveMutation.isPending ? 'Saving…' : 'Save Office'}
-            </button>
-          </div>
-        </form>
+        {/* Pinned Action Buttons Footer */}
+        <div className="flex justify-end gap-2 p-3 sm:p-4 border-t border-rule shrink-0 bg-sheet">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3 py-1.5 font-semibold text-ink-2 hover:text-ink cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={saveMutation.isPending}
+            className="px-4 py-1.5 font-bold rounded-control bg-stamp text-on-stamp hover:bg-stamp-strong flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+          >
+            <Save className="w-3.5 h-3.5" />
+            <span>{saveMutation.isPending ? 'Saving…' : 'Save Office'}</span>
+          </button>
+        </div>
+      </form>
     </ModalDialog>
   );
 }

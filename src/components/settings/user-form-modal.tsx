@@ -115,32 +115,37 @@ export function UserFormModal({
       open={open}
       onClose={onClose}
       maxWidth="max-w-lg"
+      zIndex="z-50"
       ariaLabel={isEditing ? 'Edit Operator Permissions' : 'Add Practice Operator'}
+      panelClassName="flex flex-col max-h-[calc(100vh-3rem)]"
     >
-        <div className="flex items-center justify-between p-4 border-b border-[var(--rule)] bg-[var(--sheet-2)]">
-          <div className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-[var(--stamp)]" />
-            <div>
-              <h3 className="text-sm font-bold text-[var(--ink)]">
-                {isEditing ? 'Edit Operator Permissions' : 'Add Practice Operator'}
-              </h3>
-              <p className="text-[11px] text-[var(--ink-3)]">
-                {isEditing
-                  ? `Update role and client assignments for ${membership?.email}`
-                  : 'Authorize a Google account to access your Ordinovix workspace.'}
-              </p>
-            </div>
+      {/* Pinned Header */}
+      <div className="flex items-center justify-between p-4 border-b border-[var(--rule)] bg-[var(--sheet-2)] shrink-0">
+        <div className="flex items-center gap-2">
+          <Shield className="w-5 h-5 text-[var(--stamp)]" />
+          <div>
+            <h3 className="text-sm font-bold text-[var(--ink)]">
+              {isEditing ? 'Edit Operator Permissions' : 'Add Practice Operator'}
+            </h3>
+            <p className="text-[11px] text-[var(--ink-3)]">
+              {isEditing
+                ? `Update role and client assignments for ${membership?.email}`
+                : 'Authorize a Google account to access your Ordinovix workspace.'}
+            </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 rounded text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--sheet)]"
-          >
-            <X className="w-4 h-4" />
-          </button>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-1 rounded text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--sheet)] cursor-pointer"
+          aria-label="Close dialog"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex-1 overflow-y-auto min-h-0 p-5 space-y-4">
           {error && (
             <div className="flex items-center gap-2 p-3 rounded-md bg-[var(--critical-bg)] text-[var(--critical-fg)] border border-[var(--critical-bd)] text-xs font-medium">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -302,25 +307,28 @@ export function UserFormModal({
             />
           </div>
 
-          <div className="pt-3 border-t border-[var(--rule)] flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="px-3 py-1.5 rounded-md border border-[var(--rule)] text-xs font-medium text-[var(--ink-2)] hover:bg-[var(--sheet-2)] transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-[var(--stamp)] text-[var(--on-stamp)] text-xs font-bold hover:bg-[var(--stamp-strong)] transition-colors disabled:opacity-50"
-            >
-              <User className="w-3.5 h-3.5" />
-              <span>{isSubmitting ? 'Saving...' : isEditing ? 'Save Changes' : 'Invite Operator'}</span>
-            </button>
-          </div>
-        </form>
+        </div>
+
+        {/* Pinned Action Buttons Footer */}
+        <div className="p-3 sm:p-4 border-t border-[var(--rule)] bg-[var(--sheet)] shrink-0 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="px-3 py-1.5 rounded-md border border-[var(--rule)] text-xs font-medium text-[var(--ink-2)] hover:bg-[var(--sheet-2)] transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-[var(--stamp)] text-[var(--on-stamp)] text-xs font-bold hover:bg-[var(--stamp-strong)] transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            <User className="w-3.5 h-3.5" />
+            <span>{isSubmitting ? 'Saving...' : isEditing ? 'Save Changes' : 'Invite Operator'}</span>
+          </button>
+        </div>
+      </form>
     </ModalDialog>
   );
 }

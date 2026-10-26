@@ -163,28 +163,32 @@ export function RecordPaymentSheet({
     <ModalDialog
       open={isOpen}
       onClose={onClose}
-      maxWidth="max-w-lg"
-      zIndex="z-modal"
+      maxWidth="max-w-xl"
+      zIndex="z-50"
       ariaLabel={payment ? 'Edit Payment Record' : 'Record Tax Payment'}
-      panelClassName="p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto"
+      panelClassName="flex flex-col max-h-[calc(100vh-3rem)]"
     >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-rule pb-3">
-          <div className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-stamp" />
-            <h2 className="text-base font-bold text-ink font-sans">
-              {payment ? 'Edit Payment Record' : 'Record Tax Payment'}
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded text-ink-3 hover:text-ink cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+      {/* Pinned Header */}
+      <div className="flex items-center justify-between border-b border-rule p-4 sm:p-5 shrink-0 bg-sheet">
+        <div className="flex items-center gap-2">
+          <DollarSign className="w-5 h-5 text-stamp" />
+          <h2 className="text-base font-bold text-ink font-sans">
+            {payment ? 'Edit Payment Record' : 'Record Tax Payment'}
+          </h2>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-1 rounded text-ink-3 hover:text-ink cursor-pointer"
+          aria-label="Close dialog"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden text-xs">
+        {/* Scrollable Form Body */}
+        <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-5 space-y-4">
           {/* Client Selection */}
           <div className="space-y-1">
             <label className="font-bold text-ink">Client (Required)</label>
@@ -410,25 +414,27 @@ export function RecordPaymentSheet({
             />
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-rule">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3.5 py-2 text-xs font-semibold rounded-control bg-sheet border border-rule text-ink hover:bg-sheet-2 cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saveMutation.isPending}
-              className="px-4 py-2 text-xs font-bold rounded-control bg-stamp text-on-stamp hover:bg-stamp-strong shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-            >
-              <Check className="w-3.5 h-3.5" />
-              <span>{payment ? 'Update Payment' : 'Save Payment Record'}</span>
-            </button>
-          </div>
-        </form>
+        </div>
+
+        {/* Pinned Action Buttons Footer */}
+        <div className="flex items-center justify-end gap-2 p-3 sm:p-4 border-t border-rule shrink-0 bg-sheet">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3.5 py-2 text-xs font-semibold rounded-control bg-sheet border border-rule text-ink hover:bg-sheet-2 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={saveMutation.isPending}
+            className="px-4 py-2 text-xs font-bold rounded-control bg-stamp text-on-stamp hover:bg-stamp-strong shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+          >
+            <Check className="w-3.5 h-3.5" />
+            <span>{payment ? 'Update Payment' : 'Save Payment Record'}</span>
+          </button>
+        </div>
+      </form>
     </ModalDialog>
   );
 }
