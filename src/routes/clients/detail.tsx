@@ -334,10 +334,9 @@ export function ClientDetailPage() {
               variant="primary"
               size="sm"
               onClick={() => navigate(`/tasks?new=true&clientId=${client.id}`)}
-              className="flex items-center gap-1.5"
+              icon={<Plus className="w-3.5 h-3.5" />}
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>New Task</span>
+              New Task
             </Button>
 
             {summary.blockedTaskCount > 0 && (
@@ -345,10 +344,10 @@ export function ClientDetailPage() {
                 variant="secondary"
                 size="sm"
                 onClick={() => setRequestMissingOpen(true)}
-                className="flex items-center gap-1.5 border-warn-bd text-warn-fg bg-warn-bg/50 hover:bg-warn-bg"
+                icon={<Send className="w-3.5 h-3.5" />}
+                className="border-warn-bd text-warn-fg bg-warn-bg/50 hover:bg-warn-bg"
               >
-                <Send className="w-3.5 h-3.5" />
-                <span>Request Missing</span>
+                Request Missing
               </Button>
             )}
 
@@ -356,10 +355,9 @@ export function ClientDetailPage() {
               variant="ghost"
               size="sm"
               onClick={() => setEditClientOpen(true)}
-              className="flex items-center gap-1.5"
+              icon={<Edit3 className="w-3.5 h-3.5" />}
             >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>Edit</span>
+              Edit
             </Button>
 
             {client.status === 'archived' ? (
@@ -367,20 +365,20 @@ export function ClientDetailPage() {
                 variant="ghost"
                 size="sm"
                 onClick={handleRestore}
-                className="flex items-center gap-1.5 text-stamp hover:text-stamp-strong"
+                icon={<RotateCcw className="w-3.5 h-3.5" />}
+                className="text-stamp hover:text-stamp-strong"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Restore</span>
+                Restore
               </Button>
             ) : (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setArchiveModalOpen(true)}
-                className="flex items-center gap-1.5 text-critical hover:text-critical"
+                icon={<Archive className="w-3.5 h-3.5" />}
+                className="text-critical hover:text-critical"
               >
-                <Archive className="w-3.5 h-3.5" />
-                <span>Archive</span>
+                Archive
               </Button>
             )}
 

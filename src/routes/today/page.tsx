@@ -488,9 +488,12 @@ export function TodayPage() {
 
                       <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                         <Link to={`/follow-ups?client=${group.client.id}`}>
-                          <Button variant="secondary" size="sm">
-                            <Send className="w-3.5 h-3.5 mr-1.5" />
-                            <span>Request missing</span>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            icon={<Send className="w-3.5 h-3.5" />}
+                          >
+                            Request missing
                           </Button>
                         </Link>
                       </div>

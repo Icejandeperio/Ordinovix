@@ -51,7 +51,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         type={type}
         disabled={disabled || loading}
         className={cn(
-          'inline-flex items-center justify-center rounded-control transition-all duration-instant select-none font-sans cursor-pointer',
+          'inline-flex items-center justify-center rounded-control transition-all duration-instant select-none font-sans cursor-pointer whitespace-nowrap',
           'focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp focus-visible:ring-offset-2 focus-visible:ring-offset-sheet',
           'disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:bg-auto',
           sizeClasses,
@@ -63,9 +63,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {loading ? (
           <Loader2 className="w-4 h-4 animate-spin shrink-0" />
         ) : (
-          icon && <span className="shrink-0">{icon}</span>
+          icon && <span className="shrink-0 inline-flex items-center">{icon}</span>
         )}
-        {children && <span className="truncate">{children}</span>}
+        {children && (
+          <span className="truncate inline-flex items-center gap-1.5">
+            {children}
+          </span>
+        )}
       </button>
     );
   }

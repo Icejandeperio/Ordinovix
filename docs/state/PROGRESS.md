@@ -527,4 +527,22 @@
   - Full TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
   - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 118 Vitest tests, Vite production build).
 
+## Session 2026-10-26 (Button Layout Alignment & SVG Display Bugfix)
+- Problem Analysis:
+  - User reported "This button looks odd, fix it" with screenshot showing the "Request missing" secondary button on the Today focus dashboard where the Send paper-plane icon was vertically stacked directly above the text label.
+  - Root Cause: In Tailwind CSS v4 Preflight, `<svg>` elements are styled with `display: block; vertical-align: middle;`. When `Button` (`src/components/ui/button.tsx`) wrapped `{children}` inside a plain `<span className="truncate">`, any `<svg>` passed inside `children` behaved as a block element, forcing a line break above the adjacent text element.
+- Engineering Resolution:
+  - Hardened `src/components/ui/button.tsx`:
+    - Added `whitespace-nowrap` to the outer `<button>` class list to prevent unwanted multiline wrapping of actions.
+    - Updated the icon wrapper to `<span className="shrink-0 inline-flex items-center">{icon}</span>`.
+    - Updated the children wrapper to `<span className="truncate inline-flex items-center gap-1.5">{children}</span>`, guaranteeing that any elements or icons passed inside children are laid out horizontally in a flex container with vertical centering.
+  - Refactored `src/routes/today/page.tsx`:
+    - Replaced `<Button><Send className="w-3.5 h-3.5 mr-1.5" /><span>Request missing</span></Button>` with semantic `icon={<Send className="w-3.5 h-3.5" />}` and clean text children `Request missing`.
+  - Audited and Refactored `src/routes/clients/detail.tsx`:
+    - Updated header action buttons (`New Task`, `Request Missing`, `Edit`, `Restore`, `Archive`) to use semantic `icon={...}` props.
+- Automated Verification:
+  - 16 test files passed, 118 tests green (`npm.cmd run test:run`).
+  - Full TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
+  - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 118 Vitest tests, Vite production build in 7.19s).
+
 
