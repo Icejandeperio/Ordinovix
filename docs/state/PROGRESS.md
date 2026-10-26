@@ -392,3 +392,36 @@
   - Full TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
   - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 103 Vitest tests, Vite production build).
   - Browser subagent visual inspection confirmed single-line, clean pill rendering (`Due tomorrow`, `Overdue 2d`, `Due Nov 4`) with zero text wrapping or overflow.
+
+## Session 2026-10-26 (High-Fidelity Document Printing & Export Engine Debugging)
+- Systematic Root Cause Analysis (`/debugging-engineering`):
+  - In browser print previews (`Microsoft Print to PDF`), when attempting to print documents from the preview drawer, the background `Documents Library` table was printed instead of the document, truncated horizontally at column boundaries with grey horizontal scrollbars visibly baked into the paper.
+  - Root Cause 1 (Drawer Disappearance in Print): `src/styles/print.css` unconditionally specified `[role="dialog"] { display: none !important; }`. Since `SlideSheet` assigns `role="dialog"`, triggering `window.print()` from the document drawer caused CSS print media to suppress the drawer entirely and expose the underlying background data table.
+  - Root Cause 2 (Printed Scrollbars & Table Clipping): In Chromium print layout engine, elements with `overflow-x: auto` maintain active scroll containers if table width exceeds paper margins, baking native scrollbars and scroll thumbs directly onto the printed page.
+  - Root Cause 3 (Interactive Control Pollution): Search input bars, filter select dropdowns, clear filter buttons, tab switchers, and action icon buttons were displayed on printed paper without semantic print concealment.
+  - Root Cause 4 (Pop-up Blocker Fragility in Export): `exportToPdf` previously relied on synchronous `window.open` calls that triggered pop-up blocker exceptions and alerts in secure browser configurations.
+- Systematic Resolution & Architectural Enhancements:
+  - Overhauled Print Stylesheet (`src/styles/print.css`):
+    - Universal scrollbar elimination: Applied `scrollbar-width: none !important`, `-ms-overflow-style: none !important`, and `*::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }`.
+    - Universal overflow override: Overrode `html, body, #root, main, div, section, article, table, thead, tbody, tr, td, th` with `overflow: visible !important`.
+    - Document Preview Isolation: Added `body:has([data-printable-drawer="true"]) main#main-content { display: none !important; }`. When a printable drawer is active, the background layout is completely suppressed, and the drawer expands to 100% full-width white page layout, hiding the toolbar (`.drawer-toolbar`), sidebar (`.drawer-sidebar`), and footer (`.drawer-footer`), while isolating `.drawer-canvas`.
+    - Table formatting: Applied `table-layout: auto !important`, `width: 100% !important`, 8.5pt font, word breaking, and row break-inside avoid to guarantee zero horizontal clipping.
+    - Universal interactive control suppression: Suppressed `input:not([type="checkbox"])`, `select`, `textarea`, `button:not(.print-include)`, `[data-view-toggle]`, `.filter-strip`, `.search-strip`, `.actions-cell`, and `.actions-col`.
+  - Upgraded Universal Export & Print Engine (`src/lib/export.ts`):
+    - Built `printHtmlContent(html, title)`: Implemented transparent, hidden `<iframe>` fallback printing that executes seamlessly when `window.open` is blocked by browser security policies.
+    - Built `printDocumentFile(doc: DocumentFile, clientMeta)`: Generates an archival-grade, high-fidelity practice record print sheet with practice header (`ORDINOVIX · PRACTICE DOCUMENT ARCHIVE`), client name & code, category kind badge, timestamp, full vector/raster document media, and SHA-256 tamper-evident integrity digest.
+    - Hardened `exportToPdf({ title, subtitle, headers, rows })`: Standardized on `@page { size: auto; margin: 12mm 14mm; }`, `table-layout: auto`, and universal scrollbar elimination.
+  - Wired Printable Drawer & Cleared Page Controls:
+    - `src/components/ui/slide-sheet.tsx`: Added `isPrintable?: boolean` to `SlideSheetProps` applying `data-printable-drawer={isPrintable ? 'true' : undefined}`.
+    - `src/components/documents/preview-drawer.tsx`: Set `isPrintable={true}`, tagged `.drawer-toolbar`, `.drawer-sidebar`, and `.drawer-footer` with `no-print`, and wired "Print document" button to `printDocumentFile(activeDoc, clientMeta)`.
+    - Suppressed search bars, filter dropdowns, tab strips, and action button columns across `documents/page.tsx`, `tasks/page.tsx`, `tasks/detail.tsx`, `clients/page.tsx`, `clients/detail.tsx`, `payments/page.tsx`, `audit/page.tsx`, and `reports/page.tsx`.
+- Automated Verification & Test Coverage:
+  - Added comprehensive automated unit test suite `src/lib/export.test.ts` (4 unit tests):
+    - `exportToCsv` produces UTF-8 BOM CSV output.
+    - `exportToExcel` generates valid Excel XML with Worksheet and Table structures.
+    - `exportToPdf` falls back cleanly to hidden iframe when `window.open` returns null.
+    - `printDocumentFile` renders practice header, client metadata, SHA-256 integrity hash, and scrollbar suppression styles.
+  - 107 unit tests green across 13 test files (`npm.cmd run test:run`).
+  - Full TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
+  - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 107 Vitest tests, Vite production build).
+
