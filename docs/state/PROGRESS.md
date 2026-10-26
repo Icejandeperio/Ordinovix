@@ -425,3 +425,36 @@
   - Full TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
   - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 107 Vitest tests, Vite production build).
 
+## Session 2026-10-26 (Center Floating Window Shell Transitions & Modal Cutout Elimination)
+- Systematic Root Cause Analysis:
+  - When opening floating center windows (such as `RecordPaymentSheet`), the modal was clipped and cut out at the top:
+    - Root Cause 1 (Flexbox Centering Coordinate Clipping): In `ModalDialog`, `overflow-y-auto` was applied directly to `flex items-center justify-center`. In CSS flexbox, when content height exceeds container height, `items-center` calculates a negative top offset (`top < 0`). Since scroll containers cannot scroll to negative coordinates, any overflow above the top edge is permanently truncated and inaccessible.
+    - Root Cause 2 (Single-Scroll Container Cutouts): In `RecordPaymentSheet`, `OfficeFormModal`, `UserFormModal`, and `FollowUpModals`, the modal title, icon, close button, form fields, and action buttons were placed into a single overflowing container. As soon as an input was focused or scrolled, the header scrolled away and clipped at the top, while submit buttons were pushed below the visible frame.
+    - Root Cause 3 (Visual Clutter Behind Center Floating Windows): When center modals were active, the left navigation sidebar and top header bar remained visible, distracting from the modal task.
+- Systematic Resolution & Architectural Upgrades:
+  - Built Global Reactive Center Modal Store (`src/lib/modal-store.ts`):
+    - Implemented `centerModalStore` using `useSyncExternalStore` and `data-center-modal-open` HTML attributes.
+    - Tracks active center floating window count and notifies subscribers without component tree re-rendering.
+  - Upgraded Shell Sliding Animations (`src/app/shell.tsx`):
+    - Desktop sidebar / tablet rail (`<aside>`): Automatically slides smoothly off-screen to the left (`-translate-x-full opacity-0 pointer-events-none`) with `transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]`.
+    - Top bar (`<header>` with Brand, Search, Privacy, Install, Notifications): Automatically slides smoothly off-screen to the top (`-translate-y-full opacity-0 pointer-events-none`).
+    - Sample data banner & offline banner: Automatically slides smoothly off-screen to the top.
+    - Mobile bottom bar (`<nav>`): Automatically slides smoothly off-screen to the bottom (`translate-y-full opacity-0 pointer-events-none`).
+    - When any center floating window closes, all bars and sidebars smoothly slide back into their exact previous state (preserving sidebar collapsed/expanded width).
+  - Hardened Modal Dialog Architecture (`src/components/ui/modal-dialog.tsx`):
+    - Replaced `flex items-center` with `my-auto` centering on the panel: when content fits, it centers vertically; when content is tall, `my-auto` collapses to 0 top margin, completely eliminating negative coordinate cutouts.
+    - Added `maxHeight: 'calc(100vh - 2.5rem)'` and `flex flex-col` to prevent panel overflow beyond screen boundaries.
+    - Sanitized `zIndex` fallback to ensure modal dialogs always elevate cleanly above application bars.
+  - Upgraded Center Modals to 3-Tier Architecture (Pinned Header / Scrollable Body / Pinned Footer):
+    - `RecordPaymentSheet` (`src/components/payments/record-payment-sheet.tsx`): Pinned title & close button header at top (`shrink-0`), scrollable form body in middle (`flex-1 overflow-y-auto min-h-0`), and pinned "Cancel" & "Save Payment Record" action footer at bottom (`shrink-0`).
+    - `OfficeFormModal` (`src/components/offices/office-form-modal.tsx`): Upgraded with pinned header, middle scroll body, and pinned action footer.
+    - `UserFormModal` (`src/components/settings/user-form-modal.tsx`): Upgraded with pinned header, middle scroll body, and pinned action footer.
+    - `FollowUpModals` (`src/components/follow-ups/follow-up-modals.tsx`): Upgraded `LogResponseModal` and `NewFollowUpModal` with pinned headers and footers.
+    - `CommandPalette` (`src/components/command-palette.tsx`): Integrated with `centerModalStore` to smoothly slide hide and restore shell bars during global search.
+- Automated Verification:
+  - Added unit test suite `src/lib/modal-store.test.ts` (3 tests) verifying open/close counts, non-negative boundary bounds, and subscriber notifications.
+  - 110 unit tests green across 14 test files (`npm.cmd run test:run`).
+  - Full TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
+  - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 110 Vitest tests, Vite production build).
+
+
