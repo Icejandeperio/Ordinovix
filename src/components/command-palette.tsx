@@ -22,6 +22,7 @@ import {
   ArrowRight,
   Clock,
   Sparkles,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface CommandPaletteProps {
@@ -373,6 +374,20 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 </div>
                 <span className="text-[10px] text-ink-3">/settings</span>
               </Command.Item>
+
+              {currentPersona === 'owner' && (
+                <Command.Item
+                  value="nav super admin user accounts permissions access control helper owner allowlist"
+                  onSelect={() => handleSelect(() => navigate('/settings/users'))}
+                  className="px-3 py-1.5 text-xs rounded-control flex items-center justify-between cursor-pointer data-[selected=true]:bg-sheet-2 hover:bg-sheet-2 text-ink"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-stamp" />
+                    <span>Super Admin: Users & Access</span>
+                  </div>
+                  <span className="text-[10px] text-stamp font-medium">/admin</span>
+                </Command.Item>
+              )}
 
               <Command.Item
                 value="nav help glossary shortcuts support"

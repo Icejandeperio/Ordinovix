@@ -204,6 +204,13 @@ export function DevMenu() {
             <div className="flex items-center justify-between pt-3 border-t border-rule text-xs">
               <div className="flex gap-3">
                 <Link
+                  to="/settings/users"
+                  onClick={() => setIsOpen(false)}
+                  className="text-stamp hover:underline font-semibold"
+                >
+                  User Admin
+                </Link>
+                <Link
                   to="/dev/tokens"
                   onClick={() => setIsOpen(false)}
                   className="text-stamp hover:underline font-semibold"

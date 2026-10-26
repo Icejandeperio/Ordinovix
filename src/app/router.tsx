@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppShell } from './shell';
 
 // Core routes kept in initial chunk
@@ -96,6 +96,8 @@ export const router = createBrowserRouter([
       { path: 'search', element: <SearchPage /> },
       { path: 'settings', element: <RouteSuspense><SettingsPage /></RouteSuspense> },
       { path: 'settings/*', element: <RouteSuspense><SettingsPage /></RouteSuspense> },
+      { path: 'admin', element: <Navigate to="/settings/users" replace /> },
+      { path: 'admin/users', element: <Navigate to="/settings/users" replace /> },
       { path: 'audit', element: <RouteSuspense><AuditPage /></RouteSuspense> },
       { path: 'help', element: <RouteSuspense><HelpPage /></RouteSuspense> },
       { path: 'dev/tokens', element: <RouteSuspense><DevTokensPage /></RouteSuspense> },
