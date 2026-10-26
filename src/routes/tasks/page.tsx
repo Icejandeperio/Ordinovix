@@ -8,6 +8,7 @@ import {
 } from '@/hooks/useData';
 import { StatusChip, DueBadge } from '@/components/ui/status-chip';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
 import { formatDate } from '@/lib/format';
 import { canSetStatus } from '@/domain/rules';
 import { TASK_STATUS_META } from '@/domain/labels';
@@ -300,10 +301,10 @@ export function TasksPage() {
         </div>
 
         {/* Client filter */}
-        <select
+        <Select
           value={selectedClient}
-          onChange={(e) => updateParam('clientId', e.target.value || null)}
-          className="text-xs bg-sheet-2 border border-rule rounded-control px-2.5 py-1.5 text-ink focus:outline-none focus:ring-1 focus:ring-focus font-medium"
+          onChange={(val) => updateParam('clientId', val || null)}
+          className="w-auto min-w-[130px] max-w-[200px]"
         >
           <option value="">All Clients</option>
           {clients.map((c) => (
@@ -311,13 +312,13 @@ export function TasksPage() {
               {c.client.code} · {c.client.displayName}
             </option>
           ))}
-        </select>
+        </Select>
 
         {/* Status Group Filter */}
-        <select
+        <Select
           value={selectedGroup}
-          onChange={(e) => updateParam('group', e.target.value || null)}
-          className="text-xs bg-sheet-2 border border-rule rounded-control px-2.5 py-1.5 text-ink focus:outline-none focus:ring-1 focus:ring-focus font-medium"
+          onChange={(val) => updateParam('group', val || null)}
+          className="w-auto min-w-[140px]"
         >
           <option value="">All Status Groups</option>
           <option value="blocked">Blocked</option>
@@ -325,13 +326,13 @@ export function TasksPage() {
           <option value="ready">Ready</option>
           <option value="submitted">Submitted</option>
           <option value="done">Completed / Done</option>
-        </select>
+        </Select>
 
         {/* Kind filter */}
-        <select
+        <Select
           value={selectedKind}
-          onChange={(e) => updateParam('kind', e.target.value || null)}
-          className="text-xs bg-sheet-2 border border-rule rounded-control px-2.5 py-1.5 text-ink focus:outline-none focus:ring-1 focus:ring-focus font-medium"
+          onChange={(val) => updateParam('kind', val || null)}
+          className="w-auto min-w-[120px]"
         >
           <option value="">All Kinds</option>
           <option value="filing">Filing Return</option>
@@ -340,24 +341,24 @@ export function TasksPage() {
           <option value="one_time_transaction">One-Time Transaction (ONETT)</option>
           <option value="lgu">LGU / Mayor's Permit</option>
           <option value="other">Other</option>
-        </select>
+        </Select>
 
         {/* Owner filter */}
-        <select
+        <Select
           value={selectedOwner}
-          onChange={(e) => updateParam('owner', e.target.value || null)}
-          className="text-xs bg-sheet-2 border border-rule rounded-control px-2.5 py-1.5 text-ink focus:outline-none focus:ring-1 focus:ring-focus font-medium"
+          onChange={(val) => updateParam('owner', val || null)}
+          className="w-auto min-w-[130px]"
         >
           <option value="">Assigned To: All</option>
           <option value="user-ana">Ana Santos (Owner)</option>
           <option value="user-ben">Ben Morales (Helper)</option>
-        </select>
+        </Select>
 
         {/* Period filter */}
-        <select
+        <Select
           value={selectedPeriod}
-          onChange={(e) => updateParam('period', e.target.value || null)}
-          className="text-xs bg-sheet-2 border border-rule rounded-control px-2.5 py-1.5 text-ink focus:outline-none focus:ring-1 focus:ring-focus font-medium"
+          onChange={(val) => updateParam('period', val || null)}
+          className="w-auto min-w-[110px]"
         >
           <option value="">All Periods</option>
           {periods.map((p) => (
@@ -365,7 +366,7 @@ export function TasksPage() {
               Period {p}
             </option>
           ))}
-        </select>
+        </Select>
 
         {hasActiveFilters && (
           <button

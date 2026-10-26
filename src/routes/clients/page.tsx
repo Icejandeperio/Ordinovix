@@ -16,6 +16,7 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
 import { ClientFormSheet } from '@/components/clients/client-form-sheet';
 import { AuthorizationBadge, DueBadge, ClientFlag } from '@/components/ui/status-chip';
 import { exportToCsv } from '@/lib/export';
@@ -293,48 +294,48 @@ export function ClientsPage() {
           {/* Dropdown Filters */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Entity Type */}
-            <select
+            <Select
               value={entityType}
-              onChange={(e) => setEntityType(e.target.value as any)}
-              className="px-2.5 py-1.5 text-xs rounded-control bg-sheet-2 border border-rule text-ink focus:outline-none focus:border-stamp"
+              onChange={(val) => setEntityType(val as any)}
+              className="w-auto min-w-[110px]"
             >
               <option value="all">Entity: All</option>
               <option value="gpp">GPP</option>
               <option value="solo">Solo Practitioner</option>
               <option value="other">Other Corporation</option>
-            </select>
+            </Select>
 
             {/* VAT Status */}
-            <select
+            <Select
               value={vatStatus}
-              onChange={(e) => setVatStatus(e.target.value as any)}
-              className="px-2.5 py-1.5 text-xs rounded-control bg-sheet-2 border border-rule text-ink focus:outline-none focus:border-stamp"
+              onChange={(val) => setVatStatus(val as any)}
+              className="w-auto min-w-[110px]"
             >
               <option value="all">VAT: All</option>
               <option value="vat">VAT Registered</option>
               <option value="non_vat_percentage">Non-VAT (Percentage)</option>
               <option value="non_vat_8_percent">Non-VAT (8% Flat)</option>
               <option value="not_sure">Not Sure Yet</option>
-            </select>
+            </Select>
 
             {/* Filing Channel */}
-            <select
+            <Select
               value={filingChannel}
-              onChange={(e) => setFilingChannel(e.target.value as any)}
-              className="px-2.5 py-1.5 text-xs rounded-control bg-sheet-2 border border-rule text-ink focus:outline-none focus:border-stamp"
+              onChange={(val) => setFilingChannel(val as any)}
+              className="w-auto min-w-[115px]"
             >
               <option value="all">Channel: All</option>
               <option value="efps">eFPS</option>
               <option value="ebirforms">eBIRForms</option>
               <option value="manual">Manual</option>
-            </select>
+            </Select>
 
             {/* eFPS Group (conditional or visible) */}
             {(filingChannel === 'efps' || filingChannel === 'all') && (
-              <select
+              <Select
                 value={efpsGroup}
-                onChange={(e) => setEfpsGroup(e.target.value as any)}
-                className="px-2.5 py-1.5 text-xs rounded-control bg-sheet-2 border border-rule text-ink focus:outline-none focus:border-stamp"
+                onChange={(val) => setEfpsGroup(val as any)}
+                className="w-auto min-w-[110px]"
               >
                 <option value="all">Group: All</option>
                 <option value="A">Grp A</option>
@@ -342,14 +343,14 @@ export function ClientsPage() {
                 <option value="C">Grp C</option>
                 <option value="D">Grp D</option>
                 <option value="E">Grp E</option>
-              </select>
+              </Select>
             )}
 
             {/* Assigned User */}
-            <select
+            <Select
               value={assignedUserId}
-              onChange={(e) => setAssignedUserId(e.target.value)}
-              className="px-2.5 py-1.5 text-xs rounded-control bg-sheet-2 border border-rule text-ink focus:outline-none focus:border-stamp"
+              onChange={setAssignedUserId}
+              className="w-auto min-w-[140px]"
             >
               <option value="all">Assigned: Everyone</option>
               {memberships?.map((m) => {
@@ -360,7 +361,7 @@ export function ClientsPage() {
                   </option>
                 );
               })}
-            </select>
+            </Select>
 
             {hasActiveFilters && (
               <button

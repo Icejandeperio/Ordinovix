@@ -478,4 +478,33 @@
   - TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
   - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 110 Vitest tests, Vite production build).
 
+## Session 2026-10-26 (Bespoke Fluid Animated Select Component & Dropdown Upgrade)
+- Systematic Root Cause Analysis of Clunky Native Dropdowns:
+  - Default HTML `<select>` elements invoke operating system native popup menus (square borders, Windows/Chromium default blue hover highlight, non-token typography, zero animations).
+  - Native select menus ignored Ordinovix design tokens (`--stamp`, `--sheet`, `--sheet-2`, `--rule`, `--shadow-float`, `--r-control`) and produced glaring visual discord in both light and dark modes.
+- Built Bespoke Fluid Animated Select Component (`src/components/ui/select.tsx`):
+  - Fluid spring & ease animations powered by `motion/react` (`scale: 0.96` to `1`, `y: -4` to `0`, opacity fade with cubic bezier easing `[0.16, 1, 0.3, 1]`).
+  - Smooth 180° animated rotating chevron indicator (`transition-transform duration-200`).
+  - Active focus ring with stamp-tinted glow (`border-[var(--stamp)] ring-2 ring-[var(--stamp)]/20 bg-[var(--sheet)]`).
+  - Archivo variable typography with rounded item highlights (`rounded-[calc(var(--r-control)-4px)]`).
+  - Selected state with `--stamp-soft` background, `--stamp-ink` text, and subtle checkmark icon (`Check`).
+  - Automatic inside-menu search filter input when options count >= 8 with live case-insensitive filtering.
+  - Universal dual API supporting both `options` array (`SelectOption[]`) and nested `<option>` children with automatic prop extraction.
+  - Full keyboard accessibility (`Escape` to close, `ArrowDown`/`Enter`/`Space` to open, outside click listener).
+- Comprehensive Application Filter Bar Migration:
+  - Upgraded filter dropdowns across all 8 major application screens:
+    - `src/routes/insights/page.tsx`: Date range, Owner, Client, and Template filter dropdowns.
+    - `src/routes/tasks/page.tsx`: Client, Status Group, Task Kind, Owner, and Period filter dropdowns.
+    - `src/routes/clients/page.tsx`: Entity Type, VAT Status, Filing Channel, eFPS Group, and Assigned User dropdowns.
+    - `src/routes/payments/page.tsx`: Client, Channel, and Paid By dropdowns.
+    - `src/routes/documents/page.tsx`: Client, Document Kind, and File Type dropdowns.
+    - `src/routes/follow-ups/page.tsx`: Client and Channel dropdowns.
+    - `src/routes/reports/page.tsx`: Paper size and Target Client selector dropdowns.
+    - `src/routes/calendar/page.tsx`: Client and Item Type filter dropdowns.
+- Automated Verification:
+  - Added test suite `src/components/ui/select.test.ts` (3 tests) validating option parsing, case-insensitive search filtering, and description matching.
+  - 15 test files passed, 113 tests green (`npm.cmd run test:run`).
+  - Full TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
+  - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 113 Vitest tests, Vite production build).
+
 

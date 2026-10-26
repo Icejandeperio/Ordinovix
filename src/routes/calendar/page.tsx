@@ -8,6 +8,7 @@ import {
   useOrgSettings,
 } from '@/hooks/useData';
 import { ModalDialog } from '@/components/ui/modal-dialog';
+import { Select } from '@/components/ui/select';
 import type { CalendarItem, ID } from '@/domain/types';
 import { todayInManila, formatDate, addDaysToDate } from '@/lib/dates';
 import {
@@ -313,10 +314,10 @@ export function CalendarPage() {
         {/* Filters */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Client Filter */}
-          <select
+          <Select
             value={selectedClientId}
-            onChange={(e) => setSelectedClientId(e.target.value)}
-            className="bg-sheet-2 border border-rule rounded-control px-2.5 py-1.5 text-xs text-ink focus:outline-none focus:border-stamp"
+            onChange={setSelectedClientId}
+            className="w-auto min-w-[130px] max-w-[200px]"
           >
             <option value="">All Clients</option>
             {clients.map(({ client }) => (
@@ -324,13 +325,13 @@ export function CalendarPage() {
                 [{client.code}] {client.displayName}
               </option>
             ))}
-          </select>
+          </Select>
 
           {/* Item Type Filter */}
-          <select
+          <Select
             value={itemTypeFilter}
-            onChange={(e) => setItemTypeFilter(e.target.value as ItemTypeFilter)}
-            className="bg-sheet-2 border border-rule rounded-control px-2.5 py-1.5 text-xs text-ink focus:outline-none focus:border-stamp"
+            onChange={(val) => setItemTypeFilter(val as ItemTypeFilter)}
+            className="w-auto min-w-[140px]"
           >
             <option value="all">All Item Types</option>
             <option value="task_due">Task Due Dates</option>
@@ -338,7 +339,7 @@ export function CalendarPage() {
             <option value="holiday">Statutory Holidays</option>
             <option value="follow_up">Follow-ups Expected</option>
             <option value="authorization_expiry">SPA Expiries</option>
-          </select>
+          </Select>
         </div>
       </div>
 

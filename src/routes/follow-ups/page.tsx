@@ -4,6 +4,7 @@ import { useFollowUps, useClients } from '@/hooks/useData';
 import type { FollowUpView, FollowUpState, Channel } from '@/domain/types';
 import { copyFormLabel } from '@/domain/labels';
 import { formatDate } from '@/lib/format';
+import { Select } from '@/components/ui/select';
 import { MessageComposer } from '@/components/follow-ups/composer';
 import {
   LogResponseModal,
@@ -251,10 +252,10 @@ export function FollowUpsPage() {
             />
           </div>
 
-          <select
+          <Select
             value={clientFilter}
-            onChange={(e) => setClientFilter(e.target.value)}
-            className="text-xs bg-sheet border border-rule rounded-control px-2.5 py-1.5 text-ink focus:outline-none focus:border-stamp"
+            onChange={setClientFilter}
+            className="w-auto min-w-[140px] max-w-[200px]"
           >
             <option value="">All Clients</option>
             {clients.map((c) => (
@@ -262,19 +263,19 @@ export function FollowUpsPage() {
                 {c.client.displayName} ({c.client.code})
               </option>
             ))}
-          </select>
+          </Select>
 
-          <select
+          <Select
             value={channelFilter}
-            onChange={(e) => setChannelFilter(e.target.value)}
-            className="text-xs bg-sheet border border-rule rounded-control px-2.5 py-1.5 text-ink focus:outline-none focus:border-stamp"
+            onChange={setChannelFilter}
+            className="w-auto min-w-[120px]"
           >
             <option value="">All Channels</option>
             <option value="viber">Viber</option>
             <option value="messenger">Messenger</option>
             <option value="sms">SMS</option>
             <option value="email">Email</option>
-          </select>
+          </Select>
 
           {(searchQuery || clientFilter || channelFilter) && (
             <button

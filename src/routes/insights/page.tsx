@@ -14,6 +14,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useInsights, useClients, useTemplates, useSession } from '@/hooks/useData';
+import { Select } from '@/components/ui/select';
 import { ChartFrame } from '@/components/insights/chart-frame';
 import {
   SvgLineChart,
@@ -67,34 +68,34 @@ export function InsightsPage() {
         </div>
 
         {/* Date Range */}
-        <select
+        <Select
           value={dateRange}
-          onChange={(e) => setDateRange(e.target.value)}
-          className="h-8 px-2.5 rounded-control border border-[var(--rule)] bg-[var(--sheet-2)] text-[var(--ink)] font-medium cursor-pointer"
+          onChange={setDateRange}
+          className="w-auto"
         >
           <option value="last_6_months">Last 6 Months (May–Oct 2026)</option>
           <option value="q3_2026">Q3 2026 (Jul–Sep 2026)</option>
           <option value="ytd">Year to Date (2026)</option>
-        </select>
+        </Select>
 
         {/* Owner switcher (Owner only) */}
         {isOwner && (
-          <select
+          <Select
             value={ownerFilter}
-            onChange={(e) => setOwnerFilter(e.target.value)}
-            className="h-8 px-2.5 rounded-control border border-[var(--rule)] bg-[var(--sheet-2)] text-[var(--ink)] font-medium cursor-pointer"
+            onChange={setOwnerFilter}
+            className="w-auto"
           >
             <option value="all">Assignee: Everyone</option>
             <option value="user-ana">Ana Santos (Owner)</option>
             <option value="user-ben">Ben Morales (Helper)</option>
-          </select>
+          </Select>
         )}
 
         {/* Client filter */}
-        <select
+        <Select
           value={clientFilter}
-          onChange={(e) => setClientFilter(e.target.value)}
-          className="h-8 px-2.5 rounded-control border border-[var(--rule)] bg-[var(--sheet-2)] text-[var(--ink)] font-medium cursor-pointer max-w-[200px]"
+          onChange={setClientFilter}
+          className="max-w-[220px]"
         >
           <option value="all">Client: All Clients</option>
           {clients.map((c) => (
@@ -102,13 +103,13 @@ export function InsightsPage() {
               {c.code} — {c.displayName}
             </option>
           ))}
-        </select>
+        </Select>
 
         {/* Template filter */}
-        <select
+        <Select
           value={templateFilter}
-          onChange={(e) => setTemplateFilter(e.target.value)}
-          className="h-8 px-2.5 rounded-control border border-[var(--rule)] bg-[var(--sheet-2)] text-[var(--ink)] font-medium cursor-pointer max-w-[200px]"
+          onChange={setTemplateFilter}
+          className="max-w-[220px]"
         >
           <option value="all">Template: All Templates</option>
           {templates.map((t) => (
@@ -116,7 +117,7 @@ export function InsightsPage() {
               {t.code} — {t.name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       {/* Tabs Row */}

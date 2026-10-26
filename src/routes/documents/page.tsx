@@ -11,6 +11,7 @@ import { FileTile } from '@/components/documents/file-tile';
 import { PreviewDrawer } from '@/components/documents/preview-drawer';
 import { FileDrop } from '@/components/documents/file-drop';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
 import { formatDate } from '@/lib/format';
 import { formatBytes } from '@/lib/compression';
 import type { DocumentFile, DocumentKind } from '@/domain/types';
@@ -229,10 +230,10 @@ export function DocumentsPage() {
         </div>
 
         {/* Client filter */}
-        <select
+        <Select
           value={selectedClient}
-          onChange={(e) => updateParam('clientId', e.target.value || null)}
-          className="text-xs bg-sheet-2 border border-rule rounded-control px-2.5 py-1.5 text-ink focus:outline-none focus:ring-1 focus:ring-focus font-medium"
+          onChange={(val) => updateParam('clientId', val || null)}
+          className="w-auto min-w-[130px] max-w-[200px]"
         >
           <option value="">All Clients</option>
           {clients.map((c) => (
@@ -240,13 +241,13 @@ export function DocumentsPage() {
               {c.client.code} · {c.client.displayName}
             </option>
           ))}
-        </select>
+        </Select>
 
         {/* Kind filter */}
-        <select
+        <Select
           value={selectedKind}
-          onChange={(e) => updateParam('kind', e.target.value || null)}
-          className="text-xs bg-sheet-2 border border-rule rounded-control px-2.5 py-1.5 text-ink focus:outline-none focus:ring-1 focus:ring-focus font-medium"
+          onChange={(val) => updateParam('kind', val || null)}
+          className="w-auto min-w-[140px]"
         >
           <option value="">All Document Kinds</option>
           <option value="filed_return">Filed Return</option>
@@ -257,18 +258,18 @@ export function DocumentsPage() {
           <option value="authorization">SPA / Authorization</option>
           <option value="source">Client Source Document</option>
           <option value="other">Other Attachment</option>
-        </select>
+        </Select>
 
         {/* File Type filter */}
-        <select
+        <Select
           value={selectedType}
-          onChange={(e) => updateParam('type', e.target.value || null)}
-          className="text-xs bg-sheet-2 border border-rule rounded-control px-2.5 py-1.5 text-ink focus:outline-none focus:ring-1 focus:ring-focus font-medium"
+          onChange={(val) => updateParam('type', val || null)}
+          className="w-auto min-w-[130px]"
         >
           <option value="">All File Types</option>
           <option value="image">Images / Photos (JPEG, PNG, WebP)</option>
           <option value="pdf">PDF Documents</option>
-        </select>
+        </Select>
 
         {hasActiveFilters && (
           <button

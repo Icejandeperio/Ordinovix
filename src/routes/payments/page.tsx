@@ -3,6 +3,7 @@ import { usePayments, useClients } from '@/hooks/useData';
 import type { Payment, PaymentChannel, ID } from '@/domain/types';
 import { formatPeso, formatDate } from '@/lib/format';
 import { RecordPaymentSheet } from '@/components/payments/record-payment-sheet';
+import { Select } from '@/components/ui/select';
 import { ExportMenu } from '@/components/export-menu';
 import {
   DollarSign,
@@ -249,10 +250,10 @@ export function PaymentsPage() {
         </div>
 
         {/* Client dropdown */}
-        <select
+        <Select
           value={selectedClientId}
-          onChange={(e) => setSelectedClientId(e.target.value)}
-          className="bg-sheet-2 border border-rule rounded-control px-2.5 py-1.5 text-xs text-ink focus:outline-none focus:border-stamp"
+          onChange={setSelectedClientId}
+          className="w-auto min-w-[130px] max-w-[200px]"
         >
           <option value="">All Clients</option>
           {clients.map(({ client }) => (
@@ -260,31 +261,31 @@ export function PaymentsPage() {
               [{client.code}] {client.displayName}
             </option>
           ))}
-        </select>
+        </Select>
 
         {/* Channel dropdown */}
-        <select
+        <Select
           value={selectedChannel}
-          onChange={(e) => setSelectedChannel(e.target.value)}
-          className="bg-sheet-2 border border-rule rounded-control px-2.5 py-1.5 text-xs text-ink focus:outline-none focus:border-stamp"
+          onChange={setSelectedChannel}
+          className="w-auto min-w-[140px]"
         >
           <option value="">All Channels</option>
           <option value="aab_otc">AAB Over-the-Counter</option>
           <option value="rco">Revenue Collection Officer</option>
           <option value="online">Online Payment</option>
           <option value="other">Other Channel</option>
-        </select>
+        </Select>
 
         {/* Paid By dropdown */}
-        <select
+        <Select
           value={selectedPaidBy}
-          onChange={(e) => setSelectedPaidBy(e.target.value)}
-          className="bg-sheet-2 border border-rule rounded-control px-2.5 py-1.5 text-xs text-ink focus:outline-none focus:border-stamp"
+          onChange={setSelectedPaidBy}
+          className="w-auto min-w-[130px]"
         >
           <option value="">Paid By: All</option>
           <option value="client">Direct by Client</option>
           <option value="operator">Me (Advanced)</option>
-        </select>
+        </Select>
       </div>
 
       {/* Main Payments Register Table */}

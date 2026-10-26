@@ -19,6 +19,7 @@ import {
 import { useClients, useTasks, useSession } from '@/hooks/useData';
 import { repositories } from '@/data';
 import { ExportMenu } from '@/components/export-menu';
+import { Select } from '@/components/ui/select';
 import { exportToPdf, type ExportData } from '@/lib/export';
 import { formatPeso, formatDate } from '@/lib/format';
 
@@ -282,15 +283,15 @@ export function ReportsPage() {
 
         <div className="flex items-center gap-2">
           <span className="text-[var(--ink-2)]">Paper Size:</span>
-          <select
+          <Select
             value={paperSize}
-            onChange={(e) => setPaperSize(e.target.value as any)}
-            className="h-8 px-2.5 rounded-control border border-[var(--rule)] bg-[var(--sheet-2)] text-[var(--ink)] font-medium cursor-pointer"
+            onChange={(val) => setPaperSize(val as any)}
+            className="w-auto min-w-[180px]"
           >
             <option value="long">Long (8.5 × 13 in / PH Legal)</option>
             <option value="a4">A4 (210 × 297 mm)</option>
             <option value="letter">Letter (8.5 × 11 in)</option>
-          </select>
+          </Select>
         </div>
 
         <label className="flex items-center gap-2 text-[var(--ink-2)] cursor-pointer">
@@ -344,17 +345,17 @@ export function ReportsPage() {
                   <label className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-1">
                     Target Client
                   </label>
-                  <select
+                  <Select
                     value={selectedClientId}
-                    onChange={(e) => setSelectedClientId(e.target.value)}
-                    className="w-full h-8 px-2.5 rounded-md border border-[var(--rule)] bg-[var(--sheet)] text-xs text-[var(--ink)] cursor-pointer"
+                    onChange={setSelectedClientId}
+                    className="w-full"
                   >
                     {clientSummaries.map(({ client: c }) => (
                       <option key={c.id} value={c.id}>
                         {c.code} — {c.displayName}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
 
                 <div>
@@ -419,17 +420,17 @@ export function ReportsPage() {
                   <label className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-1">
                     Select Client
                   </label>
-                  <select
+                  <Select
                     value={selectedClientId}
-                    onChange={(e) => setSelectedClientId(e.target.value)}
-                    className="w-full h-8 px-2.5 rounded-md border border-[var(--rule)] bg-[var(--sheet)] text-xs text-[var(--ink)] cursor-pointer"
+                    onChange={setSelectedClientId}
+                    className="w-full"
                   >
                     {clientSummaries.map(({ client: c }) => (
                       <option key={c.id} value={c.id}>
                         {c.code} — {c.displayName}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
                 <div className="text-xs text-[var(--ink-3)]">
                   Reporting Year: <strong className="text-[var(--ink)]">2026</strong>
