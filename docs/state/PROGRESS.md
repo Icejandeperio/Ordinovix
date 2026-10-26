@@ -303,3 +303,32 @@
   - Full TypeScript typecheck clean (`0 errors`).
   - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 95 Vitest tests, Vite production build).
   - Automated browser subagent visual QA verified Privacy Mode toggle, `Shift+P` keyboard shortcut, Skip link, top bar Install button, and responsive 360px mobile viewport rendering without horizontal overflow.
+
+## Session 2026-10-26 (Super Admin User Accounts Management & Access Control Console)
+- Implemented Super Admin User Accounts & Access Control Console (`src/routes/settings/page.tsx` on `users` tab):
+  - Executive header with distinct `Super Admin Console` badge, title, subtitle, and primary `+ Invite / Add Operator` action button.
+  - Interactive KPI cards tracking total operator accounts, Super Admins (Owners), scoped Helpers, and active vs revoked status.
+  - Search and filter bar supporting live queries across operator names or Google emails, with role filters (All, Owners, Helpers).
+  - Detailed operator card list displaying initials avatar with live status indicator dot (green active / red revoked), display name (with `(You)` badge on caller's session), role badge with icon (`Owner (Super Admin)` vs `Helper (Scoped)`), status chip (`Active` vs `Access Revoked`), assigned client matter tags, invited/active timestamps, and contextual actions (`Edit`, `Revoke`, `Reactivate`).
+  - Global Practice Security & Scoping Policies card with "Helpers Can Accept Requirements" toggle and Google Workspace OAuth allowlist enforcement documentation.
+- Implemented Operator Form Modal (`src/components/settings/user-form-modal.tsx`):
+  - Accessible modal dialog for adding new operators or editing existing permissions.
+  - Inputs for Google account email (validated with format checks), full name, and administrative notes.
+  - Role hierarchy picker clearly differentiating Owner (full practice authority) from Helper (scoped to specific clients).
+  - Client scoping assignment section featuring search input, "Select All" / "Clear All" batch controls, and interactive client checklist.
+- Implemented Revoke Operator Dialog (`src/components/settings/revoke-user-dialog.tsx`):
+  - Destructive confirmation dialog clearly explaining session termination implications and immediate file revocation with reassurance of reversible reactivation.
+- Data Layer, Repository & Permissions (`src/data/repositories.ts`, `src/data/mock/index.ts`, `src/hooks/useData.ts`):
+  - Updated `memberships` repository interface to return enriched records with operator names, initials, and last sign-in timestamps.
+  - Implemented `invite`, `update`, and `revoke` in `mockRepositories.memberships` with strict Owner-only permission enforcement and audit logging (`ActivityAction`: `access_granted`, `updated`, `access_revoked`).
+  - Added React Query mutation hooks: `useInviteMembership`, `useUpdateMembership`, `useRevokeMembership`.
+- Routing & Navigation Aliases (`src/app/router.tsx`, `src/app/dev-menu.tsx`, `src/components/command-palette.tsx`):
+  - Added route aliases `/admin` and `/admin/users` navigating directly to the Super Admin user management console.
+  - Added `User Admin` quick link in the Dev Menu footer.
+  - Added `Super Admin: Users & Access` (`/admin`) item in the Command Palette (Cmd+K).
+- Verification & Test Coverage:
+  - 101 unit tests green across 12 test files (`src/data/mock/settings.test.ts` exercising enriched membership listing, inviting new scoped helpers, updating roles/client assignments, revoking/reactivating access, and non-owner access denial).
+  - Full TypeScript typecheck clean (`0 errors`).
+  - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 101 Vitest tests, Vite production build).
+  - Browser subagent automated visual QA verified navigation to `/settings/users`, adding a new operator (Clara Reyes) with scoped client assignment, editing permissions, and `/admin` redirect routing.
+
