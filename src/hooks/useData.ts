@@ -185,6 +185,41 @@ export function useMemberships() {
   });
 }
 
+export function useInviteMembership() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (m: Parameters<typeof repositories.memberships.invite>[0]) =>
+      repositories.memberships.invite(m),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['memberships'] });
+      qc.invalidateQueries({ queryKey: ['session'] });
+    },
+  });
+}
+
+export function useUpdateMembership() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof repositories.memberships.update>[1] }) =>
+      repositories.memberships.update(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['memberships'] });
+      qc.invalidateQueries({ queryKey: ['session'] });
+    },
+  });
+}
+
+export function useRevokeMembership() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => repositories.memberships.revoke(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['memberships'] });
+      qc.invalidateQueries({ queryKey: ['session'] });
+    },
+  });
+}
+
 export function useNotes(entity: 'client' | 'task' | 'visit', entityId: string) {
   return useQuery({
     queryKey: ['notes', entity, entityId],

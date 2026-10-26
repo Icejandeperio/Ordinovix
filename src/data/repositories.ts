@@ -81,9 +81,9 @@ export interface Repositories {
   prefs: { save(p: Partial<UserPrefs>): Promise<UserPrefs> };
   settings: { save(s: Partial<OrgSettings>): Promise<OrgSettings> };
   memberships: {
-    list(): Promise<Membership[]>;
-    invite(m: { email: string; role: Role; clientIds: ID[] }): Promise<Membership>;
-    update(id: ID, m: Partial<Pick<Membership, 'role' | 'clientIds' | 'active'>>): Promise<Membership>;
+    list(): Promise<Array<Membership & { name?: string; initials?: string; lastSignInAt?: string }>>;
+    invite(m: { email: string; role: Role; clientIds: ID[]; name?: string; note?: string }): Promise<Membership & { name?: string; initials?: string }>;
+    update(id: ID, m: Partial<Pick<Membership, 'role' | 'clientIds' | 'active'>> & { name?: string }): Promise<Membership & { name?: string; initials?: string }>;
     revoke(id: ID): Promise<void>;
   };
 

@@ -838,17 +838,43 @@ export const mockRepositories: Repositories = {
   memberships: {
     async list() {
       await simulateLatency();
-      return store.memberships.filter((m) => !m.deletedAt);
+      return store.memberships.filter((m) => !m.deletedAt).map((m) => {
+        const u = store.users.find((user) => user.id === m.userId || user.email === m.email);
+        return {
+          ...m,
+          name: u?.name || (m.role === 'owner' ? 'Ana Santos' : 'Ben Morales'),
+          initials: u?.initials || (m.role === 'owner' ? 'AS' : 'BM'),
+          lastSignInAt: u?.lastSignInAt || (m.role === 'owner' ? '2026-10-26T08:30:00+08:00' : '2026-10-25T17:15:00+08:00'),
+        };
+      });
     },
     async invite(m) {
       await simulateLatency();
-      const { user } = getCurrentUser();
-      const newM: Membership = {
+      const { user, membership } = getCurrentUser();
+      if (membership.role !== 'owner') {
+        throw new Error('Access denied: Only practice owners can manage operator memberships');
+      }
+      const name = m.name || m.email.split('@')[0];
+      const initials = name.split(' ').map((p: string) => p[0]).join('').slice(0, 2).toUpperCase() || 'OP';
+      const newUserId = generateId();
+
+      const newUser: User = {
+        id: newUserId,
+        name,
+        email: m.email,
+        initials,
+        displayName: name,
+        lastSignInAt: undefined,
+      };
+      store.users.push(newUser);
+
+      const newM: Membership & { name?: string; initials?: string } = {
         id: generateId(),
         orgId: store.org.id,
+        userId: newUserId,
         email: m.email,
         role: m.role,
-        clientIds: m.clientIds,
+        clientIds: m.clientIds || [],
         active: true,
         invitedAt: todayInManila() + 'T00:00:00+08:00',
         createdAt: todayInManila() + 'T00:00:00+08:00',
@@ -856,25 +882,53 @@ export const mockRepositories: Repositories = {
         updatedAt: todayInManila() + 'T00:00:00+08:00',
         updatedBy: user.id,
         version: 1,
+        name,
+        initials,
       };
       store.memberships.push(newM);
+      logActivity('access_granted', 'membership', newM.id, `Invited ${name} (${m.email}) as ${m.role}`);
       saveStore();
       return newM;
     },
     async update(id, m) {
       await simulateLatency();
+      const { membership: callerMembership } = getCurrentUser();
+      if (callerMembership.role !== 'owner') {
+        throw new Error('Access denied: Only practice owners can manage operator memberships');
+      }
       const index = store.memberships.findIndex((item) => item.id === id);
       if (index === -1) throw new Error('Membership not found');
       store.memberships[index] = { ...store.memberships[index], ...m, version: store.memberships[index].version + 1 };
+      if (m.name) {
+        const u = store.users.find((user) => user.id === store.memberships[index].userId || user.email === store.memberships[index].email);
+        if (u) {
+          u.name = m.name;
+          u.displayName = m.name;
+        }
+      }
+      if (m.active === true && store.memberships[index].revokedAt) {
+        delete store.memberships[index].revokedAt;
+      }
+      logActivity('updated', 'membership', id, `Updated account permissions for ${store.memberships[index].email}`);
       saveStore();
-      return store.memberships[index];
+      const updatedUser = store.users.find((user) => user.id === store.memberships[index].userId || user.email === store.memberships[index].email);
+      return {
+        ...store.memberships[index],
+        name: updatedUser?.name || m.name,
+        initials: updatedUser?.initials || 'OP',
+      };
     },
     async revoke(id) {
       await simulateLatency();
+      const { membership: callerMembership } = getCurrentUser();
+      if (callerMembership.role !== 'owner') {
+        throw new Error('Access denied: Only practice owners can manage operator memberships');
+      }
       const m = store.memberships.find((item) => item.id === id);
       if (m) {
         m.active = false;
         m.revokedAt = todayInManila() + 'T00:00:00+08:00';
+        logActivity('access_revoked', 'membership', id, `Revoked access for ${m.email}`);
         saveStore();
       }
     },

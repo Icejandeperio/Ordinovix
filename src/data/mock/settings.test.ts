@@ -129,4 +129,97 @@ describe('mockRepositories.settings, baseline, and audit permissions (M10)', () 
       expect(canVerifyValid).toBe(true);
     });
   });
+
+  describe('Super Admin: Operator Membership Management', () => {
+    it('lists practice memberships with enriched user profile data', async () => {
+      mockDevControls.setPersona('owner');
+      const list = await mockRepositories.memberships.list();
+      expect(list.length).toBeGreaterThanOrEqual(2);
+
+      const owner = list.find((m) => m.role === 'owner');
+      expect(owner).toBeDefined();
+      expect(owner?.email).toBe('ana@example.com');
+      expect(owner?.name).toBe('Ana Santos');
+      expect(owner?.active).toBe(true);
+
+      const helper = list.find((m) => m.role === 'helper');
+      expect(helper).toBeDefined();
+      expect(helper?.email).toBe('ben@example.com');
+      expect(helper?.name).toBe('Ben Morales');
+      expect(helper?.clientIds.length).toBeGreaterThan(0);
+    });
+
+    it('allows owner to invite a new operator with scoped client access', async () => {
+      mockDevControls.setPersona('owner');
+      const clients = await mockRepositories.clients.list();
+      const firstClientId = clients.items[0].client.id;
+
+      const created = await mockRepositories.memberships.invite({
+        email: 'clara.santos@ordinovix.ph',
+        name: 'Clara Santos',
+        role: 'helper',
+        clientIds: [firstClientId],
+        note: 'Junior tax associate handling corporate filings',
+      });
+
+      expect(created).toBeDefined();
+      expect(created.email).toBe('clara.santos@ordinovix.ph');
+      expect(created.role).toBe('helper');
+      expect(created.clientIds).toEqual([firstClientId]);
+      expect(created.active).toBe(true);
+
+      // Verify operator appears in list
+      const list = await mockRepositories.memberships.list();
+      const found = list.find((m) => m.email === 'clara.santos@ordinovix.ph');
+      expect(found).toBeDefined();
+      expect(found?.name).toBe('Clara Santos');
+    });
+
+    it('updates operator role and assigned client matters', async () => {
+      mockDevControls.setPersona('owner');
+      const list = await mockRepositories.memberships.list();
+      const ben = list.find((m) => m.email === 'ben@example.com');
+      expect(ben).toBeDefined();
+
+      const updated = await mockRepositories.memberships.update(ben!.id, {
+        name: 'Ben Morales (Senior Associate)',
+        clientIds: ['c-001'],
+      });
+
+      expect(updated.name).toBe('Ben Morales (Senior Associate)');
+      expect(updated.clientIds).toEqual(['c-001']);
+    });
+
+    it('revokes operator access and prevents active authorization', async () => {
+      mockDevControls.setPersona('owner');
+      const list = await mockRepositories.memberships.list();
+      const ben = list.find((m) => m.email === 'ben@example.com');
+      expect(ben).toBeDefined();
+
+      await mockRepositories.memberships.revoke(ben!.id);
+
+      const refreshedList = await mockRepositories.memberships.list();
+      const revokedBen = refreshedList.find((m) => m.id === ben!.id);
+      expect(revokedBen?.active).toBe(false);
+      expect(revokedBen?.revokedAt).toBeDefined();
+
+      // Owner can reactivate
+      const reactivated = await mockRepositories.memberships.update(ben!.id, { active: true });
+      expect(reactivated.active).toBe(true);
+      expect(reactivated.revokedAt).toBeUndefined();
+    });
+
+    it('prevents non-owner from inviting or revoking operators', async () => {
+      mockDevControls.setPersona('helper');
+      await expect(
+        mockRepositories.memberships.invite({
+          email: 'unauthorized@ordinovix.ph',
+          role: 'helper',
+          clientIds: [],
+        })
+      ).rejects.toThrow(/Access denied/);
+
+      await expect(mockRepositories.memberships.revoke('m-001')).rejects.toThrow(/Access denied/);
+    });
+  });
 });
