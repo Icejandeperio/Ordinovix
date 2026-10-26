@@ -48,7 +48,18 @@ type SettingsTab =
 
 export function SettingsPage() {
   const { data: session } = useSession();
-  const { theme, setTheme } = useTheme();
+  const {
+    theme,
+    setTheme,
+    textScale,
+    setTextScale,
+    density,
+    setDensity,
+    reducedMotion,
+    setReducedMotion,
+    weekStartsOn,
+    setWeekStartsOn,
+  } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -137,11 +148,6 @@ export function SettingsPage() {
   const [phone, setPhone] = useState(session?.user.mobileE164 ?? '+63 917 555 0101');
   const [initials, setInitials] = useState(session?.user.initials ?? 'AS');
 
-  // Appearance state
-  const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable');
-  const [textSize, setTextSize] = useState<'100' | '112.5' | '125'>('100');
-  const [reducedMotion, setReducedMotion] = useState(false);
-  const [weekStartsOn, setWeekStartsOn] = useState<'monday' | 'sunday'>('monday');
 
   // Practice state
   const [practiceName, setPracticeName] = useState(session?.settings.practiceName ?? session?.org.name ?? 'Santos Tax Advisory Services');
@@ -369,9 +375,9 @@ export function SettingsPage() {
                       <button
                         key={size}
                         type="button"
-                        onClick={() => setTextSize(size)}
+                        onClick={() => setTextScale(size)}
                         className={`px-4 py-2 rounded-md border text-sm font-mono font-medium transition-colors ${
-                          textSize === size
+                          textScale === size
                             ? 'border-[var(--stamp)] bg-[var(--stamp-soft)] text-[var(--stamp-ink)] font-bold'
                             : 'border-[var(--rule)] bg-[var(--sheet-2)] text-[var(--ink-2)]'
                         }`}

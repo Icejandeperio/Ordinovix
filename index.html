@@ -21,6 +21,18 @@
             var meta = document.getElementById('theme-color-meta');
             if (meta) meta.setAttribute('content', '#0E131C');
           }
+          var textScale = localStorage.getItem('ox-text-scale');
+          if (textScale && textScale !== '100') {
+            document.documentElement.setAttribute('data-text-scale', textScale);
+          }
+          var reducedMotion = localStorage.getItem('ox-reduced-motion');
+          if (reducedMotion === 'true') {
+            document.documentElement.setAttribute('data-reduce-motion', 'true');
+          }
+          var density = localStorage.getItem('ox-density');
+          if (density) {
+            document.documentElement.setAttribute('data-density', density);
+          }
         } catch (e) {}
       })();
     </script>

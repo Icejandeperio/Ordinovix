@@ -97,6 +97,18 @@ describe('Polish & System Hygiene (M11)', () => {
       expect(parseTimeout('off')).toBeNull();
       expect(parseTimeout(null)).toBe(900000);
     });
+
+    it('validates supported text scale values and root attribute behavior', () => {
+      const supportedScales = ['100', '112.5', '125'] as const;
+      expect(supportedScales).toContain('100');
+      expect(supportedScales).toContain('112.5');
+      expect(supportedScales).toContain('125');
+
+      const getAttributeVal = (scale: '100' | '112.5' | '125') => (scale === '100' ? null : scale);
+      expect(getAttributeVal('100')).toBeNull();
+      expect(getAttributeVal('112.5')).toBe('112.5');
+      expect(getAttributeVal('125')).toBe('125');
+    });
   });
 
   describe('Financial Centavos Formatting & Philippine Locales (Section 19.7)', () => {

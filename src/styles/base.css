@@ -77,15 +77,26 @@
     user-select: auto;
   }
 
-  /* Root text scale preferences */
-  html[data-text-scale="112.5"] {
-    font-size: 112.5%;
+  /* Root text scale preferences (Section 8.2 & 19.1) */
+  html[data-text-scale="112.5"],
+  :root[data-text-scale="112.5"] {
+    font-size: 112.5% !important;
   }
-  html[data-text-scale="125"] {
-    font-size: 125%;
+  html[data-text-scale="125"],
+  :root[data-text-scale="125"] {
+    font-size: 125% !important;
   }
 
   /* Section 8.8 & 19.1 Reduced motion overrides */
+  html[data-reduce-motion="true"] *,
+  html[data-reduce-motion="true"] ::before,
+  html[data-reduce-motion="true"] ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, ::before, ::after {
       animation-duration: 0.01ms !important;
