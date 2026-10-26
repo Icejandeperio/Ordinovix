@@ -6,6 +6,7 @@ export interface LegendItem {
   label: string;
   color: string;
   icon?: React.ReactNode;
+  dashed?: boolean;
 }
 
 export interface ChartFrameProps {
@@ -56,10 +57,19 @@ export function ChartFrame({
         <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] font-medium text-[var(--ink-2)]">
           {legend.map((item, idx) => (
             <div key={idx} className="flex items-center gap-1.5">
-              <span
-                className="w-2.5 h-2.5 rounded-xs shrink-0"
-                style={{ backgroundColor: item.color }}
-              />
+              {item.dashed ? (
+                <span
+                  className="w-3.5 h-0 border-t-2 border-dashed shrink-0"
+                  style={{ borderColor: item.color }}
+                />
+              ) : item.icon ? (
+                item.icon
+              ) : (
+                <span
+                  className="w-2.5 h-2.5 rounded-xs shrink-0"
+                  style={{ backgroundColor: item.color }}
+                />
+              )}
               <span>{item.label}</span>
             </div>
           ))}

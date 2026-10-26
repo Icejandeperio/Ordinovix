@@ -307,6 +307,10 @@ function OverviewTabContent({ navigate }: { navigate: (path: string) => void }) 
         <ChartFrame
           title="First-Pass Completion Rate by Month"
           takeaway="First-pass counter success climbed from 58% in June to 86% in October, exceeding the baseline by 31 points."
+          legend={[
+            { label: 'First-Pass Rate', color: 'var(--series-1)' },
+            { label: 'Baseline (55%)', color: 'var(--rule-strong)', dashed: true },
+          ]}
           tableHeaders={['Month', 'First-Pass Rate (%)']}
           tableRows={firstPassMonthly.map((m) => [m.x, `${m.y}%`])}
           csvFilename="insights-first-pass-rate"
@@ -729,6 +733,10 @@ function DeadlinesTabContent({ navigate }: { navigate: (path: string) => void })
         <ChartFrame
           title="On-Time Filing Rate by Month"
           takeaway="On-time tax filing compliance has held steadily above the 90% benchmark target."
+          legend={[
+            { label: 'On-Time Rate', color: 'var(--series-1)' },
+            { label: 'Target (90%)', color: 'var(--rule-strong)', dashed: true },
+          ]}
           tableHeaders={['Month', 'On-Time Rate (%)']}
           tableRows={onTimeTrend.map((o) => [o.x, `${o.y}%`])}
           csvFilename="insights-ontime-rate-trend"

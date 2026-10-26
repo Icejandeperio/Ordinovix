@@ -46,7 +46,7 @@ export function SvgLineChart({
   const rangeY = computedMaxY - computedMinY || 1;
 
   const paddingLeft = 36;
-  const paddingRight = 24;
+  const paddingRight = baseline ? 82 : 24;
   const paddingTop = 16;
   const paddingBottom = 28;
   const width = 500;
@@ -99,7 +99,7 @@ export function SvgLineChart({
           );
         })}
 
-        {/* Baseline reference line */}
+        {/* Baseline reference line across plot */}
         {baseline && (
           <g>
             <line
@@ -107,19 +107,19 @@ export function SvgLineChart({
               y1={getY(baseline.value)}
               x2={width - paddingRight}
               y2={getY(baseline.value)}
-              stroke="var(--ink-3)"
+              stroke="var(--rule-strong)"
               strokeWidth="1.5"
               strokeDasharray="4 4"
             />
-            <text
-              x={width - paddingRight}
-              y={getY(baseline.value) - 4}
-              fill="var(--ink-3)"
-              textAnchor="end"
-              className="font-medium text-[9px]"
-            >
-              {baseline.label} ({baseline.value}{unit})
-            </text>
+            {/* Connector line to right margin badge */}
+            <line
+              x1={width - paddingRight}
+              y1={getY(baseline.value)}
+              x2={width - paddingRight + 4}
+              y2={getY(baseline.value)}
+              stroke="var(--rule-strong)"
+              strokeWidth="1.5"
+            />
           </g>
         )}
 
@@ -222,6 +222,36 @@ export function SvgLineChart({
             })}
           </g>
         )}
+
+        {/* Baseline pill badge in right margin (rendered on top layer to prevent collisions) */}
+        {baseline && (() => {
+          const badgeY = Math.max(4, Math.min(height - paddingBottom - 16, getY(baseline.value) - 8));
+          const badgeW = paddingRight - 8;
+          const badgeX = width - paddingRight + 4;
+          return (
+            <g className="baseline-badge select-none">
+              <rect
+                x={badgeX}
+                y={badgeY}
+                width={badgeW}
+                height={16}
+                rx={3}
+                fill="var(--sheet-2)"
+                stroke="var(--rule-strong)"
+                strokeWidth="1"
+              />
+              <text
+                x={badgeX + badgeW / 2}
+                y={badgeY + 11}
+                fill="var(--ink-2)"
+                textAnchor="middle"
+                className="font-mono text-[9px] font-semibold"
+              >
+                {baseline.label} {baseline.value}{unit}
+              </text>
+            </g>
+          );
+        })()}
       </svg>
     </div>
   );
