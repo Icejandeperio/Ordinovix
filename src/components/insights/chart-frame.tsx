@@ -44,7 +44,7 @@ export function ChartFrame({
 
   return (
     <div
-      className={`p-5 rounded-panel border border-[var(--rule)] bg-[var(--sheet)] shadow-xs flex flex-col justify-between space-y-4 ${className}`}
+      className={`p-4 sm:p-5 rounded-panel border border-[var(--rule)] bg-[var(--sheet)] shadow-xs flex flex-col justify-between space-y-4 min-w-0 overflow-hidden ${className}`}
     >
       {/* Header */}
       <div className="space-y-1">

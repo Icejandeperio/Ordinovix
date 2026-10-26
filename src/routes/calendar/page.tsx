@@ -346,12 +346,14 @@ export function CalendarPage() {
       {/* Main Calendar Display */}
       {view === 'month' && (
         <div className="bg-sheet border border-rule rounded-panel overflow-hidden shadow-xs">
-          {/* Day of Week Headers */}
-          <div className="grid grid-cols-7 border-b border-rule bg-sheet-2 text-center text-[11px] font-bold text-ink-3 uppercase py-2">
-            {orderedWeekdays.map((day) => (
-              <div key={day}>{day}</div>
-            ))}
-          </div>
+          <div className="overflow-x-auto">
+            <div className="min-w-[700px]">
+              {/* Day of Week Headers */}
+              <div className="grid grid-cols-7 border-b border-rule bg-sheet-2 text-center text-[11px] font-bold text-ink-3 uppercase py-2">
+                {orderedWeekdays.map((day) => (
+                  <div key={day}>{day}</div>
+                ))}
+              </div>
 
           {/* Calendar Grid Cells */}
           <div className="grid grid-cols-7 divide-x divide-y divide-rule">
@@ -539,6 +541,8 @@ export function CalendarPage() {
                 </div>
               );
             })}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -546,7 +550,9 @@ export function CalendarPage() {
       {/* Week View */}
       {view === 'week' && (
         <div className="bg-sheet border border-rule rounded-panel overflow-hidden shadow-xs">
-          <div className="grid grid-cols-7 border-b border-rule bg-sheet-2 text-center text-xs font-bold text-ink py-2">
+          <div className="overflow-x-auto">
+            <div className="min-w-[700px]">
+              <div className="grid grid-cols-7 border-b border-rule bg-sheet-2 text-center text-xs font-bold text-ink py-2">
             {daysToRender.map((d) => (
               <div key={d.toISOString()} className="space-y-0.5">
                 <span className="text-[10px] uppercase text-ink-3 block">
@@ -597,6 +603,8 @@ export function CalendarPage() {
                 </div>
               );
             })}
+          </div>
+            </div>
           </div>
         </div>
       )}

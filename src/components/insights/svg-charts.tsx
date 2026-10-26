@@ -68,8 +68,7 @@ export function SvgLineChart({
     <div className="w-full overflow-x-auto">
       <svg
         viewBox={`0 0 ${width} ${height}`}
-        className="w-full min-w-[320px] select-none text-[10px] font-sans"
-        style={{ height }}
+        className="w-full h-auto select-none text-[10px] font-sans"
       >
         {/* Horizontal gridlines */}
         {yTicks.map((tick, i) => {
@@ -307,8 +306,7 @@ export function SvgBarChart({
     <div className="w-full overflow-x-auto">
       <svg
         viewBox={`0 0 ${width} ${height}`}
-        className="w-full min-w-[320px] select-none text-[10px] font-sans"
-        style={{ height }}
+        className="w-full h-auto select-none text-[10px] font-sans"
       >
         {/* Horizontal gridlines */}
         {yTicks.map((tick, i) => {
@@ -439,8 +437,7 @@ export function SvgStackedBarChart({
     <div className="w-full overflow-x-auto">
       <svg
         viewBox={`0 0 ${width} ${height}`}
-        className="w-full min-w-[320px] select-none text-[10px] font-sans"
-        style={{ height }}
+        className="w-full h-auto select-none text-[10px] font-sans"
       >
         {/* Gridlines */}
         {yTicks.map((tick, i) => {
@@ -551,8 +548,7 @@ export function SvgHorizontalBarChart({
     <div className="w-full overflow-x-auto">
       <svg
         viewBox={`0 0 ${width} ${height}`}
-        className="w-full min-w-[320px] select-none text-[11px] font-sans"
-        style={{ height }}
+        className="w-full h-auto select-none text-[11px] font-sans"
       >
         {data.map((item, idx) => {
           const y = idx * rowHeight + 6;
@@ -658,7 +654,8 @@ export function SvgHeatCalendar({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 overflow-x-auto pb-1">
+      <div className="min-w-[280px] space-y-2">
       <div className="flex items-center gap-2 text-[10px] text-[var(--ink-3)] font-mono">
         <span className="w-4"></span>
         {Array.from({ length: weeks }).map((_, w) => (
@@ -706,6 +703,7 @@ export function SvgHeatCalendar({
         <span className="w-3 h-3 rounded-xs bg-[var(--seq-400)]" />
         <span className="w-3 h-3 rounded-xs bg-[var(--seq-500)]" />
         <span>More filings</span>
+      </div>
       </div>
     </div>
   );

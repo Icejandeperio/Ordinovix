@@ -1,6 +1,21 @@
 # Progress Log
 
-## Session 2026-10-25 (M0 Bootstrap & Verification)
+## Session 2026-10-27 (Responsive Layout & Multi-Scale Hardening)
+- Resolved sidebar text bleed and clipping when compacted or viewed on tablet/narrow viewports (`src/app/shell.tsx`):
+  - Fixed aside width ternary to strictly reflect `collapsed ? 'w-[72px]' : 'w-[248px]'`, eliminating the mismatch where `sm:w-[72px]` forced 72px rail width while React rendered full text labels and expanded layout.
+  - Added auto-collapse logic on screens < 1024px with resize event listeners while respecting manual toggling.
+  - Enforced `overflow-x-hidden` on navigation links and wrapped text in `truncate min-w-0` to eliminate clipped characters.
+  - Aligned center notch toggle button orientation (`>` when collapsed, `<` when expanded) and ensured active menu indicators never collide with the notch pill.
+- Enhanced header bar responsiveness and mobile accessibility (`src/app/shell.tsx`):
+  - Added dedicated mobile search button in header opening `CommandPalette` (`Ctrl+K`).
+  - Added a mobile slide-over drawer triggered by a header hamburger menu button, exposing all 13 application routes and user profile/sign-out on screens < 640px.
+  - Constrained top bar search input (`max-w-xs md:max-w-sm lg:max-w-md`), shortened practice name display on tablet, and hid secondary action text on smaller viewports.
+- Hardened SVG charts fluid scaling across laptop, tablet, and mobile (`src/components/insights/svg-charts.tsx`, `chart-frame.tsx`, `src/routes/insights/page.tsx`):
+  - Removed fixed `style={{ height }}` constraints from `SvgLineChart`, `SvgBarChart`, `SvgStackedBarChart`, and `SvgHorizontalBarChart`, replacing with `className="w-full h-auto select-none"`.
+  - Allowed charts to span the entire card width fluidly without horizontal overflow or 200px empty side margins.
+  - Added `min-w-0 overflow-hidden` to KPI tiles, `ChartFrame`, and overview chart grids.
+- Added horizontal scrolling containers with `min-w-[700px]` to calendar Month and Week grids (`src/routes/calendar/page.tsx`) to prevent day squishing on mobile and portrait tablet.
+- Full verification passed (`tsc --noEmit`, 118 vitest tests, `vite build`, `scripts/verify.ps1`).
 - Bootstrapped Factory Build Protocol harness and governance policies (`AGENTS.md`, `PREVIEW.md`, `policy/`, `docs/`, `scripts/`).
 - Implemented full design tokens (`src/styles/tokens.css`, `base.css`, `print.css`) supporting both light mode (`--paper: #EEF1F4`, `--stamp: #5A3DB8`) and dark mode (`--paper: #0E131C`, `--stamp: #A794F5`) with zero-flash pre-paint script.
 - Bundled variable Archivo typography with tabular figures (`tnum`) enabled.

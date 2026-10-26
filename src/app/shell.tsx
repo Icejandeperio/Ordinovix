@@ -18,6 +18,7 @@ import {
   Search,
   HelpCircle,
   Menu,
+  X,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
@@ -84,11 +85,32 @@ export function AppShell() {
 
   const [collapsed, setCollapsed] = useState(() => {
     try {
-      return localStorage.getItem('ordinovix:sidebar_collapsed') === 'true';
+      const stored = localStorage.getItem('ordinovix:sidebar_collapsed');
+      if (stored !== null) return stored === 'true';
+      return typeof window !== 'undefined' && window.innerWidth < 1024;
     } catch {
       return false;
     }
   });
+
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+  // Auto-collapse sidebar on viewport transition below 1024px if not explicitly overridden
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        try {
+          if (localStorage.getItem('ordinovix:sidebar_collapsed') === null) {
+            setCollapsed(true);
+          }
+        } catch {
+          setCollapsed(true);
+        }
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
@@ -235,6 +257,12 @@ export function AppShell() {
   }, []);
 
   const location = useLocation();
+
+  // Close mobile drawer on route navigation
+  useEffect(() => {
+    setMobileDrawerOpen(false);
+  }, [location.pathname]);
+
   const currentPersona = devControls.getPersona();
   const isHelper = currentPersona === 'helper';
 
@@ -297,7 +325,7 @@ export function AppShell() {
         {/* Desktop Sidebar (>=1024px) / Tablet Rail (640px-1023px) */}
         <aside
           className={`hidden sm:flex flex-col border-r border-rule bg-sheet transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-30 relative shrink-0 h-full ${
-            collapsed ? 'w-[72px]' : 'lg:w-[248px] sm:w-[72px]'
+            collapsed ? 'w-[72px]' : 'w-[248px]'
           } ${
             isModalOpen ? '-translate-x-full pointer-events-none opacity-0' : 'translate-x-0 opacity-100'
           }`}
@@ -340,7 +368,7 @@ export function AppShell() {
             onMouseMove={handleNavMouseMove}
             onMouseEnter={handleNavMouseMove}
             onMouseLeave={handleNavMouseLeave}
-            className={`flex-1 overflow-y-auto py-3 px-2 space-y-1 min-h-0 relative ${
+            className={`flex-1 overflow-y-auto overflow-x-hidden py-3 px-2 space-y-1 min-h-0 relative ${
               collapsed ? 'no-scrollbar' : ''
             } ${
               collapsed && autoscrollState.active && autoscrollState.isScrollable
@@ -359,10 +387,10 @@ export function AppShell() {
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  className={`transition-colors rounded-control text-xs font-semibold flex items-center ${
+                  className={`transition-colors rounded-control text-xs font-semibold flex items-center min-w-0 ${
                     collapsed
                       ? 'w-10 h-10 mx-auto justify-center'
-                      : 'gap-3 px-3 py-2'
+                      : 'gap-3 px-3 py-2 w-full'
                   } ${
                     isActive
                       ? 'bg-stamp-soft text-stamp-strong ' + (collapsed ? 'ring-1 ring-stamp/30' : 'border-l-2 border-stamp')
@@ -371,7 +399,7 @@ export function AppShell() {
                   title={item.label}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
-                  {!collapsed && <span className="truncate">{item.label}</span>}
+                  {!collapsed && <span className="truncate min-w-0">{item.label}</span>}
                 </NavLink>
               );
             })}
@@ -450,27 +478,38 @@ export function AppShell() {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden h-full min-h-0">
           {/* Top Bar (56px) */}
           <header
-            className={`h-14 shrink-0 border-b border-rule bg-sheet/95 backdrop-blur-xs flex items-center justify-between px-4 sm:px-6 z-20 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            className={`h-14 shrink-0 border-b border-rule bg-sheet/95 backdrop-blur-xs flex items-center justify-between px-3 sm:px-6 z-20 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
               isModalOpen ? '-translate-y-full pointer-events-none opacity-0' : 'translate-y-0 opacity-100'
             }`}
           >
             {/* Left brand on mobile */}
-            <div className="flex items-center gap-3 sm:hidden">
-              <LogoMark className="w-7 h-7 text-stamp" />
-              <span className="font-bold text-base tracking-tight font-sans text-ink">Ordinovix</span>
+            <div className="flex items-center gap-2 sm:hidden min-w-0">
+              <button
+                type="button"
+                onClick={() => setMobileDrawerOpen(true)}
+                className="p-1.5 -ml-1 rounded-control text-ink-2 hover:bg-sheet-2 hover:text-ink transition-colors cursor-pointer"
+                title="Open Navigation Menu"
+                aria-label="Open Navigation Menu"
+              >
+                <Menu className="w-5 h-5 text-ink" />
+              </button>
+              <NavLink to="/" className="flex items-center gap-2 min-w-0" title="Ordinovix">
+                <LogoMark className="w-6 h-6 text-stamp shrink-0" />
+                <span className="font-bold text-base tracking-tight font-sans text-ink truncate">Ordinovix</span>
+              </NavLink>
             </div>
 
             {/* Title / breadcrumb / Search trigger */}
-            <div className="hidden sm:flex items-center gap-3 flex-1 max-w-md">
+            <div className="hidden sm:flex items-center gap-3 flex-1 max-w-xs md:max-w-sm lg:max-w-md">
               <button
                 type="button"
                 onClick={() => setCommandOpen(true)}
                 className="relative w-full text-left"
               >
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
-                <div className="w-full pl-9 pr-4 py-1.5 text-xs rounded-control bg-sheet-2 border border-rule text-ink-3 hover:bg-sheet-3 transition-colors flex items-center justify-between cursor-pointer">
-                  <span>Search clients, tasks, documents...</span>
-                  <kbd className="px-1.5 py-0.2 rounded-chip bg-sheet border border-rule font-mono text-[10px] text-ink-3">
+                <div className="w-full pl-9 pr-3 sm:pr-4 py-1.5 text-xs rounded-control bg-sheet-2 border border-rule text-ink-3 hover:bg-sheet-3 transition-colors flex items-center justify-between cursor-pointer min-w-0">
+                  <span className="truncate">Search clients, tasks...</span>
+                  <kbd className="px-1.5 py-0.2 rounded-chip bg-sheet border border-rule font-mono text-[10px] text-ink-3 shrink-0 ml-1.5">
                     Ctrl K
                   </kbd>
                 </div>
@@ -478,12 +517,23 @@ export function AppShell() {
             </div>
 
             {/* Right icons */}
-            <div className="flex items-center gap-2 sm:gap-3 relative">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 relative">
+              {/* Mobile Search Button */}
+              <button
+                type="button"
+                onClick={() => setCommandOpen(true)}
+                className="sm:hidden p-2 rounded-control text-ink-2 hover:bg-sheet-2 transition-colors cursor-pointer"
+                title="Search (Ctrl+K)"
+                aria-label="Search"
+              >
+                <Search className="w-4 h-4" />
+              </button>
+
               {/* Privacy Mode Toggle (Section 19.5) */}
               <button
                 type="button"
                 onClick={togglePrivacyMode}
-                className={`p-2 rounded-control text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                className={`p-2 rounded-control text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
                   privacyMode
                     ? 'bg-warn-bg text-warn-fg border border-warn-bd shadow-xs'
                     : 'text-ink-2 hover:bg-sheet-2 hover:text-ink'
@@ -493,7 +543,7 @@ export function AppShell() {
                 aria-pressed={privacyMode}
               >
                 {privacyMode ? <EyeOff className="w-4 h-4 text-warn-fg" /> : <Eye className="w-4 h-4" />}
-                <span className="hidden md:inline">{privacyMode ? 'Privacy On' : 'Privacy'}</span>
+                <span className="hidden lg:inline">{privacyMode ? 'Privacy On' : 'Privacy'}</span>
               </button>
 
               {/* Install App Button (Section 19.3) */}
@@ -504,7 +554,7 @@ export function AppShell() {
                     installPrompt.prompt();
                     setInstallPrompt(null);
                   }}
-                  className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-control bg-sheet-2 border border-rule text-xs font-semibold text-ink hover:bg-sheet-3 transition-colors"
+                  className="hidden lg:flex items-center gap-1 px-2.5 py-1 rounded-control bg-sheet-2 border border-rule text-xs font-semibold text-ink hover:bg-sheet-3 transition-colors cursor-pointer"
                   title="Install Ordinovix application"
                 >
                   <Download className="w-3.5 h-3.5 text-stamp" />
@@ -516,7 +566,7 @@ export function AppShell() {
                 <button
                   type="button"
                   onClick={() => setNotificationsOpen(!notificationsOpen)}
-                  className={`relative p-2 rounded-control hover:bg-sheet-2 transition-colors ${
+                  className={`relative p-2 rounded-control hover:bg-sheet-2 transition-colors cursor-pointer ${
                     notificationsOpen ? 'bg-sheet-2 text-stamp' : 'text-ink-2 hover:text-ink'
                   }`}
                   title="Notifications"
@@ -534,12 +584,12 @@ export function AppShell() {
                 />
               </div>
 
-              <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-rule text-xs text-ink-2">
-                <span className="font-semibold">{session?.org.name || 'Santos Tax Services'}</span>
+              <div className="hidden md:flex items-center gap-2 pl-2 border-l border-rule text-xs text-ink-2 min-w-0">
+                <span className="font-semibold truncate max-w-[130px] lg:max-w-none">{session?.org.name || 'Santos Tax Services'}</span>
                 <button
                   type="button"
                   onClick={() => navigate('/sign-in')}
-                  className="p-1.5 rounded-control text-ink-3 hover:text-critical-fg hover:bg-sheet-2 transition-colors cursor-pointer ml-1"
+                  className="p-1.5 rounded-control text-ink-3 hover:text-critical-fg hover:bg-sheet-2 transition-colors cursor-pointer ml-0.5 shrink-0"
                   title="Sign out (Log out)"
                   aria-label="Sign out"
                 >
@@ -553,10 +603,10 @@ export function AppShell() {
           <main
             id="main-content"
             tabIndex={-1}
-            className="flex-1 overflow-y-auto min-h-0 w-full focus:outline-none"
+            className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 w-full focus:outline-none"
             style={{ scrollPaddingTop: '72px', scrollPaddingBottom: '72px' }}
           >
-            <div className="max-w-[1400px] w-full mx-auto p-4 sm:p-6 lg:p-8 pb-24 sm:pb-8">
+            <div className="max-w-[1400px] w-full mx-auto p-3 sm:p-5 lg:p-8 pb-24 sm:pb-8 min-w-0">
               <Outlet />
             </div>
           </main>
@@ -625,6 +675,93 @@ export function AppShell() {
           );
         })}
       </nav>
+
+      {/* Mobile Slide-Over Navigation Drawer (< 640px) */}
+      {mobileDrawerOpen && (
+        <div
+          className="sm:hidden fixed inset-0 z-50 flex"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navigation Menu"
+        >
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-ink/40 backdrop-blur-xs transition-opacity animate-in fade-in"
+            onClick={() => setMobileDrawerOpen(false)}
+          />
+
+          {/* Drawer content */}
+          <div className="relative w-72 max-w-[80vw] bg-sheet h-full shadow-2xl flex flex-col z-10 animate-in slide-in-from-left duration-200">
+            {/* Header */}
+            <div className="h-14 px-4 border-b border-rule flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <LogoMark className="w-6 h-6 text-stamp shrink-0" />
+                <span className="font-bold text-base font-sans text-ink">Ordinovix</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileDrawerOpen(false)}
+                className="p-1.5 rounded-control text-ink-3 hover:text-ink hover:bg-sheet-2 transition-colors cursor-pointer"
+                aria-label="Close Navigation"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Nav Links */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.to || (item.to !== '/' && location.pathname.startsWith(item.to));
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setMobileDrawerOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-control text-xs font-semibold transition-colors ${
+                      isActive
+                        ? 'bg-stamp-soft text-stamp-strong border-l-2 border-stamp'
+                        : 'text-ink-2 hover:bg-sheet-2 hover:text-ink'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span>{item.label}</span>
+                  </NavLink>
+                );
+              })}
+            </div>
+
+            {/* User Profile Footer */}
+            <div className="p-3 border-t border-rule bg-sheet-2 flex items-center justify-between gap-2 shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-stamp text-on-stamp flex items-center justify-center text-xs font-bold shrink-0">
+                  {currentPersona === 'owner' ? 'AS' : 'BM'}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-ink truncate">
+                    {currentPersona === 'owner' ? 'Ana Santos' : 'Ben Morales'}
+                  </div>
+                  <div className="text-[10px] text-ink-3 truncate">
+                    {session?.org.name || 'Santos Tax Services'}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileDrawerOpen(false);
+                  navigate('/sign-in');
+                }}
+                className="p-1.5 rounded-control text-ink-3 hover:text-critical-fg hover:bg-sheet-3 transition-colors cursor-pointer shrink-0"
+                title="Sign out"
+                aria-label="Sign out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Developer Drawer */}
       <DevMenu />

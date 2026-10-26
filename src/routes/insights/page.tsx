@@ -280,12 +280,12 @@ function OverviewTabContent({ navigate }: { navigate: (path: string) => void }) 
         {kpis.map((kpi, idx) => (
           <div
             key={idx}
-            className="p-4 rounded-panel border border-[var(--rule)] bg-[var(--sheet)] shadow-xs space-y-1.5"
+            className="p-4 rounded-panel border border-[var(--rule)] bg-[var(--sheet)] shadow-xs space-y-1.5 min-w-0 overflow-hidden"
           >
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-3)]">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-3)] truncate">
               {kpi.title}
             </div>
-            <div className="flex items-baseline gap-2">
+            <div className="flex items-baseline gap-2 flex-wrap">
               <span className="text-3xl font-extrabold text-[var(--ink)] font-sans tabular-nums">
                 {kpi.value}
               </span>
@@ -298,13 +298,13 @@ function OverviewTabContent({ navigate }: { navigate: (path: string) => void }) 
                 <span>{kpi.comparison}</span>
               </div>
             </div>
-            <p className="text-[11px] text-[var(--ink-3)]">{kpi.baseline}</p>
+            <p className="text-[11px] text-[var(--ink-3)] truncate">{kpi.baseline}</p>
           </div>
         ))}
       </div>
 
       {/* Primary Overview Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
         <ChartFrame
           title="First-Pass Completion Rate by Month"
           takeaway="First-pass counter success climbed from 58% in June to 86% in October, exceeding the baseline by 31 points."
