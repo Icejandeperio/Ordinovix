@@ -332,3 +332,11 @@
   - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 101 Vitest tests, Vite production build).
   - Browser subagent automated visual QA verified navigation to `/settings/users`, adding a new operator (Clara Reyes) with scoped client assignment, editing permissions, and `/admin` redirect routing.
 
+- Fixed Insights Chart Baseline Label Collision (`src/components/insights/svg-charts.tsx`, `src/components/insights/chart-frame.tsx`, `src/routes/insights/page.tsx`):
+  - Solved visual collision where the solid purple series trend line and rightmost data point marker (October at 96%) intersected and sliced directly through raw unpadded "Target (90%)" text.
+  - Allocated dedicated right margin space (`paddingRight: 82px` when baseline is active) isolating the reference badge completely outside the data point plotting envelope.
+  - Rendered a styled reference pill badge (`<rect fill="var(--sheet-2)" stroke="var(--rule-strong)">`) on the topmost SVG layer, connected to the dashed baseline line.
+  - Added dashed line indicator support to `ChartFrame` legend (`dashed: true`) displaying "Target (90%)" and "Baseline (55%)" clearly in the card header.
+  - Verified clean rendering via browser subagent on both Overview and Deadlines tabs; full verification gate passed.
+
+
