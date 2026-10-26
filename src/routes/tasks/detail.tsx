@@ -13,6 +13,7 @@ import {
 import { StatusChip, DueBadge, LineChip } from '@/components/ui/status-chip';
 import { ReviewStamp } from '@/components/ui/stamp';
 import { Button } from '@/components/ui/button';
+import { ModalDialog } from '@/components/ui/modal-dialog';
 import { formatDate } from '@/lib/format';
 import { isLateDiscovered, validAuthorization, authorizationState } from '@/domain/rules';
 import { TASK_STATUS_META } from '@/domain/labels';
@@ -939,9 +940,13 @@ export function TaskDetailPage() {
       />
 
       {/* Quick Edit Next Action Modal */}
-      {isEditingNextAction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-          <div className="w-full max-w-sm bg-sheet border border-rule rounded-panel p-5 shadow-lg space-y-4">
+      <ModalDialog
+        open={isEditingNextAction}
+        onClose={() => setIsEditingNextAction(false)}
+        maxWidth="max-w-sm"
+        ariaLabel="Update Next Action"
+        panelClassName="p-5 space-y-4"
+      >
             <h3 className="text-sm font-bold text-ink font-sans">Update Next Action</h3>
             <div className="space-y-3">
               <div>
@@ -995,9 +1000,7 @@ export function TaskDetailPage() {
                 Save
               </Button>
             </div>
-          </div>
-        </div>
-      )}
+          </ModalDialog>
     </div>
   );
 }

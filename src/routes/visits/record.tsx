@@ -17,6 +17,7 @@ import {
   SUPPLIER_LABELS,
 } from '@/domain/labels';
 import { DateField } from '@/components/inputs/date-field';
+import { ModalDialog } from '@/components/ui/modal-dialog';
 import { todayInManila, addDaysToDate } from '@/lib/dates';
 import { formatPeso } from '@/lib/format';
 import {
@@ -698,9 +699,14 @@ export function VisitRecordPage() {
       )}
 
       {/* Finish Visit Modal */}
-      {isFinishModalOpen && (
-        <div className="fixed inset-0 z-modal flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs">
-          <div className="relative w-full max-w-md bg-paper border border-rule rounded-panel shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150">
+      <ModalDialog
+        open={isFinishModalOpen}
+        onClose={() => setIsFinishModalOpen(false)}
+        maxWidth="max-w-md"
+        zIndex="z-modal"
+        ariaLabel="Finish Office Trip"
+        panelClassName="p-5 space-y-4"
+      >
             <div className="flex items-center justify-between border-b border-rule pb-3">
               <div className="flex items-center gap-2">
                 <CheckCheck className="w-5 h-5 text-good-fg" />
@@ -782,9 +788,7 @@ export function VisitRecordPage() {
                 Complete Visit
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          </ModalDialog>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
 import { formatDate } from '@/lib/format';
 import { ReadinessMeter } from '@/components/ui/status-chip';
 import { ReviewStamp } from '@/components/ui/stamp';
+import { ModalDialog } from '@/components/ui/modal-dialog';
 import { repositories } from '@/data';
 import {
   ArrowLeft,
@@ -512,9 +513,14 @@ export function VisitDetailPage() {
       </div>
 
       {/* Departure Override Reason Modal */}
-      {isOverrideModalOpen && (
-        <div className="fixed inset-0 z-modal flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs">
-          <div className="relative w-full max-w-md bg-paper border border-rule rounded-panel shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150">
+      <ModalDialog
+        open={isOverrideModalOpen}
+        onClose={() => setIsOverrideModalOpen(false)}
+        maxWidth="max-w-md"
+        zIndex="z-modal"
+        ariaLabel="Leave Without Everything Ready?"
+        panelClassName="p-5 space-y-4"
+      >
             <div className="flex items-center gap-2 text-critical-fg border-b border-rule pb-3">
               <AlertTriangle className="w-5 h-5 shrink-0" />
               <h3 className="text-base font-bold text-ink font-sans">
@@ -566,9 +572,7 @@ export function VisitDetailPage() {
                 Depart Anyway
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          </ModalDialog>
     </div>
   );
 }

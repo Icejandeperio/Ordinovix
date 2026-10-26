@@ -45,6 +45,7 @@ import {
   FileCheck2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ModalDialog } from '@/components/ui/modal-dialog';
 import { MaskedTin } from '@/components/inputs/identity-inputs';
 import { AuthorizationBadge, DueBadge, ClientFlag, StatusChip } from '@/components/ui/status-chip';
 import { ClientFormSheet } from '@/components/clients/client-form-sheet';
@@ -1037,10 +1038,13 @@ export function ClientDetailPage() {
       />
 
       {/* Archive Reason Modal per Spec 11.7.2 & QA #4 */}
-      {archiveModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-          <div className="fixed inset-0" onClick={() => setArchiveModalOpen(false)} />
-          <div className="relative w-full max-w-md bg-sheet rounded-modal border border-rule shadow-2xl p-5 space-y-4 z-10">
+      <ModalDialog
+        open={archiveModalOpen}
+        onClose={() => setArchiveModalOpen(false)}
+        maxWidth="max-w-md"
+        ariaLabel={`Archive Client: ${client.displayName}`}
+        panelClassName="p-5 space-y-4"
+      >
             <h3 className="text-sm font-bold text-ink">Archive Client: {client.displayName}</h3>
             <p className="text-xs text-ink-2">
               Archiving removes this client from the active directory and Today focus queue. Closed filing history remains accessible.
@@ -1071,15 +1075,16 @@ export function ClientDetailPage() {
                 Archive Client
               </Button>
             </div>
-          </div>
-        </div>
-      )}
+          </ModalDialog>
 
       {/* Request Missing Items Modal */}
-      {requestMissingOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-          <div className="fixed inset-0" onClick={() => setRequestMissingOpen(false)} />
-          <div className="relative w-full max-w-lg bg-sheet rounded-modal border border-rule shadow-2xl p-5 space-y-4 z-10">
+      <ModalDialog
+        open={requestMissingOpen}
+        onClose={() => setRequestMissingOpen(false)}
+        maxWidth="max-w-lg"
+        ariaLabel={`Request All Missing Items (${client.code})`}
+        panelClassName="p-5 space-y-4"
+      >
             <div className="flex items-center justify-between border-b border-rule pb-3">
               <h3 className="text-sm font-bold text-ink">Request All Missing Items ({client.code})</h3>
               <button onClick={() => setRequestMissingOpen(false)} className="text-ink-3 hover:text-ink">✕</button>
@@ -1111,9 +1116,7 @@ export function ClientDetailPage() {
                 </Button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          </ModalDialog>
     </div>
   );
 }

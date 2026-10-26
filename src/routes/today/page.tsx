@@ -4,6 +4,7 @@ import { useToday, useSetLineStatus, useSession } from '@/hooks/useData';
 import { formatDate, formatRelative, formatTime } from '@/lib/format';
 import { formatHeaderDate } from '@/lib/dates';
 import { Button } from '@/components/ui/button';
+import { ModalDialog } from '@/components/ui/modal-dialog';
 import { DueBadge, StatusChip, ReadinessMeter, AuthorizationBadge } from '@/components/ui/status-chip';
 import { ReviewStamp } from '@/components/ui/stamp';
 import {
@@ -747,87 +748,107 @@ export function TodayPage() {
       )}
 
       {/* Flag Issue Modal */}
-      {flaggingLine && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-xs p-4">
-          <div className="bg-sheet border border-rule rounded-panel p-6 max-w-md w-full shadow-lg space-y-4">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <h3 className="text-base font-bold text-ink">Flag Issue on Document</h3>
-                <p className="text-xs text-ink-3">
-                  {flaggingLine.client.displayName} · {flaggingLine.line.label}
-                </p>
-              </div>
-              <button
-                onClick={() => setFlaggingLine(null)}
-                className="text-ink-3 hover:text-ink p-1"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+      {(() => {
+        return (
+          <ModalDialog
+            open={Boolean(flaggingLine)}
+            onClose={() => setFlaggingLine(null)}
+            maxWidth="max-w-md"
+            ariaLabel="Flag Issue on Document"
+            panelClassName="p-6 space-y-4"
+          >
+            {flaggingLine && (
+              <>
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <h3 className="text-base font-bold text-ink">Flag Issue on Document</h3>
+                    <p className="text-xs text-ink-3">
+                      {flaggingLine.client.displayName} · {flaggingLine.line.label}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setFlaggingLine(null)}
+                    className="text-ink-3 hover:text-ink p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-ink">Correction note for client / helper</label>
-              <textarea
-                value={flagNote}
-                onChange={(e) => setFlagNote(e.target.value)}
-                placeholder="Describe what needs correction (e.g., missing signature on Part II, blurred date)..."
-                rows={3}
-                className="w-full p-2.5 text-xs bg-sheet-2 border border-rule rounded-control text-ink focus:outline-none focus:ring-2 focus:ring-focus"
-              />
-            </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-ink">Correction note for client / helper</label>
+                  <textarea
+                    value={flagNote}
+                    onChange={(e) => setFlagNote(e.target.value)}
+                    placeholder="Describe what needs correction (e.g., missing signature on Part II, blurred date)..."
+                    rows={3}
+                    className="w-full p-2.5 text-xs bg-sheet-2 border border-rule rounded-control text-ink focus:outline-none focus:ring-2 focus:ring-focus"
+                  />
+                </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="secondary" size="sm" onClick={() => setFlaggingLine(null)}>
-                Cancel
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={handleConfirmFlag}
-                disabled={!flagNote.trim() || setLineStatus.isPending}
-              >
-                Flag Issue
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="secondary" size="sm" onClick={() => setFlaggingLine(null)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={handleConfirmFlag}
+                    disabled={!flagNote.trim() || setLineStatus.isPending}
+                  >
+                    Flag Issue
+                  </Button>
+                </div>
+              </>
+            )}
+          </ModalDialog>
+        );
+      })()}
 
       {/* Document File Preview Modal */}
-      {previewFile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-xs p-4">
-          <div className="bg-sheet border border-rule rounded-panel p-6 max-w-lg w-full shadow-lg space-y-4">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <h3 className="text-base font-bold text-ink truncate max-w-sm">
-                  {previewFile.file.displayName}
-                </h3>
-                <p className="text-xs text-ink-3">
-                  {previewFile.client.displayName} · {previewFile.file.mimeType} · Version {previewFile.file.versionNo}
-                </p>
-              </div>
-              <button
-                onClick={() => setPreviewFile(null)}
-                className="text-ink-3 hover:text-ink p-1"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+      {(() => {
+        return (
+          <ModalDialog
+            open={Boolean(previewFile)}
+            onClose={() => setPreviewFile(null)}
+            maxWidth="max-w-lg"
+            ariaLabel="Document File Preview"
+            panelClassName="p-6 space-y-4"
+          >
+            {previewFile && (
+              <>
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <h3 className="text-base font-bold text-ink truncate max-w-sm">
+                      {previewFile.file.displayName}
+                    </h3>
+                    <p className="text-xs text-ink-3">
+                      {previewFile.client.displayName} · {previewFile.file.mimeType} · Version {previewFile.file.versionNo}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setPreviewFile(null)}
+                    className="text-ink-3 hover:text-ink p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
 
-            <div className="h-48 bg-sheet-2 border border-dashed border-rule rounded-panel flex flex-col items-center justify-center text-ink-3 space-y-2">
-              <FileText className="w-8 h-8 text-stamp" />
-              <div className="text-xs font-medium text-ink">Simulated Document Preview</div>
-              <div className="text-[11px] text-ink-3 font-mono">{previewFile.file.storageKey}</div>
-            </div>
+                <div className="h-48 bg-sheet-2 border border-dashed border-rule rounded-panel flex flex-col items-center justify-center text-ink-3 space-y-2">
+                  <FileText className="w-8 h-8 text-stamp" />
+                  <div className="text-xs font-medium text-ink">Simulated Document Preview</div>
+                  <div className="text-[11px] text-ink-3 font-mono">{previewFile.file.storageKey}</div>
+                </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="secondary" size="sm" onClick={() => setPreviewFile(null)}>
-                Close
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="secondary" size="sm" onClick={() => setPreviewFile(null)}>
+                    Close
+                  </Button>
+                </div>
+              </>
+            )}
+          </ModalDialog>
+        );
+      })()}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import {
   useChangeTaskDue,
   useOrgSettings,
 } from '@/hooks/useData';
+import { ModalDialog } from '@/components/ui/modal-dialog';
 import type { CalendarItem, ID } from '@/domain/types';
 import { todayInManila, formatDate, addDaysToDate } from '@/lib/dates';
 import {
@@ -662,9 +663,16 @@ export function CalendarPage() {
       )}
 
       {/* Day Details Popover / Modal (When +N more is clicked) */}
-      {selectedDayItems && (
-        <div className="fixed inset-0 z-modal flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-          <div className="relative w-full max-w-md bg-paper border border-rule rounded-panel shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150">
+      <ModalDialog
+        open={Boolean(selectedDayItems)}
+        onClose={() => setSelectedDayItems(null)}
+        maxWidth="max-w-md"
+        zIndex="z-modal"
+        ariaLabel="Scheduled items"
+        panelClassName="p-5 space-y-4"
+      >
+        {selectedDayItems && (
+          <>
             <div className="flex items-center justify-between border-b border-rule pb-3">
               <div>
                 <h3 className="text-base font-bold text-ink font-sans">
@@ -702,14 +710,21 @@ export function CalendarPage() {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </ModalDialog>
 
       {/* Reschedule Task Due Date Dialog */}
-      {taskToReschedule && (
-        <div className="fixed inset-0 z-modal flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs">
-          <div className="relative w-full max-w-md bg-paper border border-rule rounded-panel shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150">
+      <ModalDialog
+        open={Boolean(taskToReschedule)}
+        onClose={() => setTaskToReschedule(null)}
+        maxWidth="max-w-md"
+        zIndex="z-modal"
+        ariaLabel="Change Statutory Due Date"
+        panelClassName="p-5 space-y-4"
+      >
+        {taskToReschedule && (
+          <>
             <div className="flex items-center justify-between border-b border-rule pb-3">
               <div className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-stamp" />
@@ -771,9 +786,9 @@ export function CalendarPage() {
                 Confirm Move
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </ModalDialog>
     </div>
   );
 }
