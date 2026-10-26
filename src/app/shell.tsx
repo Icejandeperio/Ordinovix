@@ -31,6 +31,7 @@ import { useNavigate } from 'react-router-dom';
 import { DevMenu } from './dev-menu';
 import { CommandPalette } from '@/components/command-palette';
 import { NotificationsPopover } from '@/components/notifications-popover';
+import { useIsCenterModalOpen } from '@/lib/modal-store';
 
 // Logomark SVG component
 export function LogoMark({ className = 'w-7 h-7 text-stamp' }: { className?: string }) {
@@ -47,6 +48,7 @@ export function AppShell() {
   const { data: session } = useSession();
   const { data: unreadCount = 0 } = useUnreadNotificationsCount();
   const navigate = useNavigate();
+  const isModalOpen = useIsCenterModalOpen();
   const [commandOpen, setCommandOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
@@ -180,7 +182,11 @@ export function AppShell() {
       </a>
 
       {/* Sample data banner */}
-      <div className="shrink-0 bg-stamp-soft text-stamp-strong border-b border-rule px-4 py-1 text-center text-xs font-semibold flex items-center justify-center gap-2 z-30 sample-data-banner">
+      <div
+        className={`shrink-0 bg-stamp-soft text-stamp-strong border-b border-rule px-4 py-1 text-center text-xs font-semibold flex items-center justify-center gap-2 z-30 sample-data-banner transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isModalOpen ? '-translate-y-full pointer-events-none opacity-0 h-0 py-0 overflow-hidden border-b-0' : 'translate-y-0 opacity-100'
+        }`}
+      >
         <span className="w-2 h-2 rounded-full bg-stamp animate-pulse" />
         <span>Sample Data Mode</span>
         <span className="text-ink-3">|</span>
@@ -191,7 +197,13 @@ export function AppShell() {
 
       {/* Offline Status Banner (Section 19.3) */}
       {isDevOffline && (
-        <div className="shrink-0 bg-warn-bg text-warn-fg border-b border-warn-bd px-4 py-1 text-center text-xs font-semibold flex items-center justify-center gap-2 z-30" role="status" aria-live="polite">
+        <div
+          className={`shrink-0 bg-warn-bg text-warn-fg border-b border-warn-bd px-4 py-1 text-center text-xs font-semibold flex items-center justify-center gap-2 z-30 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            isModalOpen ? '-translate-y-full pointer-events-none opacity-0 h-0 py-0 overflow-hidden border-b-0' : 'translate-y-0 opacity-100'
+          }`}
+          role="status"
+          aria-live="polite"
+        >
           <WifiOff className="w-3.5 h-3.5 text-warn-solid" />
           <span>Working offline. Changes are saved locally and will sync when reconnected.</span>
         </div>
@@ -200,8 +212,10 @@ export function AppShell() {
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Desktop Sidebar (>=1024px) / Tablet Rail (640px-1023px) */}
         <aside
-          className={`hidden sm:flex flex-col border-r border-rule bg-sheet transition-all duration-200 z-30 relative shrink-0 h-full ${
+          className={`hidden sm:flex flex-col border-r border-rule bg-sheet transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-30 relative shrink-0 h-full ${
             collapsed ? 'w-[72px]' : 'lg:w-[248px] sm:w-[72px]'
+          } ${
+            isModalOpen ? '-translate-x-full pointer-events-none opacity-0' : 'translate-x-0 opacity-100'
           }`}
         >
           {/* Center border notch collapse/expand toggle */}
@@ -287,7 +301,11 @@ export function AppShell() {
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden h-full min-h-0">
           {/* Top Bar (56px) */}
-          <header className="h-14 shrink-0 border-b border-rule bg-sheet/95 backdrop-blur-xs flex items-center justify-between px-4 sm:px-6 z-20">
+          <header
+            className={`h-14 shrink-0 border-b border-rule bg-sheet/95 backdrop-blur-xs flex items-center justify-between px-4 sm:px-6 z-20 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              isModalOpen ? '-translate-y-full pointer-events-none opacity-0' : 'translate-y-0 opacity-100'
+            }`}
+          >
             {/* Left brand on mobile */}
             <div className="flex items-center gap-3 sm:hidden">
               <LogoMark className="w-7 h-7 text-stamp" />
@@ -422,7 +440,11 @@ export function AppShell() {
       )}
 
       {/* Mobile Bottom Bar (<640px) */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 h-16 bg-sheet border-t border-rule flex items-center justify-around z-40 px-2 pb-[env(safe-area-inset-bottom)]">
+      <nav
+        className={`sm:hidden fixed bottom-0 left-0 right-0 h-16 bg-sheet border-t border-rule flex items-center justify-around z-40 px-2 pb-[env(safe-area-inset-bottom)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isModalOpen ? 'translate-y-full pointer-events-none opacity-0' : 'translate-y-0 opacity-100'
+        }`}
+      >
         {[
           { to: '/', label: 'Today', icon: CalendarDays },
           { to: '/tasks', label: 'Tasks', icon: CheckSquare },

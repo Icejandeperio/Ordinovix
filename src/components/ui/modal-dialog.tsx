@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/cn';
+import { centerModalStore } from '@/lib/modal-store';
 
 export interface ModalDialogProps {
   open: boolean;
@@ -29,6 +30,15 @@ export function ModalDialog({
     document.documentElement.getAttribute('data-reduce-motion') === 'true';
   const shouldReduceMotion = systemReducedMotion || htmlReduceMotion;
 
+  // Notify global store when center floating window opens/closes so AppShell can smoothly slide out bars
+  useEffect(() => {
+    if (!open) return;
+    centerModalStore.open();
+    return () => {
+      centerModalStore.close();
+    };
+  }, [open]);
+
   // Handle Escape key to close
   useEffect(() => {
     if (!open) return;
@@ -52,13 +62,16 @@ export function ModalDialog({
     };
   }, [open]);
 
+  // Fallback for legacy z-modal tokens to ensure high elevation over application bars
+  const computedZIndex = !zIndex || zIndex === 'z-modal' ? 'z-[100]' : zIndex;
+
   return (
     <AnimatePresence>
       {open && (
         <div
           className={cn(
-            'fixed inset-0 overflow-y-auto flex items-center justify-center p-4',
-            zIndex,
+            'fixed inset-0 overflow-y-auto flex flex-col items-center justify-center p-3 sm:p-6',
+            computedZIndex,
             className
           )}
           role="dialog"
@@ -103,10 +116,13 @@ export function ModalDialog({
               ease: [0.16, 1, 0.3, 1],
             }}
             className={cn(
-              'relative w-full bg-sheet border border-rule rounded-modal shadow-2xl z-10 overflow-hidden',
+              'relative w-full my-auto bg-sheet border border-rule rounded-modal shadow-2xl z-10 overflow-hidden flex flex-col',
               maxWidth,
               panelClassName
             )}
+            style={{
+              maxHeight: 'calc(100vh - 2.5rem)',
+            }}
           >
             {children}
           </motion.div>

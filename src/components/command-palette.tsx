@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { useClients, useTasks } from '@/hooks/useData';
 import { useTheme } from '@/app/theme';
 import { devControls } from '@/data';
+import { centerModalStore } from '@/lib/modal-store';
 import {
   Search,
   Plus,
@@ -76,6 +77,15 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, onOpenChange]);
+
+  // Notify global store when center command palette opens/closes
+  useEffect(() => {
+    if (!open) return;
+    centerModalStore.open();
+    return () => {
+      centerModalStore.close();
+    };
+  }, [open]);
 
   const saveRecentSearch = (q: string) => {
     const trimmed = q.trim();
