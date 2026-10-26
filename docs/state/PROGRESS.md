@@ -339,4 +339,30 @@
   - Added dashed line indicator support to `ChartFrame` legend (`dashed: true`) displaying "Target (90%)" and "Baseline (55%)" clearly in the card header.
   - Verified clean rendering via browser subagent on both Overview and Deadlines tabs; full verification gate passed.
 
-
+## Session 2026-10-26 (Smooth Drawer & Modal Open/Close Animations and Gradual Backdrop Blur)
+- Implemented Reusable Animated Shell Components (`src/components/ui/slide-sheet.tsx`, `src/components/ui/modal-dialog.tsx`):
+  - Built `SlideSheet`: Reusable side-sheet / drawer powered by `motion/react` (Motion 12) and `AnimatePresence`. Implements smooth sliding enter/exit (`x: '100%'` <-> `x: 0`, ease `[0.16, 1, 0.3, 1]`), gradual backdrop blur (`blur(0px)` <-> `blur(6px)`), smooth backdrop opacity fade (`0` <-> `1`), global Escape key handling, and body scroll locking.
+  - Built `ModalDialog`: Reusable center modal dialog powered by `motion/react` (Motion 12) and `AnimatePresence`. Implements smooth scale and opacity enter/exit (`scale: 0.94`, `y: 10`, `opacity: 0` <-> `scale: 1`, `y: 0`, `opacity: 1`), gradual backdrop blur (`blur(0px)` <-> `blur(6px)`), and smooth backdrop fade.
+  - Respects accessibility constraints: Automatically disables transitions when `prefers-reduced-motion` or `html[data-reduce-motion="true"]` is active.
+- Upgraded All Side Sheets & Drawers:
+  - `NewTaskSheet` (`src/components/tasks/new-task-sheet.tsx`): Replaced abrupt unmount with `SlideSheet` for smooth slide-in and slide-out.
+  - `ClientFormSheet` (`src/components/clients/client-form-sheet.tsx`): Upgraded to `SlideSheet`.
+  - `PlanVisitSheet` (`src/components/visits/plan-visit-sheet.tsx`): Upgraded to `SlideSheet`.
+  - `FollowUpComposer` (`src/components/follow-ups/composer.tsx`): Upgraded to `SlideSheet`.
+  - `PreviewDrawer` (`src/components/documents/preview-drawer.tsx`): Upgraded to `SlideSheet` with active doc ref caching to ensure smooth exit animation when parent sets selected document to null.
+- Upgraded Floating Windows, Popovers & Dropdowns:
+  - `CommandPalette` (`src/components/command-palette.tsx`): Wrapped with `AnimatePresence` and `motion.div` for smooth top-sliding/scale transition and gradual backdrop blur.
+  - `NotificationsPopover` (`src/components/notifications-popover.tsx`): Upgraded with `AnimatePresence` for smooth popup and exit.
+  - `ExportMenu` (`src/components/export-menu.tsx`): Upgraded with `AnimatePresence` for smooth dropdown transition.
+  - `DateField` (`src/components/inputs/date-field.tsx`): Upgraded with `AnimatePresence` for smooth calendar picker animation.
+- Upgraded All Center Modals and Dialogs:
+  - Settings & Admin: `UserFormModal`, `RevokeUserDialog`, `DevMenu`.
+  - Tasks: `OpenPeriodModal`, and all 6 dialogs in `task-modals.tsx` (`MarkSubmittedDialog`, `MarkCompletedDialog`, `OverrideStatusDialog`, `ChangeDueDateDialog`, `AddChecklistLineModal`, `ArchiveTaskDialog`).
+  - Follow-ups: All 4 dialogs in `follow-up-modals.tsx` (`LogResponseModal`, `EscalateModal`, `ResolveModal`, `NewFollowUpModal`).
+  - Directory & Records: `OfficeFormModal`, `ContactFormModal`, `AuthorizationFormModal`, `RecordPaymentSheet`.
+  - Route Action Modals: Task quick action edit in `tasks/detail.tsx`, flag issue and preview in `today/page.tsx`, departure override in `visits/detail.tsx`, finish visit in `visits/record.tsx`, day items and reschedule in `calendar/page.tsx`, and archive/request missing in `clients/detail.tsx`.
+- Verification & Test Coverage:
+  - 101 unit tests green across 12 test files (`vitest run`).
+  - Full TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
+  - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 101 Vitest tests, Vite production build).
+  - Browser subagent visual QA verified smooth slide-in, gradual backdrop blur, and smooth slide-out on `NewTaskSheet`, `CommandPalette` (`Ctrl+K`), and `UserFormModal`.
