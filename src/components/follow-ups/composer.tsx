@@ -11,6 +11,7 @@ import {
 import { DateField } from '@/components/inputs/date-field';
 import { todayInManila, addDaysToDate } from '@/lib/dates';
 import { toast } from 'sonner';
+import { SlideSheet } from '@/components/ui/slide-sheet';
 import {
   X,
   Copy,
@@ -176,12 +177,12 @@ export function MessageComposer({
   };
 
   return (
-    <div className="fixed inset-0 z-modal flex justify-end bg-ink/40 backdrop-blur-xs animate-in fade-in duration-150">
-      <div
-        className="relative w-full max-w-2xl h-full bg-paper flex flex-col shadow-2xl border-l border-rule overflow-hidden animate-in slide-in-from-right duration-200"
-        role="dialog"
-        aria-label="Message Composer"
-      >
+    <SlideSheet
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="max-w-2xl"
+      ariaLabel="Message Composer"
+    >
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-rule bg-sheet flex items-center justify-between gap-3">
           <div>
@@ -466,7 +467,6 @@ export function MessageComposer({
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    </SlideSheet>
   );
 }

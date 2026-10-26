@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { SlideSheet } from '@/components/ui/slide-sheet';
+import { ModalDialog } from '@/components/ui/modal-dialog';
 import {
   X,
   ZoomIn,
@@ -74,29 +76,39 @@ export function PreviewDrawer({
     setRotation(0);
   }, [currentDoc?.id]);
 
-  if (!open || !currentDoc) return null;
+  // Preserve last valid document so exit animation remains fully populated
+  const lastDocRef = useRef(currentDoc);
+  if (currentDoc) {
+    lastDocRef.current = currentDoc;
+  }
+  const activeDoc = currentDoc || lastDocRef.current;
 
-  const isImage = currentDoc.mimeType.startsWith('image/');
-  const isPdf = currentDoc.mimeType === 'application/pdf';
+  const isImage = activeDoc?.mimeType.startsWith('image/');
+  const isPdf = activeDoc?.mimeType === 'application/pdf';
 
-  const currentIndex = documentsList.findIndex((d) => d.id === currentDoc.id);
+  const currentIndex = activeDoc ? documentsList.findIndex((d) => d.id === activeDoc.id) : -1;
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex < documentsList.length - 1;
 
   const canReview = lineStatus === 'received' || lineStatus === 'under_review';
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-ink/50 backdrop-blur-xs transition-opacity animate-fade-in">
-      {/* 720px Desktop Side Sheet / Full screen mobile */}
-      <div className="w-full sm:w-[720px] h-full bg-sheet border-l border-rule shadow-2xl flex flex-col overflow-hidden animate-slide-in-right">
+    <SlideSheet
+      open={Boolean(open && currentDoc)}
+      onClose={onClose}
+      maxWidth="sm:max-w-[720px]"
+      ariaLabel={activeDoc?.displayName || 'Document Preview'}
+    >
+      {activeDoc && (
+        <>
         {/* 1. Header Toolbar */}
         <div className="p-3.5 border-b border-rule flex items-center justify-between gap-3 bg-sheet-2 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-xs font-bold text-ink truncate max-w-[280px]">
-              {currentDoc.displayName}
+              {activeDoc.displayName}
             </span>
             <span className="text-[10px] font-mono font-bold uppercase bg-sheet-3 px-1.5 py-0.5 rounded border border-rule text-ink-3">
-              v{currentDoc.versionNo}
+              v{activeDoc.versionNo}
             </span>
           </div>
 
@@ -158,8 +170,8 @@ export function PreviewDrawer({
 
             {/* Download */}
             <a
-              href={currentDoc.storageKey}
-              download={currentDoc.displayName}
+              href={activeDoc.storageKey}
+              download={activeDoc.displayName}
               className="p-1.5 text-ink-3 hover:text-ink rounded-control bg-sheet border border-rule hover:bg-sheet-3 transition-colors"
               title="Download original file"
             >
@@ -198,21 +210,21 @@ export function PreviewDrawer({
                 className="max-w-full max-h-full flex items-center justify-center"
               >
                 <img
-                  src={currentDoc.storageKey}
-                  alt={currentDoc.displayName}
+                  src={activeDoc.storageKey}
+                  alt={activeDoc.displayName}
                   className="max-w-full max-h-[75vh] object-contain shadow-sm rounded-xs pointer-events-none"
                 />
               </div>
             ) : isPdf ? (
               <iframe
-                src={`${currentDoc.storageKey}#toolbar=0`}
-                title={currentDoc.displayName}
+                src={`${activeDoc.storageKey}#toolbar=0`}
+                title={activeDoc.displayName}
                 className="w-full h-full border-0 rounded"
               />
             ) : (
               <div className="p-8 text-center text-zinc-600 space-y-2">
                 <FileText className="w-12 h-12 text-zinc-400 mx-auto" />
-                <p className="text-sm font-bold text-zinc-800">{currentDoc.displayName}</p>
+                <p className="text-sm font-bold text-zinc-800">{activeDoc.displayName}</p>
                 <p className="text-xs">Preview unavailable for this format.</p>
               </div>
             )}
@@ -227,22 +239,22 @@ export function PreviewDrawer({
               <div className="space-y-2 pt-1 border-t border-rule">
                 <div>
                   <span className="text-ink-3 block text-[11px]">Category Kind</span>
-                  <span className="font-bold text-ink uppercase font-mono">{currentDoc.kind}</span>
+                  <span className="font-bold text-ink uppercase font-mono">{activeDoc.kind}</span>
                 </div>
                 <div>
                   <span className="text-ink-3 block text-[11px]">File Size</span>
-                  <span className="font-semibold text-ink">{formatBytes(currentDoc.sizeBytes)}</span>
+                  <span className="font-semibold text-ink">{formatBytes(activeDoc.sizeBytes)}</span>
                 </div>
                 <div>
                   <span className="text-ink-3 block text-[11px]">Upload Date</span>
                   <span className="font-semibold text-ink">
-                    {formatDate(currentDoc.createdAt.slice(0, 10))}
+                    {formatDate(activeDoc.createdAt.slice(0, 10))}
                   </span>
                 </div>
                 <div>
                   <span className="text-ink-3 block text-[11px]">Uploaded By</span>
                   <span className="font-semibold text-ink">
-                    {currentDoc.createdBy === 'user-ana' ? 'Ana Santos (Owner)' : 'Ben Morales (Helper)'}
+                    {activeDoc.createdBy === 'user-ana' ? 'Ana Santos (Owner)' : 'Ben Morales (Helper)'}
                   </span>
                 </div>
               </div>
@@ -258,14 +270,14 @@ export function PreviewDrawer({
                   <Hash className="w-3 h-3 text-stamp" />
                   <span>SHA-256</span>
                 </div>
-                {currentDoc.sha256}
+                {activeDoc.sha256}
               </div>
             </div>
           </div>
         </div>
 
         {/* 4. Review Footer Actions (Section 9.8): Mark Accepted & Flag */}
-        {canReview && currentDoc.lineId && (
+        {canReview && activeDoc.lineId && (
           <div className="p-3.5 border-t border-rule bg-sheet-2 flex items-center justify-between gap-3 shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-ink">
@@ -288,7 +300,7 @@ export function PreviewDrawer({
                 variant="primary"
                 size="sm"
                 onClick={() => {
-                  onAcceptLine?.(currentDoc.lineId!);
+                  onAcceptLine?.(activeDoc.lineId!);
                   onClose();
                 }}
                 icon={<Stamp className="w-3.5 h-3.5" />}
@@ -301,59 +313,63 @@ export function PreviewDrawer({
         )}
 
         {/* Flag Correction Modal */}
-        {flagNoteOpen && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
-            <div className="w-full max-w-sm bg-sheet border border-rule rounded-panel p-5 shadow-xl space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-ink font-sans">Flag Document Issue</h3>
-                <button
-                  onClick={() => setFlagNoteOpen(false)}
-                  className="text-ink-3 hover:text-ink"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-ink mb-1">
-                  Specify what needs correction:
-                </label>
-                <textarea
-                  value={flagNote}
-                  onChange={(e) => setFlagNote(e.target.value)}
-                  placeholder="e.g. Missing signature on page 2 or blurry schedule"
-                  rows={3}
-                  className="w-full p-2 text-xs bg-sheet-2 border border-rule rounded-control text-ink focus:outline-none focus:ring-1 focus:ring-focus resize-none"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-rule">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setFlagNoteOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => {
-                    if (flagNote.trim() && currentDoc.lineId) {
-                      onFlagLine?.(currentDoc.lineId, flagNote.trim());
-                      setFlagNoteOpen(false);
-                      onClose();
-                    }
-                  }}
-                  disabled={!flagNote.trim()}
-                >
-                  Submit Flag
-                </Button>
-              </div>
-            </div>
+        <ModalDialog
+          open={flagNoteOpen}
+          onClose={() => setFlagNoteOpen(false)}
+          maxWidth="max-w-sm"
+          zIndex="z-60"
+          ariaLabel="Flag Document Issue"
+          panelClassName="p-5 space-y-4"
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-ink font-sans">Flag Document Issue</h3>
+            <button
+              onClick={() => setFlagNoteOpen(false)}
+              className="text-ink-3 hover:text-ink"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        )}
-      </div>
-    </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-ink mb-1">
+              Specify what needs correction:
+            </label>
+            <textarea
+              value={flagNote}
+              onChange={(e) => setFlagNote(e.target.value)}
+              placeholder="e.g. Missing signature on page 2 or blurry schedule"
+              rows={3}
+              className="w-full p-2 text-xs bg-sheet-2 border border-rule rounded-control text-ink focus:outline-none focus:ring-1 focus:ring-focus resize-none"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-rule">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setFlagNoteOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => {
+                if (flagNote.trim() && activeDoc.lineId) {
+                  onFlagLine?.(activeDoc.lineId, flagNote.trim());
+                  setFlagNoteOpen(false);
+                  onClose();
+                }
+              }}
+              disabled={!flagNote.trim()}
+            >
+              Submit Flag
+            </Button>
+          </div>
+        </ModalDialog>
+        </>
+      )}
+    </SlideSheet>
   );
 }

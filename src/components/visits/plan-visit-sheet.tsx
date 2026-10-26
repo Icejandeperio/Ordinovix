@@ -19,6 +19,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SlideSheet } from '@/components/ui/slide-sheet';
 
 interface PlanVisitSheetProps {
   isOpen: boolean;
@@ -68,7 +69,6 @@ export function PlanVisitSheet({ isOpen, onClose }: PlanVisitSheetProps) {
     );
   }, [allTasks]);
 
-  if (!isOpen) return null;
 
   const handleToggleTask = (taskId: string) => {
     const exists = selectedTasks.find((t) => t.taskId === taskId);
@@ -120,12 +120,12 @@ export function PlanVisitSheet({ isOpen, onClose }: PlanVisitSheetProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-modal flex justify-end bg-ink/40 backdrop-blur-xs animate-in fade-in duration-150">
-      <div
-        className="relative w-full max-w-xl h-full bg-paper flex flex-col shadow-2xl border-l border-rule overflow-hidden animate-in slide-in-from-right duration-200"
-        role="dialog"
-        aria-label="Plan a Visit"
-      >
+    <SlideSheet
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="max-w-xl"
+      ariaLabel="Plan Office Trip"
+    >
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-rule bg-sheet flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -320,7 +320,6 @@ export function PlanVisitSheet({ isOpen, onClose }: PlanVisitSheetProps) {
             onSuccess={(saved) => setSelectedOfficeId(saved.id)}
           />
         )}
-      </div>
-    </div>
+    </SlideSheet>
   );
 }

@@ -13,6 +13,7 @@ import {
   ChevronUp,
   Save,
 } from 'lucide-react';
+import { SlideSheet } from '@/components/ui/slide-sheet';
 import type { Client, EntityType, VatStatus, SizeClass, FilingChannel, EfpsGroup, AccessHolder, Language } from '@/domain/types';
 
 interface ClientFormSheetProps {
@@ -117,7 +118,6 @@ export function ClientFormSheet({ open, onClose, client }: ClientFormSheetProps)
   const hasPasswordWarning =
     /password|pw:|passwd|secret/i.test(notes);
 
-  if (!open) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,10 +167,12 @@ export function ClientFormSheet({ open, onClose, client }: ClientFormSheetProps)
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-ink/40 backdrop-blur-xs">
-      <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
-
-      <div className="relative w-full max-w-xl bg-sheet border-l border-rule shadow-2xl flex flex-col h-full z-10 overflow-hidden">
+    <SlideSheet
+      open={open}
+      onClose={onClose}
+      maxWidth="max-w-xl"
+      ariaLabel={isEditing && client ? `Edit Client: ${client.code}` : 'Register New Client'}
+    >
         {/* Header */}
         <div className="p-4 border-b border-rule flex items-center justify-between shrink-0 bg-sheet">
           <div>
@@ -483,7 +485,6 @@ export function ClientFormSheet({ open, onClose, client }: ClientFormSheetProps)
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </SlideSheet>
   );
 }

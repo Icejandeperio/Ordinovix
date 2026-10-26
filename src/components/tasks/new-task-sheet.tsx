@@ -12,6 +12,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SlideSheet } from '@/components/ui/slide-sheet';
 import { DateField } from '@/components/inputs/date-field';
 import { useClients, useTemplates, useMemberships, useTasks, useCreateTask } from '@/hooks/useData';
 import type { TaskKind } from '@/domain/types';
@@ -91,7 +92,6 @@ export function NewTaskSheet({ open, onClose, defaultClientId }: NewTaskSheetPro
     );
   }, [existingTasks, clientId, templateId, period, isOneOff, title]);
 
-  if (!open) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,9 +153,12 @@ export function NewTaskSheet({ open, onClose, defaultClientId }: NewTaskSheetPro
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-ink/40 backdrop-blur-xs">
-      <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
-      <div className="relative w-full max-w-lg bg-sheet border-l border-rule shadow-2xl flex flex-col h-full z-10 overflow-hidden">
+    <SlideSheet
+      open={open}
+      onClose={onClose}
+      maxWidth="max-w-lg"
+      ariaLabel="Create New Task"
+    >
         {/* Header */}
         <div className="p-4 border-b border-rule flex items-center justify-between shrink-0 bg-sheet">
           <div className="flex items-center gap-2">
@@ -384,7 +387,6 @@ export function NewTaskSheet({ open, onClose, defaultClientId }: NewTaskSheetPro
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </SlideSheet>
   );
 }
