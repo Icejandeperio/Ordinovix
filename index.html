@@ -29,10 +29,8 @@
           if (reducedMotion === 'true') {
             document.documentElement.setAttribute('data-reduce-motion', 'true');
           }
-          var density = localStorage.getItem('ox-density');
-          if (density) {
-            document.documentElement.setAttribute('data-density', density);
-          }
+          var density = localStorage.getItem('ox-density') || 'comfortable';
+          document.documentElement.setAttribute('data-density', density);
           var palette = localStorage.getItem('ox-palette');
           if (palette && palette !== 'amethyst') {
             document.documentElement.setAttribute('data-palette', palette);

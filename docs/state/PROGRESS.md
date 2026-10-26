@@ -1,5 +1,26 @@
 # Progress Log
 
+## Session 2026-10-27 (Layout Density Engine & Live Preview)
+- Root Cause Analysis:
+  - Discovered that while `ox-density` was stored in `localStorage` and `data-density` was stamped onto `document.documentElement`, there were zero CSS rules or component styles targeting `[data-density="compact"]`. Consequently, toggling between Comfortable and Compact had no effect on any row heights or spacing.
+- Implemented Section 9.10 Layout Density engine (`src/styles/base.css`):
+  - Defined CSS density tokens on `:root`: `--density-table-row-h`, `--density-table-cell-py`, `--density-table-head-py`, `--density-list-py`, `--density-gap`.
+  - Added universal compact table overrides:
+    - Reduced `table th` padding to `0.35rem` (~30px tight header).
+    - Reduced `table td` padding to `0.35rem` (~34px row height, matching the spec of 32-36px).
+    - Auto-scaled table avatars, thumbnails (`w-10 h-10` -> `1.75rem`), status chips, and action buttons.
+  - Added compact list and feed overrides for `.divide-y` items across the application.
+- Initialized zero-flash density pre-paint script (`index.html`):
+  - Ensured `ox-density` defaults to `comfortable` immediately on document head execution.
+- Enhanced Appearance Settings UI (`src/routes/settings/page.tsx`):
+  - Added active pill badges, selection rings, and visual wireframe density indicators to the Comfortable and Compact option cards.
+  - Built an interactive live density preview table under the selectors displaying real sample tax filings, live row height indicator chips (`44px` vs `34px`), and caption detailing application-wide synchronization.
+- Verification & QA:
+  - TypeScript type check (`npx.cmd tsc --noEmit`) clean with 0 errors.
+  - 16 test files passed (118 tests passed) via `npm.cmd run test:run`.
+  - Automated browser subagent verified real-time row height changes in Settings, `/tasks` list view, and `/clients` directory.
+  - Full verification gate passed via `scripts/verify.ps1`.
+
 ## Session 2026-10-27 (Curated Multi-Tonal Color Palettes & Appearance Settings)
 - Researched and implemented 6 dual/triadic harmonic color palettes tailored for tax compliance, accounting, and long-session eye comfort:
   - `Classic Amethyst`: Royal violet & deep sea teal (original heritage tax seal).

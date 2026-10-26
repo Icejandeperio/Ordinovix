@@ -558,26 +558,130 @@ export function SettingsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-2">Layout Density</label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-2">
+                    Layout Density
+                  </label>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
                     {[
-                      { id: 'comfortable', label: 'Comfortable', desc: 'Standard 40-44px rows' },
-                      { id: 'compact', label: 'Compact', desc: 'Tight 32-36px table rows' },
-                    ].map((d) => (
-                      <button
-                        key={d.id}
-                        type="button"
-                        onClick={() => setDensity(d.id as 'comfortable' | 'compact')}
-                        className={`p-3 rounded-lg border text-left transition-colors select-none cursor-pointer ${
-                          density === d.id
-                            ? 'border-[var(--stamp)] bg-[var(--stamp-soft)] text-[var(--stamp-ink)]'
-                            : 'border-[var(--rule)] bg-[var(--sheet-2)] text-[var(--ink-2)]'
-                        }`}
-                      >
-                        <div className="text-sm font-bold">{d.label}</div>
-                        <div className="text-xs text-[var(--ink-3)] mt-0.5">{d.desc}</div>
-                      </button>
-                    ))}
+                      { id: 'comfortable', label: 'Comfortable', desc: 'Standard 40-44px rows', height: '44px' },
+                      { id: 'compact', label: 'Compact', desc: 'Tight 32-36px table rows', height: '34px' },
+                    ].map((d) => {
+                      const isActive = density === d.id;
+                      return (
+                        <button
+                          key={d.id}
+                          type="button"
+                          onClick={() => setDensity(d.id as 'comfortable' | 'compact')}
+                          className={`p-3 rounded-lg border text-left transition-all select-none cursor-pointer flex flex-col justify-between ${
+                            isActive
+                              ? 'border-stamp bg-stamp-soft text-stamp-strong ring-1 ring-stamp'
+                              : 'border-rule bg-sheet-2 text-ink-2 hover:border-rule-strong'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm font-bold flex items-center gap-1.5">
+                              {d.label}
+                              {isActive && (
+                                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-stamp text-on-stamp font-medium">
+                                  Active
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sheet border border-rule text-ink-3">
+                              {d.height}
+                            </span>
+                          </div>
+                          <div className="text-xs text-ink-3 mt-1">{d.desc}</div>
+
+                          {/* Wireframe density visualizer */}
+                          <div className="mt-3 pt-2.5 border-t border-rule/50 space-y-1" aria-hidden="true">
+                            <div className={`w-full bg-sheet-3 rounded-xs transition-all ${d.id === 'compact' ? 'h-2' : 'h-3'}`} />
+                            <div className={`w-3/4 bg-sheet-3 rounded-xs transition-all ${d.id === 'compact' ? 'h-2' : 'h-3'}`} />
+                            <div className={`w-5/6 bg-sheet-3 rounded-xs transition-all ${d.id === 'compact' ? 'h-2' : 'h-3'}`} />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Live Interactive Density Preview */}
+                  <div className="border border-rule rounded-panel overflow-hidden bg-sheet shadow-xs">
+                    <div className="px-3 py-2 bg-sheet-2 border-b border-rule flex items-center justify-between text-[11px] text-ink-3">
+                      <span className="font-semibold text-ink">Live Table Density Preview</span>
+                      <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-sheet border border-rule text-stamp font-bold">
+                        {density === 'compact' ? 'Compact: ~34px Rows Active' : 'Comfortable: ~44px Rows Active'}
+                      </span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-sheet-2/60 border-b border-rule text-ink-3 font-semibold uppercase tracking-wider text-[10px]">
+                            <th className="py-2.5 px-3">Client</th>
+                            <th className="py-2.5 px-3">Obligation</th>
+                            <th className="py-2.5 px-3 whitespace-nowrap">Due Date</th>
+                            <th className="py-2.5 px-3">Status</th>
+                            <th className="py-2.5 px-3 text-right">Row Size</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-rule font-sans">
+                          <tr className="hover:bg-sheet-2/60 transition-colors">
+                            <td className="py-3 px-3">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-stamp-soft text-stamp">
+                                  BGC-001
+                                </span>
+                                <span className="font-semibold text-ink">ABC Holdings Inc.</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 font-medium text-ink">
+                              1702-RT (Annual Income Tax)
+                            </td>
+                            <td className="py-3 px-3 whitespace-nowrap text-ink-2 font-mono text-[11px]">
+                              Apr 15, 2026
+                            </td>
+                            <td className="py-3 px-3">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-[11px] font-semibold bg-warn-bg text-warn-fg border border-warn-bd">
+                                Awaiting Review
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-right">
+                              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-sheet-2 text-ink-3 border border-rule">
+                                {density === 'compact' ? '34px' : '44px'}
+                              </span>
+                            </td>
+                          </tr>
+                          <tr className="hover:bg-sheet-2/60 transition-colors">
+                            <td className="py-3 px-3">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-stamp-soft text-stamp">
+                                  QC-042
+                                </span>
+                                <span className="font-semibold text-ink">Summit Retail Corp</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 font-medium text-ink">
+                              2551Q (Quarterly Percentage Tax)
+                            </td>
+                            <td className="py-3 px-3 whitespace-nowrap text-ink-2 font-mono text-[11px]">
+                              May 25, 2026
+                            </td>
+                            <td className="py-3 px-3">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-[11px] font-semibold bg-info-bg text-info-fg border border-info-bd">
+                                Ready Next Step
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-right">
+                              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-sheet-2 text-ink-3 border border-rule">
+                                {density === 'compact' ? '34px' : '44px'}
+                              </span>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="px-3 py-1.5 bg-sheet-2/40 border-t border-rule text-[11px] text-ink-3">
+                      Applies automatically across all tables in Tasks, Clients, Payments, Documents, and Audit Logs.
+                    </div>
                   </div>
                 </div>
 
