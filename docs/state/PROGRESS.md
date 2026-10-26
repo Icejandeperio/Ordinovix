@@ -570,4 +570,22 @@
   - Full TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
   - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 118 Vitest tests, Vite production build in 6.58s).
 
+## Session 2026-10-26 (Kanban Card Due Badge & Items Overflow Fix)
+- Problem Analysis:
+  - User reported "Look at the items text, it goes beyond the card edge" with screenshot showing "0/1 items" extending past the right border of the Kanban card.
+  - Root Cause: In the 8-column Kanban board with `min-w-[1400px]`, each column was only ~164px wide (inner card content width ~125px). The standard `DueBadge` rendered at `h-6` with `text-xs` (width ~95px-100px), which left insufficient horizontal room for the adjacent `0/1 items` label (~45px), causing it to overflow past the card edge.
+- Engineering Resolution:
+  - Upgraded `DueBadge` Component (`src/components/ui/status-chip.tsx`):
+    - Added `size?: 'sm' | 'md'` prop.
+    - `size="sm"` renders compact `h-5`, `text-[10px]`, `px-1.5 py-0`, and scaled `w-3 h-3` icons, reducing badge width footprint by ~25px while retaining full icon and textual clarity.
+  - Hardened Kanban Card Layout (`src/routes/tasks/page.tsx`):
+    - Added `overflow-hidden` to the card container class to strictly contain children inside rounded borders.
+    - Updated the due row to use `DueBadge size="sm"` with `gap-1.5 min-w-0`.
+    - Increased Kanban board grid container min-width from `1400px` to `1600px` (`min-w-[1600px]`), providing comfortable ~195px per column so badges and item counts fit with generous margin.
+- Automated Verification:
+  - 16 test files passed, 118 tests green (`npm.cmd run test:run`).
+  - Full TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
+  - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 118 Vitest tests, Vite production build in 6.84s).
+
+
 

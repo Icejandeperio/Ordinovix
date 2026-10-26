@@ -654,7 +654,7 @@ export function TasksPage() {
           )}
 
           <div className="overflow-x-auto pb-4 select-none">
-            <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-3 min-w-[1400px]">
+            <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-3 min-w-[1600px]">
               {boardColumns.map((col) => {
                 const colSummaries = filtered.filter((s) => s.displayedStatus === col.status);
                 const isDragTarget = dragOverColumn === col.status;
@@ -740,7 +740,7 @@ export function TasksPage() {
                                 setDraggedTaskId(null);
                                 setDragOverColumn(null);
                               }}
-                              className={`bg-sheet border border-rule rounded-control p-2.5 space-y-2 shadow-2xs hover:shadow-xs transition-all relative group cursor-grab active:cursor-grabbing select-none ${
+                              className={`bg-sheet border border-rule rounded-control p-2.5 space-y-2 shadow-2xs hover:shadow-xs transition-all relative group cursor-grab active:cursor-grabbing select-none overflow-hidden ${
                                 isDragging ? 'opacity-40 ring-2 ring-stamp/40 scale-[0.98]' : ''
                               }`}
                             >
@@ -768,9 +768,12 @@ export function TasksPage() {
                               </div>
 
                               {/* Card Status & Due */}
-                              <div className="flex items-center justify-between gap-1 pt-1 border-t border-rule/50">
-                                <DueBadge state={summary.dueState} dueDate={task.dueDate} />
-                                <span className="text-[10px] font-semibold text-ink-3 whitespace-nowrap shrink-0">
+                              <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-rule/50 min-w-0">
+                                <DueBadge size="sm" state={summary.dueState} dueDate={task.dueDate} />
+                                <span
+                                  title={`${summary.acceptedLineCount} of ${summary.requiredLineCount} checklist items accepted`}
+                                  className="text-[10px] font-semibold text-ink-3 whitespace-nowrap shrink-0"
+                                >
                                   {summary.acceptedLineCount}/{summary.requiredLineCount} items
                                 </span>
                               </div>

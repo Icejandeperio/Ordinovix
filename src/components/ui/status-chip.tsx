@@ -128,6 +128,7 @@ export interface DueBadgeProps {
   isCompleted?: boolean;
   completedDate?: string;
   className?: string;
+  size?: 'sm' | 'md';
 }
 
 export function DueBadge({
@@ -137,19 +138,27 @@ export function DueBadge({
   isCompleted = false,
   completedDate,
   className,
+  size = 'md',
 }: DueBadgeProps) {
+  const isSmall = size === 'sm';
+  const sizeClasses = isSmall
+    ? 'text-[10px] px-1.5 py-0 h-5 gap-1'
+    : 'text-xs px-2 py-0.5 h-6 gap-1';
+  const iconClasses = isSmall ? 'w-3 h-3 shrink-0' : 'w-3.5 h-3.5 shrink-0';
+
   if (isCompleted) {
     const formattedDone = completedDate ? formatDate(completedDate) : 'recently';
     return (
       <span
         title={completedDate ? `Completed on ${completedDate}` : undefined}
         className={cn(
-          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6 whitespace-nowrap shrink-0',
+          'inline-flex items-center rounded-chip font-semibold border select-none whitespace-nowrap shrink-0',
+          sizeClasses,
           'text-neutral-fg bg-neutral-bg border-neutral-bd',
           className
         )}
       >
-        <CircleCheck className="w-3.5 h-3.5 shrink-0" />
+        <CircleCheck className={iconClasses} />
         <span>Done {formattedDone}</span>
       </span>
     );
@@ -179,12 +188,13 @@ export function DueBadge({
       <span
         title={tooltip}
         className={cn(
-          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6 whitespace-nowrap shrink-0',
+          'inline-flex items-center rounded-chip font-semibold border select-none whitespace-nowrap shrink-0',
+          sizeClasses,
           'text-critical-fg bg-critical-bg border-critical-bd',
           className
         )}
       >
-        <AlarmClock className="w-3.5 h-3.5 shrink-0 animate-pulse" />
+        <AlarmClock className={cn(iconClasses, 'animate-pulse')} />
         <span>{label}</span>
       </span>
     );
@@ -195,12 +205,13 @@ export function DueBadge({
       <span
         title={tooltip}
         className={cn(
-          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6 whitespace-nowrap shrink-0',
+          'inline-flex items-center rounded-chip font-semibold border select-none whitespace-nowrap shrink-0',
+          sizeClasses,
           'text-warn-fg bg-warn-bg border-warn-bd',
           className
         )}
       >
-        <Clock className="w-3.5 h-3.5 shrink-0" />
+        <Clock className={iconClasses} />
         <span>Due today</span>
       </span>
     );
@@ -220,12 +231,13 @@ export function DueBadge({
       <span
         title={tooltip}
         className={cn(
-          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6 whitespace-nowrap shrink-0',
+          'inline-flex items-center rounded-chip font-semibold border select-none whitespace-nowrap shrink-0',
+          sizeClasses,
           'text-warn-fg bg-warn-bg border-warn-bd',
           className
         )}
       >
-        <Hourglass className="w-3.5 h-3.5 shrink-0" />
+        <Hourglass className={iconClasses} />
         <span>{label}</span>
       </span>
     );
@@ -235,12 +247,13 @@ export function DueBadge({
     <span
       title={tooltip}
       className={cn(
-        'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6 whitespace-nowrap shrink-0',
+        'inline-flex items-center rounded-chip font-semibold border select-none whitespace-nowrap shrink-0',
+        sizeClasses,
         'text-neutral-fg bg-neutral-bg border-neutral-bd',
         className
       )}
     >
-      <Clock className="w-3.5 h-3.5 shrink-0" />
+      <Clock className={iconClasses} />
       <span>Due {formattedDate}</span>
     </span>
   );
