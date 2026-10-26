@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   useTasks,
@@ -14,7 +14,11 @@ import { canSetStatus } from '@/domain/rules';
 import { TASK_STATUS_META } from '@/domain/labels';
 import { OpenPeriodModal } from '@/components/tasks/open-period-modal';
 import { NewTaskSheet } from '@/components/tasks/new-task-sheet';
-import { MarkSubmittedDialog, MarkCompletedDialog } from '@/components/tasks/task-modals';
+import {
+  MarkSubmittedDialog,
+  MarkCompletedDialog,
+  OverrideStatusDialog,
+} from '@/components/tasks/task-modals';
 import type { TaskSummary, TaskStatus, TaskKind, StatusGroup, Task } from '@/domain/types';
 import {
   Plus,
@@ -35,6 +39,7 @@ import {
   FileText,
   AlertCircle,
   ExternalLink,
+  GripVertical,
 } from 'lucide-react';
 
 type TabView =
@@ -71,6 +76,18 @@ export function TasksPage() {
   // Modals for board transitions
   const [submittedModalTask, setSubmittedModalTask] = useState<Task | null>(null);
   const [completedModalTask, setCompletedModalTask] = useState<Task | null>(null);
+  const [overrideModalTask, setOverrideModalTask] = useState<Task | null>(null);
+
+  // Kanban drag-and-drop & feedback state
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
+  const [boardNotice, setBoardNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!boardNotice) return;
+    const timer = setTimeout(() => setBoardNotice(null), 6000);
+    return () => clearTimeout(timer);
+  }, [boardNotice]);
 
   // Load all tasks (we do client-side filtering for ultra-responsive tabs & filters)
   const { data, isLoading } = useTasks();
@@ -191,6 +208,57 @@ export function TasksPage() {
     { status: 'submitted', label: 'Submitted', isDerived: false, helper: 'Awaiting acknowledgment' },
     { status: 'completed', label: 'Completed', isDerived: false, helper: 'Last 30 days' },
   ];
+
+  const handleDropTask = (
+    summary: TaskSummary,
+    targetColStatus: TaskStatus,
+    targetIsDerived: boolean,
+    targetColLabel: string
+  ) => {
+    if (targetColStatus === summary.displayedStatus) return;
+
+    if (targetIsDerived) {
+      setBoardNotice(
+        `Status "${targetColLabel}" is computed automatically from line items. Open task to accept or update lines.`
+      );
+      return;
+    }
+
+    if (targetColStatus === 'submitted') {
+      setSubmittedModalTask(summary.task);
+      return;
+    }
+
+    if (targetColStatus === 'completed') {
+      setCompletedModalTask(summary.task);
+      return;
+    }
+
+    // Operator target column (in_preparation, ready_next_step)
+    const role = session?.membership.role || 'helper';
+    if (summary.requiredLineCount > summary.acceptedLineCount) {
+      if (role === 'owner') {
+        setOverrideModalTask(summary.task);
+        setBoardNotice(
+          `Task has ${summary.requiredLineCount - summary.acceptedLineCount} unaccepted lines. As owner, provide an override reason to bypass.`
+        );
+      } else {
+        setBoardNotice(
+          `Cannot move to "${targetColLabel}": ${summary.requiredLineCount - summary.acceptedLineCount} required lines are incomplete.`
+        );
+      }
+      return;
+    }
+
+    setTaskStatus.mutate(
+      { id: summary.task.id, to: targetColStatus },
+      {
+        onError: (err: any) => {
+          setBoardNotice(err?.message || 'Failed to update task status');
+        },
+      }
+    );
+  };
 
   return (
     <div className="space-y-5 pb-12">
@@ -568,115 +636,255 @@ export function TasksPage() {
         </div>
       ) : (
         /* ================= KANBAN BOARD VIEW ================= */
-        <div className="overflow-x-auto pb-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-3 min-w-[1400px]">
-            {boardColumns.map((col) => {
-              const colSummaries = filtered.filter((s) => s.displayedStatus === col.status);
+        <div className="space-y-3" data-kanban-board>
+          {boardNotice && (
+            <div className="flex items-center justify-between px-3 py-2 rounded-control bg-warn-bg border border-warn-bd text-warn-fg text-xs font-medium">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{boardNotice}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBoardNotice(null)}
+                className="p-1 hover:text-ink text-warn-fg transition-colors cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
-              return (
-                <div
-                  key={col.status}
-                  className="bg-sheet-2/60 border border-rule rounded-panel p-2.5 flex flex-col min-h-[500px]"
-                >
-                  {/* Column Header */}
-                  <div className="mb-2.5 pb-2 border-b border-rule">
-                    <div className="flex items-center justify-between gap-1">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        {col.isDerived && (
-                          <span title="Computed automatically from lines">
-                            <Lock className="w-3 h-3 text-ink-3 shrink-0" />
-                          </span>
-                        )}
-                        <h3 className="text-xs font-bold text-ink truncate font-sans">
-                          {col.label}
-                        </h3>
+          <div className="overflow-x-auto pb-4 select-none">
+            <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-3 min-w-[1400px]">
+              {boardColumns.map((col) => {
+                const colSummaries = filtered.filter((s) => s.displayedStatus === col.status);
+                const isDragTarget = dragOverColumn === col.status;
+
+                return (
+                  <div
+                    key={col.status}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                      if (dragOverColumn !== col.status) {
+                        setDragOverColumn(col.status);
+                      }
+                    }}
+                    onDragLeave={(e) => {
+                      if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                        if (dragOverColumn === col.status) setDragOverColumn(null);
+                      }
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragOverColumn(null);
+                      const taskId = e.dataTransfer.getData('text/plain') || draggedTaskId;
+                      if (!taskId) return;
+                      const targetSummary = allSummaries.find((s) => s.task.id === taskId);
+                      if (!targetSummary) return;
+                      handleDropTask(targetSummary, col.status, col.isDerived, col.label);
+                    }}
+                    className={`border rounded-panel p-2.5 flex flex-col min-h-[500px] transition-all select-none ${
+                      isDragTarget
+                        ? 'bg-stamp/10 border-stamp ring-2 ring-stamp/20 shadow-md'
+                        : 'bg-sheet-2/60 border-rule'
+                    }`}
+                  >
+                    {/* Column Header */}
+                    <div className="mb-2.5 pb-2 border-b border-rule">
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          {col.isDerived && (
+                            <span title="Computed automatically from line items">
+                              <Lock className="w-3 h-3 text-ink-3 shrink-0" />
+                            </span>
+                          )}
+                          <h3 className="text-xs font-bold text-ink truncate font-sans">
+                            {col.label}
+                          </h3>
+                        </div>
+                        <span className="px-1.5 py-0.2 text-[10px] font-black rounded-full bg-sheet-3 border border-rule text-ink">
+                          {colSummaries.length}
+                        </span>
                       </div>
-                      <span className="px-1.5 py-0.2 text-[10px] font-black rounded-full bg-sheet-3 border border-rule text-ink">
-                        {colSummaries.length}
-                      </span>
+                      <p className="text-[10px] text-ink-3 mt-0.5 truncate">{col.helper}</p>
                     </div>
-                    <p className="text-[10px] text-ink-3 mt-0.5 truncate">{col.helper}</p>
-                  </div>
 
-                  {/* Cards List */}
-                  <div className="space-y-2 flex-1">
-                    {colSummaries.length === 0 ? (
-                      <div className="h-24 rounded border border-dashed border-rule flex items-center justify-center text-[11px] text-ink-3 text-center p-2">
-                        No tasks
-                      </div>
-                    ) : (
-                      colSummaries.map((summary) => {
-                        const { task, client } = summary;
-                        const role = session?.membership.role || 'helper';
+                    {/* Cards List */}
+                    <div className="space-y-2 flex-1">
+                      {colSummaries.length === 0 ? (
+                        <div
+                          className={`h-24 rounded border border-dashed flex items-center justify-center text-[11px] text-ink-3 text-center p-2 transition-colors select-none ${
+                            isDragTarget
+                              ? 'border-stamp text-stamp font-bold bg-stamp/5'
+                              : 'border-rule'
+                          }`}
+                        >
+                          {isDragTarget ? 'Drop task here' : 'No tasks'}
+                        </div>
+                      ) : (
+                        colSummaries.map((summary) => {
+                          const { task, client } = summary;
+                          const role = session?.membership.role || 'helper';
+                          const isDragging = draggedTaskId === task.id;
 
-                        return (
-                          <div
-                            key={task.id}
-                            className="bg-sheet border border-rule rounded-control p-2.5 space-y-2 shadow-2xs hover:shadow-xs transition-shadow relative group"
-                          >
-                            {/* Card Client tab & task title */}
-                            <div>
-                              <div className="flex items-center justify-between text-[10px] text-ink-3 mb-1">
-                                <span className="font-mono font-bold bg-sheet-2 px-1 rounded border border-rule">
-                                  {client.code}
+                          return (
+                            <div
+                              key={task.id}
+                              draggable={true}
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData('text/plain', task.id);
+                                e.dataTransfer.effectAllowed = 'move';
+                                setDraggedTaskId(task.id);
+                              }}
+                              onDragEnd={() => {
+                                setDraggedTaskId(null);
+                                setDragOverColumn(null);
+                              }}
+                              className={`bg-sheet border border-rule rounded-control p-2.5 space-y-2 shadow-2xs hover:shadow-xs transition-all relative group cursor-grab active:cursor-grabbing select-none ${
+                                isDragging ? 'opacity-40 ring-2 ring-stamp/40 scale-[0.98]' : ''
+                              }`}
+                            >
+                              {/* Card Client tab, period & grip */}
+                              <div>
+                                <div className="flex items-center justify-between text-[10px] text-ink-3 mb-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <GripVertical className="w-3 h-3 text-ink-3/30 group-hover:text-ink-3 transition-colors shrink-0" />
+                                    <span className="font-mono font-bold bg-sheet-2 px-1 rounded border border-rule text-ink">
+                                      {client.code}
+                                    </span>
+                                  </div>
+                                  {task.period && (
+                                    <span className="font-medium bg-sheet-2 px-1 rounded text-ink-2">
+                                      {task.period}
+                                    </span>
+                                  )}
+                                </div>
+                                <Link
+                                  to={`/tasks/${task.id}`}
+                                  className="block font-bold text-xs text-ink hover:text-stamp line-clamp-2 transition-colors"
+                                >
+                                  {task.title || (task.templateId ? `Filing ${task.templateId}` : 'Tax Obligation')}
+                                </Link>
+                              </div>
+
+                              {/* Card Status & Due */}
+                              <div className="flex items-center justify-between gap-1 pt-1 border-t border-rule/50">
+                                <DueBadge state={summary.dueState} dueDate={task.dueDate} />
+                                <span className="text-[10px] font-semibold text-ink-3 whitespace-nowrap shrink-0">
+                                  {summary.acceptedLineCount}/{summary.requiredLineCount} items
                                 </span>
-                                {task.period && (
-                                  <span className="font-medium bg-sheet-2 px-1 rounded">
-                                    {task.period}
-                                  </span>
+                              </div>
+
+                              {/* Card Actions & Transition */}
+                              <div className="pt-1.5 border-t border-rule/40">
+                                {col.isDerived ? (
+                                  <div className="flex flex-col gap-1">
+                                    {col.status === 'waiting_on_client' && (
+                                      <Link to={`/tasks/${task.id}`} className="w-full block">
+                                        <Button
+                                          variant="secondary"
+                                          size="sm"
+                                          className="w-full text-[10px] h-6 py-0 justify-center font-semibold border-warn-bd text-warn-fg bg-warn-bg/40 hover:bg-warn-bg"
+                                        >
+                                          View Missing Items
+                                        </Button>
+                                      </Link>
+                                    )}
+                                    {col.status === 'review_required' && (
+                                      <Link to={`/tasks/${task.id}`} className="w-full block">
+                                        <Button
+                                          variant="primary"
+                                          size="sm"
+                                          className="w-full text-[10px] h-6 py-0 justify-center font-semibold"
+                                        >
+                                          Review Lines ({summary.requiredLineCount - summary.acceptedLineCount})
+                                        </Button>
+                                      </Link>
+                                    )}
+                                    {col.status === 'needs_correction' && (
+                                      <Link to={`/tasks/${task.id}`} className="w-full block">
+                                        <Button
+                                          variant="secondary"
+                                          size="sm"
+                                          className="w-full text-[10px] h-6 py-0 justify-center font-semibold border-critical-bd text-critical bg-critical-bg/40 hover:bg-critical-bg"
+                                        >
+                                          Resolve Flagged
+                                        </Button>
+                                      </Link>
+                                    )}
+                                    {col.status === 'intake' && (
+                                      <Link to={`/tasks/${task.id}`} className="w-full block">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="w-full text-[10px] h-6 py-0 justify-center font-semibold"
+                                        >
+                                          Request Items
+                                        </Button>
+                                      </Link>
+                                    )}
+                                    {role === 'owner' && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setOverrideModalTask(task);
+                                        }}
+                                        className="text-[10px] text-ink-3 hover:text-stamp text-center underline cursor-pointer pt-0.5"
+                                      >
+                                        Override status...
+                                      </button>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <Select
+                                    value=""
+                                    placeholder="Move to..."
+                                    onChange={(val) => {
+                                      const target = val as TaskStatus;
+                                      if (!target) return;
+                                      if (target === 'submitted') {
+                                        setSubmittedModalTask(task);
+                                      } else if (target === 'completed') {
+                                        setCompletedModalTask(task);
+                                      } else {
+                                        setTaskStatus.mutate({ id: task.id, to: target });
+                                      }
+                                    }}
+                                    buttonClassName="text-[10px] h-6 py-0 px-2 bg-sheet-2 border-rule text-ink-2 hover:text-ink w-full font-medium"
+                                    menuClassName="min-w-[150px] text-xs z-30"
+                                  >
+                                    {col.status === 'in_preparation' && (
+                                      <option value="ready_next_step">Ready for Action</option>
+                                    )}
+                                    {col.status === 'ready_next_step' && (
+                                      <>
+                                        <option value="in_preparation">In Preparation</option>
+                                        <option value="submitted">Mark Submitted</option>
+                                        <option value="completed">Mark Completed</option>
+                                      </>
+                                    )}
+                                    {col.status === 'submitted' && (
+                                      <>
+                                        <option value="completed">Mark Completed</option>
+                                        <option value="in_preparation">Revert to In Prep</option>
+                                      </>
+                                    )}
+                                    {col.status === 'completed' && (
+                                      <option value="in_preparation">Reopen Task</option>
+                                    )}
+                                  </Select>
                                 )}
                               </div>
-                              <Link
-                                to={`/tasks/${task.id}`}
-                                className="block font-bold text-xs text-ink hover:text-stamp line-clamp-2"
-                              >
-                                {task.title || (task.templateId ? `Filing ${task.templateId}` : 'Tax Obligation')}
-                              </Link>
                             </div>
-
-                            {/* Card Status & Due */}
-                            <div className="flex items-center justify-between gap-1 pt-1 border-t border-rule/50">
-                              <DueBadge state={summary.dueState} dueDate={task.dueDate} />
-                              <span className="text-[10px] font-semibold text-ink-3 whitespace-nowrap shrink-0">
-                                {summary.acceptedLineCount}/{summary.requiredLineCount} items
-                              </span>
-                            </div>
-
-                            {/* Move to Menu */}
-                            <div className="pt-1.5 border-t border-rule/40 flex items-center justify-between">
-                              <select
-                                defaultValue=""
-                                onChange={(e) => {
-                                  const target = e.target.value as TaskStatus;
-                                  if (!target) return;
-                                  if (target === 'submitted') {
-                                    setSubmittedModalTask(task);
-                                  } else if (target === 'completed') {
-                                    setCompletedModalTask(task);
-                                  } else {
-                                    setTaskStatus.mutate({ id: task.id, to: target });
-                                  }
-                                  e.target.value = '';
-                                }}
-                                className="text-[10px] bg-sheet-2 border border-rule rounded px-1.5 py-0.5 text-ink-2 hover:text-ink focus:outline-none w-full"
-                              >
-                                <option value="" disabled>
-                                  Move to...
-                                </option>
-                                <option value="in_preparation">In Preparation</option>
-                                <option value="ready_next_step">Ready for Action</option>
-                                <option value="submitted">Submitted</option>
-                                <option value="completed">Completed</option>
-                              </select>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
@@ -705,6 +913,14 @@ export function TasksPage() {
           open={Boolean(completedModalTask)}
           onClose={() => setCompletedModalTask(null)}
           task={completedModalTask}
+        />
+      )}
+
+      {overrideModalTask && (
+        <OverrideStatusDialog
+          open={Boolean(overrideModalTask)}
+          onClose={() => setOverrideModalTask(null)}
+          task={overrideModalTask}
         />
       )}
     </div>

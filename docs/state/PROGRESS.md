@@ -545,4 +545,29 @@
   - Full TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
   - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 118 Vitest tests, Vite production build in 7.19s).
 
+## Session 2026-10-26 (Kanban Board Accidental Selection, Drag-and-Drop & Dropdown Bugfixes)
+- Problem Analysis:
+  - User reported "look at the bugs here also" with screenshot of the Tasks Kanban board showing:
+    1. Fragmented purple text selection boxes (`::selection` with `--stamp-soft`) across headers (`review`, `correction`), cards (`BIR 0619-E...`, `1/2 items`, `Move to`), and empty states (`No tasks`), triggered when users click, drag horizontally, or try dragging cards.
+    2. Lack of drag-and-drop on Kanban cards, causing attempted card dragging to highlight text across multiple columns.
+    3. Ugly native HTML `<select>` elements with default OS arrows for card transitions.
+    4. Broken/misleading "Move to..." options on cards in derived columns (`intake`, `waiting_on_client`, `review_required`, `needs_correction`) where line items are incomplete, causing silent failure or transition errors.
+- Engineering Resolution:
+  - Accidental Text Selection Elimination (`src/styles/base.css`, `src/routes/tasks/page.tsx`):
+    - Added `[data-kanban-board], [data-kanban-board] *` to `user-select: none; -webkit-user-select: none;` and transparent `::selection`.
+    - Added `select-none` to board container, column panels, headers, and task cards.
+  - Native HTML5 Drag and Drop Engine (`src/routes/tasks/page.tsx`):
+    - Enabled `draggable={true}` on task cards with tactile `cursor-grab active:cursor-grabbing` and `GripVertical` indicator.
+    - Implemented `onDragOver`, `onDragLeave`, and `onDrop` on columns with dynamic hover drop-zone styling (`border-stamp ring-2 ring-stamp/20 bg-stamp/10`).
+    - Handled drop transitions: triggers `MarkSubmittedDialog` for submitted column, `MarkCompletedDialog` for completed column, and validates line completion for operator columns (`in_preparation`, `ready_next_step`).
+    - Integrated `OverrideStatusDialog` when owner drops blocked tasks onto operator columns.
+  - Bespoke Animated Dropdowns & Derived Action Buttons:
+    - Replaced native HTML `<select>` in operator columns with bespoke fluid animated `Select` component, restricted to valid transitions.
+    - Replaced broken "Move to..." in derived columns with contextual line-resolution action buttons ("View Missing Items", "Review Lines", "Resolve Flagged", "Request Items") linking directly to the task, plus owner "Override status..." modal trigger.
+    - Added auto-dismissing notice toast banner for drag validation feedback.
+- Automated Verification:
+  - 16 test files passed, 118 tests green (`npm.cmd run test:run`).
+  - Full TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
+  - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 118 Vitest tests, Vite production build in 6.58s).
+
 

@@ -27,17 +27,20 @@
     box-shadow: var(--focus);
   }
 
-  /* Prevent accidental text selection and highlight artifacts on interactive controls */
+  /* Prevent accidental text selection and highlight artifacts on interactive controls and Kanban boards */
   button,
   [role="button"],
-  [role="tab"] {
+  [role="tab"],
+  [data-kanban-board],
+  [data-kanban-board] * {
     user-select: none;
     -webkit-user-select: none;
   }
 
   button::selection,
   [role="button"]::selection,
-  [role="tab"]::selection {
+  [role="tab"]::selection,
+  [data-kanban-board] *::selection {
     background: transparent;
   }
 
