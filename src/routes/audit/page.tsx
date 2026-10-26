@@ -125,27 +125,29 @@ export function AuditPage() {
           </p>
         </div>
 
-        <ExportMenu
-          label="Export Audit Log"
-          getData={() => ({
-            filename: `ordinovix-audit-log-${new Date().toISOString().slice(0, 10)}`,
-            title: 'Practice Activity Audit Trail',
-            subtitle: `Filter: ${filter.toUpperCase()} · Total Events: ${filteredEvents.length}`,
-            headers: ['Timestamp (PHT)', 'Actor', 'Target Record', 'Action', 'Details / Delta', 'Client Device'],
-            rows: filteredEvents.map((e) => [
-              e.time,
-              e.actor,
-              e.recordName,
-              e.action,
-              e.beforeAfter,
-              e.device,
-            ]),
-          })}
-        />
+        <div className="no-print">
+          <ExportMenu
+            label="Export Audit Log"
+            getData={() => ({
+              filename: `ordinovix-audit-log-${new Date().toISOString().slice(0, 10)}`,
+              title: 'Practice Activity Audit Trail',
+              subtitle: `Filter: ${filter.toUpperCase()} · Total Events: ${filteredEvents.length}`,
+              headers: ['Timestamp (PHT)', 'Actor', 'Target Record', 'Action', 'Details / Delta', 'Client Device'],
+              rows: filteredEvents.map((e) => [
+                e.time,
+                e.actor,
+                e.recordName,
+                e.action,
+                e.beforeAfter,
+                e.device,
+              ]),
+            })}
+          />
+        </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 border-b border-[var(--rule)] pb-2 text-sm">
+      <div className="flex items-center gap-2 border-b border-[var(--rule)] pb-2 text-sm no-print">
         <Filter className="w-4 h-4 text-[var(--ink-3)] mr-1" />
         <span className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mr-2">Views:</span>
         <button

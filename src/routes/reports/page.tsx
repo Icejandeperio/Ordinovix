@@ -274,7 +274,7 @@ export function ReportsPage() {
       </div>
 
       {/* Print Configuration Controls (Section 11.14) */}
-      <div className="p-4 rounded-panel bg-[var(--sheet)] border border-[var(--rule)] shadow-xs flex flex-wrap items-center gap-4 text-xs">
+      <div className="p-4 rounded-panel bg-[var(--sheet)] border border-[var(--rule)] shadow-xs flex flex-wrap items-center gap-4 text-xs no-print">
         <div className="flex items-center gap-1.5 font-semibold text-[var(--ink-3)] uppercase text-[11px]">
           <Printer className="w-3.5 h-3.5 text-[var(--stamp)]" />
           <span>Print Format Settings:</span>

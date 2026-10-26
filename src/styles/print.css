@@ -1,11 +1,12 @@
 /**
  * Section 19.6: High-fidelity Print Stylesheet
  * Strict black text on white for trip packs, client checklists, histories, and summaries.
+ * Eliminates printed scrollbars, horizontal clipping, and cleans interactive controls.
  */
 
 @media print {
   @page {
-    margin: 12mm 15mm;
+    margin: 12mm 14mm;
     size: auto;
   }
 
@@ -14,27 +15,72 @@
   *::after {
     box-shadow: none !important;
     text-shadow: none !important;
+    box-sizing: border-box !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  /* Universal overflow visibility to eliminate printed scrollbars and page cutoffs */
+  html,
+  body,
+  #root,
+  main,
+  div,
+  section,
+  article,
+  table,
+  thead,
+  tbody,
+  tr,
+  td,
+  th {
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
   }
 
   body {
     background: #FFFFFF !important;
-    color: #000000 !important;
-    font-size: 11pt !important;
-    line-height: 1.4 !important;
+    color: #182033 !important;
+    font-size: 10pt !important;
+    line-height: 1.35 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  /* Hide navigation, mobile bar, dev tools, sample banner, overlays */
+  /* Hide navigation, mobile bar, dev tools, sample banner, overlays, interactive search & filter controls */
   nav,
   aside,
   header,
   .no-print,
-  [role="dialog"],
-  [role="status"],
   #dev-menu,
   .sample-data-banner,
-  button:not(.print-include) {
+  input:not([type="checkbox"]),
+  select,
+  textarea,
+  button:not(.print-include),
+  [data-view-toggle],
+  .filter-strip,
+  .search-strip,
+  .actions-cell,
+  .actions-col,
+  th.actions-col,
+  td.actions-col,
+  th:last-child:has(button),
+  td:last-child:has(button) {
+    display: none !important;
+  }
+
+  /* Dialogs and overlays are hidden unless explicitly marked as a printable drawer */
+  [role="dialog"]:not([data-printable-drawer="true"]),
+  [role="status"],
+  .fixed.inset-0.bg-ink\/40 {
     display: none !important;
   }
 
@@ -46,15 +92,105 @@
     overflow: visible !important;
   }
 
+  /* When a document preview drawer is active, isolate and print the document preview */
+  body:has([data-printable-drawer="true"]) main#main-content {
+    display: none !important;
+  }
+
+  body:has([data-printable-drawer="true"]) [data-printable-drawer="true"] {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #FFFFFF !important;
+    box-shadow: none !important;
+    border: none !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  [data-printable-drawer="true"] .drawer-toolbar,
+  [data-printable-drawer="true"] .drawer-sidebar,
+  [data-printable-drawer="true"] .drawer-footer {
+    display: none !important;
+  }
+
+  [data-printable-drawer="true"] .drawer-canvas {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    padding: 0 !important;
+    background: #FFFFFF !important;
+    overflow: visible !important;
+  }
+
+  [data-printable-drawer="true"] img,
+  [data-printable-drawer="true"] svg {
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    transform: none !important;
+    page-break-inside: avoid !important;
+    box-shadow: none !important;
+  }
+
+  /* High-fidelity table formatting across all data registers */
+  .hidden.md\:block,
+  .md\:block {
+    display: block !important;
+  }
+
+  table {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: auto !important;
+    border-collapse: collapse !important;
+    font-size: 8.5pt !important;
+    line-height: 1.3 !important;
+    margin-top: 8pt !important;
+  }
+
+  th {
+    background-color: #F6F7F9 !important;
+    color: #182033 !important;
+    font-weight: 700 !important;
+    border-bottom: 1.5pt solid #5A3DB8 !important;
+    padding: 4pt 6pt !important;
+    text-transform: uppercase !important;
+    font-size: 7.5pt !important;
+    letter-spacing: 0.05em !important;
+    word-break: break-word !important;
+  }
+
+  td {
+    border-bottom: 0.5pt solid #D8DEE6 !important;
+    padding: 4pt 6pt !important;
+    color: #182033 !important;
+    font-variant-numeric: tabular-nums !important;
+    word-break: break-word !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  tr:nth-child(even) td {
+    background-color: #FAFAFC !important;
+  }
+
   /* 9 pt metadata typography */
   .meta,
   .print-meta,
   small {
-    font-size: 9pt !important;
-    color: #444444 !important;
+    font-size: 8.5pt !important;
+    color: #465065 !important;
   }
 
-  /* 4 mm physical bordered square checkboxes */
+  /* 4 mm physical bordered square checkboxes for Trip Pack & Checklists */
   .print-checkbox,
   input[type="checkbox"] {
     width: 4mm !important;
@@ -89,3 +225,4 @@
     display: block !important;
   }
 }
+

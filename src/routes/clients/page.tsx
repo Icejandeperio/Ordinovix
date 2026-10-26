@@ -172,7 +172,7 @@ export function ClientsPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 no-print">
           <Button
             variant="ghost"
             size="sm"
@@ -205,7 +205,7 @@ export function ClientsPage() {
       </div>
 
       {/* Built-in View Tabs */}
-      <div className="flex items-center gap-1 overflow-x-auto scrollbar-none border-b border-rule pb-px">
+      <div className="flex items-center gap-1 overflow-x-auto scrollbar-none border-b border-rule pb-px no-print">
         <button
           onClick={() => setActiveTab('active')}
           className={`px-3 py-2 text-xs font-semibold whitespace-nowrap border-b-2 transition-all flex items-center gap-1.5 ${
@@ -268,7 +268,7 @@ export function ClientsPage() {
       </div>
 
       {/* Instant Filter Controls */}
-      <div className="bg-sheet rounded-panel border border-rule p-3 space-y-3 shadow-2xs">
+      <div className="bg-sheet rounded-panel border border-rule p-3 space-y-3 shadow-2xs no-print">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3">
           {/* Instant Search Input */}
           <div className="relative flex-1">
@@ -411,7 +411,7 @@ export function ClientsPage() {
                     <th className="py-2.5 px-3 whitespace-nowrap min-w-[120px]">Next Due</th>
                     <th className="py-2.5 px-3 whitespace-nowrap min-w-[130px]">Authorization</th>
                     <th className="py-2.5 px-3 whitespace-nowrap">Assigned</th>
-                    <th className="py-2.5 px-2 w-8"></th>
+                    <th className="py-2.5 px-2 w-8 actions-col no-print"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-rule font-sans">
@@ -505,7 +505,7 @@ export function ClientsPage() {
                       </td>
 
                       {/* Chevron Action */}
-                      <td className="py-3 px-2 text-right text-ink-3 group-hover:text-stamp transition-colors">
+                      <td className="py-3 px-2 text-right text-ink-3 group-hover:text-stamp transition-colors actions-cell no-print">
                         <ChevronRight className="w-4 h-4 ml-auto" />
                       </td>
                     </tr>
@@ -516,7 +516,7 @@ export function ClientsPage() {
           </div>
 
           {/* Mobile Card View (< 768px) */}
-          <div className="md:hidden space-y-3">
+          <div className="md:hidden space-y-3 no-print">
             {filteredSummaries.map(({ client, activeTaskCount, blockedTaskCount, urgentDueState, authAttention }) => (
               <div
                 key={client.id}

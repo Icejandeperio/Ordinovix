@@ -329,7 +329,7 @@ export function ClientDetailPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0 no-print">
             <Button
               variant="primary"
               size="sm"
@@ -396,7 +396,7 @@ export function ClientDetailPage() {
         </div>
 
         {/* Tab Navigation Navigation Bar */}
-        <div className="px-6 border-t border-rule bg-sheet-2/40 overflow-x-auto scrollbar-none flex items-center gap-1">
+        <div className="px-6 border-t border-rule bg-sheet-2/40 overflow-x-auto scrollbar-none flex items-center gap-1 no-print">
           {TABS.map((tab) => {
             const isActive = currentTab === tab.key;
             return (

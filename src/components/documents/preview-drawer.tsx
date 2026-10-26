@@ -23,6 +23,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/format';
 import { formatBytes } from '@/lib/compression';
+import { printDocumentFile } from '@/lib/export';
 import { useSetLineStatus } from '@/hooks/useData';
 import type { DocumentFile, LineStatus } from '@/domain/types';
 
@@ -35,6 +36,7 @@ export interface PreviewDrawerProps {
   lineStatus?: LineStatus;
   onAcceptLine?: (lineId: string) => void;
   onFlagLine?: (lineId: string, note: string) => void;
+  clientMeta?: { displayName?: string; code?: string };
 }
 
 export function PreviewDrawer({
@@ -46,6 +48,7 @@ export function PreviewDrawer({
   lineStatus,
   onAcceptLine,
   onFlagLine,
+  clientMeta,
 }: PreviewDrawerProps) {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
@@ -98,11 +101,12 @@ export function PreviewDrawer({
       onClose={onClose}
       maxWidth="sm:max-w-[720px]"
       ariaLabel={activeDoc?.displayName || 'Document Preview'}
+      isPrintable={true}
     >
       {activeDoc && (
         <>
         {/* 1. Header Toolbar */}
-        <div className="p-3.5 border-b border-rule flex items-center justify-between gap-3 bg-sheet-2 shrink-0">
+        <div className="drawer-toolbar no-print p-3.5 border-b border-rule flex items-center justify-between gap-3 bg-sheet-2 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-xs font-bold text-ink truncate max-w-[280px]">
               {activeDoc.displayName}
@@ -180,8 +184,8 @@ export function PreviewDrawer({
 
             {/* Print */}
             <button
-              onClick={() => window.print()}
-              className="p-1.5 text-ink-3 hover:text-ink rounded-control bg-sheet border border-rule hover:bg-sheet-3 transition-colors"
+              onClick={() => printDocumentFile(activeDoc, clientMeta)}
+              className="p-1.5 text-ink-3 hover:text-ink rounded-control bg-sheet border border-rule hover:bg-sheet-3 transition-colors cursor-pointer"
               title="Print document"
             >
               <Printer className="w-3.5 h-3.5" />
@@ -200,7 +204,7 @@ export function PreviewDrawer({
         {/* 2. Main Canvas Body: Pure White Canvas even in dark mode */}
         <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
           {/* Document Canvas Area: Strictly white background */}
-          <div className="flex-1 bg-white flex items-center justify-center p-4 overflow-auto relative select-none">
+          <div className="drawer-canvas flex-1 bg-white flex items-center justify-center p-4 overflow-auto relative select-none">
             {isImage ? (
               <div
                 style={{
@@ -231,7 +235,7 @@ export function PreviewDrawer({
           </div>
 
           {/* 3. Document Details Side Panel */}
-          <div className="w-full md:w-64 border-t md:border-t-0 md:border-l border-rule bg-sheet p-4 space-y-4 overflow-y-auto shrink-0 text-xs">
+          <div className="drawer-sidebar no-print w-full md:w-64 border-t md:border-t-0 md:border-l border-rule bg-sheet p-4 space-y-4 overflow-y-auto shrink-0 text-xs">
             <div>
               <span className="text-[10px] uppercase font-bold text-ink-3 tracking-wider block mb-1">
                 Document Details
@@ -278,7 +282,7 @@ export function PreviewDrawer({
 
         {/* 4. Review Footer Actions (Section 9.8): Mark Accepted & Flag */}
         {canReview && activeDoc.lineId && (
-          <div className="p-3.5 border-t border-rule bg-sheet-2 flex items-center justify-between gap-3 shrink-0">
+          <div className="drawer-footer no-print p-3.5 border-t border-rule bg-sheet-2 flex items-center justify-between gap-3 shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-ink">
                 Line is currently awaiting review

@@ -246,7 +246,7 @@ export function TaskDetailPage() {
   return (
     <div className="space-y-6 pb-16">
       {/* 1. Navigation Top Bar */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between no-print">
         <Link
           to="/tasks"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-3 hover:text-ink transition-colors"
@@ -487,7 +487,7 @@ export function TaskDetailPage() {
                 size="sm"
                 onClick={() => setIsAddLineOpen(true)}
                 icon={<Plus className="w-3.5 h-3.5" />}
-                className="text-xs"
+                className="text-xs no-print"
               >
                 Add line
               </Button>

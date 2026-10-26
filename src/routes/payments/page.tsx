@@ -129,7 +129,7 @@ export function PaymentsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap no-print">
           <ExportMenu
             label="Export Payments"
             getData={() => ({
@@ -175,7 +175,7 @@ export function PaymentsPage() {
       </div>
 
       {/* Tabs and KPI summary */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-rule pb-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-rule pb-2 no-print">
         <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
           <button
             onClick={() => setActiveTab('all')}
@@ -235,7 +235,7 @@ export function PaymentsPage() {
       </div>
 
       {/* Filter Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 bg-sheet border border-rule rounded-panel p-3 text-xs">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 bg-sheet border border-rule rounded-panel p-3 text-xs no-print">
         {/* Search */}
         <div className="relative">
           <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3" />
@@ -319,7 +319,7 @@ export function PaymentsPage() {
                   <th className="py-2.5 px-3.5 whitespace-nowrap">Paid By</th>
                   <th className="py-2.5 px-3.5 whitespace-nowrap">Reimbursement</th>
                   <th className="py-2.5 px-3.5 whitespace-nowrap">Proof</th>
-                  <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Actions</th>
+                  <th className="py-2.5 px-3.5 text-right whitespace-nowrap actions-col no-print">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-rule text-ink">
@@ -441,7 +441,7 @@ export function PaymentsPage() {
                       </td>
 
                       {/* Actions */}
-                      <td className="py-3 px-3.5 text-right whitespace-nowrap">
+                      <td className="py-3 px-3.5 text-right whitespace-nowrap actions-cell no-print">
                         <button
                           onClick={() => handleOpenEdit(p)}
                           className="p-1 rounded text-ink-3 hover:text-stamp hover:bg-sheet-2 transition-colors cursor-pointer"

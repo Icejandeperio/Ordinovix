@@ -12,6 +12,7 @@ export interface SlideSheetProps {
   ariaLabel?: string;
   className?: string;
   panelClassName?: string;
+  isPrintable?: boolean;
 }
 
 export function SlideSheet({
@@ -24,6 +25,7 @@ export function SlideSheet({
   ariaLabel = 'Slide panel',
   className,
   panelClassName,
+  isPrintable = false,
 }: SlideSheetProps) {
   const systemReducedMotion = useReducedMotion();
   const htmlReduceMotion =
@@ -70,6 +72,7 @@ export function SlideSheet({
           role="dialog"
           aria-modal="true"
           aria-label={ariaLabel}
+          data-printable-drawer={isPrintable ? 'true' : undefined}
         >
           {/* Backdrop with gradual fade and gradual backdrop blur */}
           <motion.div
@@ -102,6 +105,7 @@ export function SlideSheet({
               maxWidth,
               panelClassName
             )}
+            data-printable-drawer={isPrintable ? 'true' : undefined}
           >
             {children}
           </motion.div>

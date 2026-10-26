@@ -207,7 +207,7 @@ export function TasksPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 no-print">
           {/* View Mode Toggle */}
           <div className="flex items-center p-0.5 bg-sheet-2 border border-rule rounded-control">
             <button
@@ -256,7 +256,7 @@ export function TasksPage() {
       </div>
 
       {/* 2. Built-in View Tabs */}
-      <div className="border-b border-rule flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-thin">
+      <div className="border-b border-rule flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-thin no-print">
         {[
           { id: 'all_open', label: 'All open' },
           { id: 'my_tasks', label: 'My tasks' },
@@ -286,7 +286,7 @@ export function TasksPage() {
       </div>
 
       {/* 3. Filter Bar */}
-      <div className="bg-sheet border border-rule rounded-panel p-3 flex flex-wrap items-center gap-2.5 shadow-2xs">
+      <div className="bg-sheet border border-rule rounded-panel p-3 flex flex-wrap items-center gap-2.5 shadow-2xs no-print">
         {/* Instant Search */}
         <div className="relative min-w-[200px] flex-1">
           <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2" />
@@ -423,7 +423,7 @@ export function TasksPage() {
                   <th className="py-2.5 px-3 min-w-[130px] whitespace-nowrap">Ready Progress</th>
                   <th className="py-2.5 px-3 min-w-[160px]">Next Action</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Owner</th>
-                  <th className="py-2.5 px-3 text-right whitespace-nowrap">Action</th>
+                  <th className="py-2.5 px-3 text-right whitespace-nowrap actions-col no-print">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-rule">
@@ -549,7 +549,7 @@ export function TasksPage() {
                       </td>
 
                       {/* Action */}
-                      <td className="py-3 px-3 text-right">
+                      <td className="py-3 px-3 text-right actions-cell no-print">
                         <Link
                           to={`/tasks/${task.id}`}
                           className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded bg-sheet-2 border border-rule text-ink hover:bg-sheet-3 transition-colors"

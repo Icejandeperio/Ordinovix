@@ -150,7 +150,7 @@ export function DocumentsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 no-print">
           {/* View mode toggle */}
           <div className="flex items-center p-0.5 bg-sheet-2 border border-rule rounded-control">
             <button
@@ -190,7 +190,7 @@ export function DocumentsPage() {
       </div>
 
       {/* 2. Built-in View Tabs */}
-      <div className="border-b border-rule flex items-center gap-1 overflow-x-auto pb-0.5">
+      <div className="border-b border-rule flex items-center gap-1 overflow-x-auto pb-0.5 no-print">
         {[
           { id: 'all', label: 'All documents' },
           { id: 'needs_review', label: 'Needs review' },
@@ -215,7 +215,7 @@ export function DocumentsPage() {
       </div>
 
       {/* 3. Filter Strip */}
-      <div className="bg-sheet border border-rule rounded-panel p-3 flex flex-wrap items-center gap-2.5 shadow-2xs">
+      <div className="bg-sheet border border-rule rounded-panel p-3 flex flex-wrap items-center gap-2.5 shadow-2xs no-print">
         {/* Search */}
         <div className="relative min-w-[200px] flex-1">
           <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2" />
@@ -318,7 +318,7 @@ export function DocumentsPage() {
                   <th className="py-2.5 px-3 whitespace-nowrap">File Size</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Uploaded By</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Date</th>
-                  <th className="py-2.5 px-3 text-right whitespace-nowrap">Actions</th>
+                  <th className="py-2.5 px-3 text-right whitespace-nowrap actions-col no-print">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-rule">
@@ -396,7 +396,7 @@ export function DocumentsPage() {
                       </td>
 
                       {/* Actions */}
-                      <td className="py-2.5 px-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <td className="py-2.5 px-3 text-right whitespace-nowrap actions-cell no-print" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => setPreviewDoc(doc)}
@@ -466,6 +466,14 @@ export function DocumentsPage() {
         document={previewDoc}
         documentsList={filtered}
         onSelectDocument={setPreviewDoc}
+        clientMeta={
+          previewDoc
+            ? (() => {
+                const c = clients.find((cl) => cl.client.id === previewDoc.clientId)?.client;
+                return c ? { displayName: c.displayName, code: c.code } : undefined;
+              })()
+            : undefined
+        }
         onAcceptLine={(lineId) => {
           setLineStatus.mutate({
             id: lineId,
