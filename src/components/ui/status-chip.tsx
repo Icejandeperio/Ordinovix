@@ -22,6 +22,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { daysFromToday, formatDate } from '@/lib/dates';
 import {
   LINE_STATUS_META,
   TASK_STATUS_META,
@@ -75,7 +76,7 @@ export function StatusChip({ status, className }: StatusChipProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+        'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6 whitespace-nowrap shrink-0',
         TONE_CLASSES[meta.tone],
         className
       )}
@@ -104,7 +105,7 @@ export function LineChip({ status, onClick, className }: LineChipProps) {
   const content = (
     <span
       className={cn(
-        'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+        'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6 whitespace-nowrap shrink-0',
         TONE_CLASSES[meta.tone],
         onClick && 'cursor-pointer hover:opacity-90 active:scale-95 transition-all',
         className
@@ -130,48 +131,71 @@ export interface DueBadgeProps {
 }
 
 export function DueBadge({
-  state = 'ok',
-  daysDiff = 0,
+  state,
+  daysDiff,
   dueDate,
   isCompleted = false,
   completedDate,
   className,
 }: DueBadgeProps) {
   if (isCompleted) {
+    const formattedDone = completedDate ? formatDate(completedDate) : 'recently';
     return (
       <span
+        title={completedDate ? `Completed on ${completedDate}` : undefined}
         className={cn(
-          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6 whitespace-nowrap shrink-0',
           'text-neutral-fg bg-neutral-bg border-neutral-bd',
           className
         )}
       >
         <CircleCheck className="w-3.5 h-3.5 shrink-0" />
-        <span>Done {completedDate || 'recently'}</span>
+        <span>Done {formattedDone}</span>
       </span>
     );
   }
 
-  if (state === 'overdue') {
+  // Calculate actual day difference from dueDate if provided, else use daysDiff
+  const hasExplicitDays = daysDiff !== undefined;
+  const computedDays = dueDate ? daysFromToday(dueDate) : hasExplicitDays ? daysDiff : undefined;
+
+  // Resolve effective due state: auto-derive if dueDate provided, or sanitize 0-day boundaries
+  let effectiveState: DueState = state || 'ok';
+  if (computedDays !== undefined) {
+    if (computedDays < 0) effectiveState = 'overdue';
+    else if (computedDays === 0) effectiveState = 'due_today';
+    else if (computedDays <= 7) effectiveState = 'due_soon';
+    else effectiveState = 'ok';
+  }
+
+  const tooltip = dueDate ? `Due date: ${dueDate}` : undefined;
+  const formattedDate = dueDate ? formatDate(dueDate) : 'later';
+
+  if (effectiveState === 'overdue') {
+    const absDays = computedDays !== undefined ? Math.abs(computedDays) : undefined;
+    const label = absDays !== undefined && absDays > 0 ? `Overdue ${absDays}d` : 'Overdue';
+
     return (
       <span
+        title={tooltip}
         className={cn(
-          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6 whitespace-nowrap shrink-0',
           'text-critical-fg bg-critical-bg border-critical-bd',
           className
         )}
       >
         <AlarmClock className="w-3.5 h-3.5 shrink-0 animate-pulse" />
-        <span>Overdue {Math.abs(daysDiff)}d</span>
+        <span>{label}</span>
       </span>
     );
   }
 
-  if (state === 'due_today') {
+  if (effectiveState === 'due_today') {
     return (
       <span
+        title={tooltip}
         className={cn(
-          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6 whitespace-nowrap shrink-0',
           'text-warn-fg bg-warn-bg border-warn-bd',
           className
         )}
@@ -182,31 +206,42 @@ export function DueBadge({
     );
   }
 
-  if (state === 'due_soon') {
+  if (effectiveState === 'due_soon') {
+    const label =
+      computedDays !== undefined
+        ? computedDays === 1
+          ? 'Due tomorrow'
+          : computedDays > 1
+            ? `Due in ${computedDays}d`
+            : 'Due today'
+        : 'Due soon';
+
     return (
       <span
+        title={tooltip}
         className={cn(
-          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6 whitespace-nowrap shrink-0',
           'text-warn-fg bg-warn-bg border-warn-bd',
           className
         )}
       >
         <Hourglass className="w-3.5 h-3.5 shrink-0" />
-        <span>Due in {daysDiff}d</span>
+        <span>{label}</span>
       </span>
     );
   }
 
   return (
     <span
+      title={tooltip}
       className={cn(
-        'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+        'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6 whitespace-nowrap shrink-0',
         'text-neutral-fg bg-neutral-bg border-neutral-bd',
         className
       )}
     >
       <Clock className="w-3.5 h-3.5 shrink-0" />
-      <span>Due {dueDate || 'later'}</span>
+      <span>Due {formattedDate}</span>
     </span>
   );
 }
@@ -219,17 +254,19 @@ export interface AuthorizationBadgeProps {
 }
 
 export function AuthorizationBadge({ state, detail, className }: AuthorizationBadgeProps) {
+  const formattedDetail = detail ? (detail.includes('-') ? formatDate(detail) : detail) : '';
+
   if (state === 'valid') {
     return (
       <span
         className={cn(
-          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6 whitespace-nowrap shrink-0',
           'text-good-fg bg-good-bg border-good-bd',
           className
         )}
       >
         <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-        <span>Valid {detail ? `to ${detail}` : ''}</span>
+        <span>Valid {formattedDetail ? `to ${formattedDetail}` : ''}</span>
       </span>
     );
   }
@@ -238,13 +275,13 @@ export function AuthorizationBadge({ state, detail, className }: AuthorizationBa
     return (
       <span
         className={cn(
-          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6 whitespace-nowrap shrink-0',
           'text-warn-fg bg-warn-bg border-warn-bd',
           className
         )}
       >
         <Hourglass className="w-3.5 h-3.5 shrink-0" />
-        <span>Expires in {detail || 'soon'}</span>
+        <span>Expires {formattedDetail ? `in ${formattedDetail}` : 'soon'}</span>
       </span>
     );
   }
@@ -253,13 +290,13 @@ export function AuthorizationBadge({ state, detail, className }: AuthorizationBa
     return (
       <span
         className={cn(
-          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+          'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6 whitespace-nowrap shrink-0',
           'text-critical-fg bg-critical-bg border-critical-bd',
           className
         )}
       >
         <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
-        <span>Expired {detail || ''}</span>
+        <span>Expired {formattedDetail || ''}</span>
       </span>
     );
   }
@@ -267,7 +304,7 @@ export function AuthorizationBadge({ state, detail, className }: AuthorizationBa
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6',
+        'inline-flex items-center gap-1 px-2 py-0.5 rounded-chip text-xs font-semibold border select-none h-6 whitespace-nowrap shrink-0',
         'text-critical-fg bg-critical-bg border-critical-bd',
         className
       )}
@@ -317,7 +354,7 @@ export function ClientFlag({ label, className }: { label: string; className?: st
   return (
     <span
       className={cn(
-        'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider',
+        'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider whitespace-nowrap shrink-0',
         'bg-sheet-2 text-ink-3 border border-rule',
         className
       )}

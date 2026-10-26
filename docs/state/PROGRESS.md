@@ -366,3 +366,29 @@
   - Full TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
   - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 101 Vitest tests, Vite production build).
   - Browser subagent visual QA verified smooth slide-in, gradual backdrop blur, and smooth slide-out on `NewTaskSheet`, `CommandPalette` (`Ctrl+K`), and `UserFormModal`.
+
+## Session 2026-10-26 (Due Date Badge Calculations, "0d" Elimination & Table Column Wrap Integrity)
+- Root Cause Analysis (`/debugging-engineering`):
+  - In `src/components/ui/status-chip.tsx`, `DueBadge` was missing `daysFromToday` calculation when `dueDate` was provided without `daysDiff`, causing `daysDiff` to default to 0 and render anomalous "Due in 0d" and "Overdue 0d" strings.
+  - Furthermore, `DueBadge`, `StatusChip`, `LineChip`, `AuthorizationBadge`, and `ClientFlag` lacked `whitespace-nowrap` and `shrink-0`, causing text to break on hyphens/spaces and vertically overflow the fixed `h-6` container into multiple disjointed lines (e.g. "Due" \n "2026-" \n "11-04").
+  - Table columns in `tasks/page.tsx`, `clients/page.tsx`, `documents/page.tsx`, `payments/page.tsx`, and `clients/detail.tsx` lacked minimum widths and nowrap constraints on status, due date, period, and action cells.
+- Systematic Resolution:
+  - Upgraded `DueBadge` in `src/components/ui/status-chip.tsx`:
+    - Imported `daysFromToday` and `formatDate` from `@/lib/dates`.
+    - Auto-calculates `computedDays` dynamically from `dueDate` whenever provided.
+    - Accurately renders relative labels: `Overdue ${N}d` (when negative), `Due today` (when 0), `Due tomorrow` (when 1), `Due in ${N}d` (when <= 7), and formatted `Due ${formatDate(dueDate)}` (e.g. `Due Nov 4`) when > 7 days.
+    - Completely eliminated any "0d" strings across all states.
+    - Added `whitespace-nowrap shrink-0` across all chips and badges (`StatusChip`, `LineChip`, `DueBadge`, `AuthorizationBadge`, `ClientFlag`).
+  - Hardened Table Columns Across All Screens:
+    - `tasks/page.tsx`: Added `whitespace-nowrap min-w-[125px]` to Due Date column, `min-w-[110px]` to Status column, and `whitespace-nowrap` to period, client, and action cells.
+    - `clients/page.tsx`: Added `whitespace-nowrap min-w-[120px]` to Next Due, `min-w-[130px]` to Authorization, and `whitespace-nowrap` to open tasks and blocked columns.
+    - `documents/page.tsx`: Added `whitespace-nowrap` to Preview, Client, Kind, Size, Uploaded By, Date, and Actions columns.
+    - `payments/page.tsx`: Added `whitespace-nowrap` to Paid On, Reference, Channel, Amount, and Proof columns.
+    - `clients/detail.tsx`: Added `formatDate` and `whitespace-nowrap` to client payment history table.
+  - Regression Test Suite (`src/data/mock/polish.test.ts`):
+    - Added tests verifying day difference calculations without boundary 0d errors and human-readable date formatting without raw hyphen breaks.
+- Verification:
+  - 103 unit tests green across 12 test files (`vitest run`).
+  - Full TypeScript typecheck clean (`0 errors`, `tsc --noEmit`).
+  - Full verification gate (`scripts/verify.ps1`) PASSED (TypeScript check, 103 Vitest tests, Vite production build).
+  - Browser subagent visual inspection confirmed single-line, clean pill rendering (`Due tomorrow`, `Overdue 2d`, `Due Nov 4`) with zero text wrapping or overflow.

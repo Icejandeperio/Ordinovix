@@ -5,7 +5,8 @@ import {
   clearErrorLogs,
   generateDiagnosticReport,
 } from '@/lib/error-buffer';
-import { formatPeso, formatPesoShort, parseToCentavos, todayInManila } from '@/lib/format';
+import { formatPeso, formatPesoShort, parseToCentavos, todayInManila, formatDate } from '@/lib/format';
+import { daysFromToday } from '@/lib/dates';
 
 describe('Polish & System Hygiene (M11)', () => {
   describe('Error Ring Buffer & Diagnostics (Section 19.8)', () => {
@@ -143,6 +144,31 @@ describe('Polish & System Hygiene (M11)', () => {
       const manilaDateRegex = /^\d{4}-\d{2}-\d{2}$/;
       const today = todayInManila();
       expect(today).toMatch(manilaDateRegex);
+    });
+  });
+
+  describe('Due Date & Badge Display Integrity (Section 9.7 & 16.5)', () => {
+    it('correctly calculates day differences from today without boundary 0d errors', () => {
+      const today = todayInManila();
+      const [y, m, d] = today.split('-').map(Number);
+      const yesterday = `${y}-${String(m).padStart(2, '0')}-${String(d - 1).padStart(2, '0')}`;
+      const tomorrow = `${y}-${String(m).padStart(2, '0')}-${String(d + 1).padStart(2, '0')}`;
+
+      // Date in past returns negative
+      expect(daysFromToday('2020-01-01', today)).toBeLessThan(0);
+      // Date in future returns positive
+      expect(daysFromToday('2030-01-01', today)).toBeGreaterThan(0);
+      // Today returns exactly 0
+      expect(daysFromToday(today, today)).toBe(0);
+    });
+
+    it('formats human readable dates without raw ISO string hyphen wrapping', () => {
+      const today = todayInManila();
+      const parts = today.split('-');
+      const formatted = formatDate(today, today);
+      // Formatted date should be 'MMM d', e.g. 'Oct 26', not '2026-10-26'
+      expect(formatted).not.toContain('-');
+      expect(formatted).toMatch(/^[A-Z][a-z]{2}\s\d{1,2}$/);
     });
   });
 });

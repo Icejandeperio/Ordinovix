@@ -699,19 +699,19 @@ export function ClientDetailPage() {
                 <table className="w-full text-xs text-left">
                   <thead className="bg-sheet-2 border-b border-rule text-ink-2 font-semibold">
                     <tr>
-                      <th className="p-3">Paid On</th>
-                      <th className="p-3">Channel</th>
-                      <th className="p-3">Reference</th>
-                      <th className="p-3 text-right">Amount</th>
+                      <th className="p-3 whitespace-nowrap">Paid On</th>
+                      <th className="p-3 whitespace-nowrap">Channel</th>
+                      <th className="p-3 whitespace-nowrap">Reference</th>
+                      <th className="p-3 text-right whitespace-nowrap">Amount</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-rule font-sans">
                     {payments.map((p) => (
                       <tr key={p.id} className="hover:bg-sheet-2">
-                        <td className="p-3 font-mono">{p.paidOn}</td>
-                        <td className="p-3 uppercase font-medium">{p.channel.replace(/_/g, ' ')}</td>
-                        <td className="p-3 font-mono text-ink-3">{p.referenceNo || '—'}</td>
-                        <td className="p-3 text-right font-mono font-bold text-ink">
+                        <td className="p-3 font-mono whitespace-nowrap">{formatDate(p.paidOn)}</td>
+                        <td className="p-3 uppercase font-medium whitespace-nowrap">{p.channel.replace(/_/g, ' ')}</td>
+                        <td className="p-3 font-mono text-ink-3 whitespace-nowrap">{p.referenceNo || '—'}</td>
+                        <td className="p-3 text-right font-mono font-bold text-ink whitespace-nowrap">
                           {formatPeso(p.amount)}
                         </td>
                       </tr>

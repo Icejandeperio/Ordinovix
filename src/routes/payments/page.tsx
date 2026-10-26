@@ -311,15 +311,15 @@ export function PaymentsPage() {
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-sheet-2 border-b border-rule text-ink-2 font-bold uppercase tracking-wider text-[11px]">
-                  <th className="py-2.5 px-3.5">Paid On</th>
-                  <th className="py-2.5 px-3.5">Client</th>
-                  <th className="py-2.5 px-3.5">Reference No</th>
-                  <th className="py-2.5 px-3.5">Channel / Provider</th>
-                  <th className="py-2.5 px-3.5 text-right">Amount (PHP)</th>
-                  <th className="py-2.5 px-3.5">Paid By</th>
-                  <th className="py-2.5 px-3.5">Reimbursement</th>
-                  <th className="py-2.5 px-3.5">Proof</th>
-                  <th className="py-2.5 px-3.5 text-right">Actions</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Paid On</th>
+                  <th className="py-2.5 px-3.5 min-w-[160px]">Client</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap min-w-[120px]">Reference No</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Channel / Provider</th>
+                  <th className="py-2.5 px-3.5 text-right whitespace-nowrap min-w-[110px]">Amount (PHP)</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Paid By</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Reimbursement</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Proof</th>
+                  <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-rule text-ink">
@@ -351,9 +351,9 @@ export function PaymentsPage() {
                       </td>
 
                       {/* Reference Number with Copy Button */}
-                      <td className="py-3 px-3.5 font-mono text-xs">
+                      <td className="py-3 px-3.5 font-mono text-xs whitespace-nowrap">
                         {p.referenceNo ? (
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 whitespace-nowrap">
                             <span className="font-bold text-ink">{p.referenceNo}</span>
                             <button
                               onClick={() => handleCopyRef(p.referenceNo!)}
@@ -373,9 +373,9 @@ export function PaymentsPage() {
                       </td>
 
                       {/* Channel & Provider */}
-                      <td className="py-3 px-3.5">
+                      <td className="py-3 px-3.5 whitespace-nowrap">
                         <div className="space-y-0.5">
-                          <span className="px-1.5 py-0.2 rounded text-[10px] font-bold uppercase bg-sheet-2 border border-rule text-ink-2">
+                          <span className="px-1.5 py-0.2 rounded text-[10px] font-bold uppercase bg-sheet-2 border border-rule text-ink-2 whitespace-nowrap shrink-0">
                             {p.channel.replace(/_/g, ' ')}
                           </span>
                           {p.provider && (

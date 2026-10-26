@@ -415,15 +415,15 @@ export function TasksPage() {
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-sheet-2 border-b border-rule text-ink-3 font-semibold uppercase tracking-wider text-[10px]">
-                  <th className="py-2.5 px-3">Client</th>
-                  <th className="py-2.5 px-3">Task / Obligation</th>
-                  <th className="py-2.5 px-3">Period</th>
-                  <th className="py-2.5 px-3">Status</th>
-                  <th className="py-2.5 px-3">Due Date</th>
-                  <th className="py-2.5 px-3 min-w-[130px]">Ready Progress</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Client</th>
+                  <th className="py-2.5 px-3 min-w-[160px]">Task / Obligation</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Period</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap min-w-[110px]">Status</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap min-w-[125px]">Due Date</th>
+                  <th className="py-2.5 px-3 min-w-[130px] whitespace-nowrap">Ready Progress</th>
                   <th className="py-2.5 px-3 min-w-[160px]">Next Action</th>
-                  <th className="py-2.5 px-3">Owner</th>
-                  <th className="py-2.5 px-3 text-right">Action</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Owner</th>
+                  <th className="py-2.5 px-3 text-right whitespace-nowrap">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-rule">
@@ -441,7 +441,7 @@ export function TasksPage() {
                       className="hover:bg-sheet-2/80 transition-colors group cursor-pointer"
                     >
                       {/* Client */}
-                      <td className="py-3 px-3">
+                      <td className="py-3 px-3 whitespace-nowrap">
                         <Link
                           to={`/clients/${client.id}`}
                           onClick={(e) => e.stopPropagation()}
@@ -471,9 +471,9 @@ export function TasksPage() {
                       </td>
 
                       {/* Period */}
-                      <td className="py-3 px-3">
+                      <td className="py-3 px-3 whitespace-nowrap">
                         {task.period ? (
-                          <span className="px-1.5 py-0.5 rounded bg-sheet-2 border border-rule text-[11px] font-semibold text-ink-2">
+                          <span className="px-1.5 py-0.5 rounded bg-sheet-2 border border-rule text-[11px] font-semibold text-ink-2 whitespace-nowrap">
                             {task.period}
                           </span>
                         ) : (
@@ -482,8 +482,8 @@ export function TasksPage() {
                       </td>
 
                       {/* Status */}
-                      <td className="py-3 px-3">
-                        <div className="flex items-center gap-1.5">
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 whitespace-nowrap">
                           <StatusChip status={summary.displayedStatus} />
                           {isOverridden && (
                             <span
@@ -495,7 +495,7 @@ export function TasksPage() {
                       </td>
 
                       {/* Due */}
-                      <td className="py-3 px-3">
+                      <td className="py-3 px-3 whitespace-nowrap min-w-[125px]">
                         <DueBadge
                           state={summary.dueState}
                           dueDate={task.dueDate}
@@ -636,7 +636,7 @@ export function TasksPage() {
                             {/* Card Status & Due */}
                             <div className="flex items-center justify-between gap-1 pt-1 border-t border-rule/50">
                               <DueBadge state={summary.dueState} dueDate={task.dueDate} />
-                              <span className="text-[10px] font-semibold text-ink-3">
+                              <span className="text-[10px] font-semibold text-ink-3 whitespace-nowrap shrink-0">
                                 {summary.acceptedLineCount}/{summary.requiredLineCount} items
                               </span>
                             </div>

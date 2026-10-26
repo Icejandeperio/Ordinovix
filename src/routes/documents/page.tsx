@@ -311,14 +311,14 @@ export function DocumentsPage() {
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-sheet-2 border-b border-rule text-ink-3 font-semibold uppercase tracking-wider text-[10px]">
-                  <th className="py-2.5 px-3 w-16">Preview</th>
-                  <th className="py-2.5 px-3">Document Name</th>
-                  <th className="py-2.5 px-3">Client</th>
-                  <th className="py-2.5 px-3">Category Kind</th>
-                  <th className="py-2.5 px-3">File Size</th>
-                  <th className="py-2.5 px-3">Uploaded By</th>
-                  <th className="py-2.5 px-3">Date</th>
-                  <th className="py-2.5 px-3 text-right">Actions</th>
+                  <th className="py-2.5 px-3 w-16 whitespace-nowrap">Preview</th>
+                  <th className="py-2.5 px-3 min-w-[180px]">Document Name</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Client</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Category Kind</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">File Size</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Uploaded By</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Date</th>
+                  <th className="py-2.5 px-3 text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-rule">
@@ -374,29 +374,29 @@ export function DocumentsPage() {
                       </td>
 
                       {/* Kind */}
-                      <td className="py-2.5 px-3">
-                        <span className="px-2 py-0.5 rounded-chip text-[10px] font-bold uppercase bg-sheet-2 border border-rule text-ink-2 font-mono">
+                      <td className="py-2.5 px-3 whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded-chip text-[10px] font-bold uppercase bg-sheet-2 border border-rule text-ink-2 font-mono whitespace-nowrap shrink-0">
                           {doc.kind.replace(/_/g, ' ')}
                         </span>
                       </td>
 
                       {/* Size */}
-                      <td className="py-2.5 px-3 font-mono text-[11px] text-ink-2">
+                      <td className="py-2.5 px-3 font-mono text-[11px] text-ink-2 whitespace-nowrap">
                         {formatBytes(doc.sizeBytes)}
                       </td>
 
                       {/* Uploaded By */}
-                      <td className="py-2.5 px-3 text-ink-2">
+                      <td className="py-2.5 px-3 text-ink-2 whitespace-nowrap">
                         {doc.createdBy === 'user-ana' ? 'Ana Santos' : 'Ben Morales'}
                       </td>
 
                       {/* Date */}
-                      <td className="py-2.5 px-3 text-ink-3 text-[11px]">
+                      <td className="py-2.5 px-3 text-ink-3 text-[11px] whitespace-nowrap">
                         {formatDate(doc.createdAt.slice(0, 10))}
                       </td>
 
                       {/* Actions */}
-                      <td className="py-2.5 px-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      <td className="py-2.5 px-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => setPreviewDoc(doc)}

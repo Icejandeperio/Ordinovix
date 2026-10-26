@@ -404,13 +404,13 @@ export function ClientsPage() {
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-rule bg-sheet-2/60 text-ink-2 font-semibold select-none">
-                    <th className="py-2.5 px-3 w-16">Code</th>
+                    <th className="py-2.5 px-3 w-16 whitespace-nowrap">Code</th>
                     <th className="py-2.5 px-3 min-w-[200px]">Client / Firm Name</th>
-                    <th className="py-2.5 px-3 text-center">Open Tasks</th>
-                    <th className="py-2.5 px-3 text-center">Blocked</th>
-                    <th className="py-2.5 px-3">Next Due</th>
-                    <th className="py-2.5 px-3">Authorization</th>
-                    <th className="py-2.5 px-3">Assigned</th>
+                    <th className="py-2.5 px-3 text-center whitespace-nowrap">Open Tasks</th>
+                    <th className="py-2.5 px-3 text-center whitespace-nowrap">Blocked</th>
+                    <th className="py-2.5 px-3 whitespace-nowrap min-w-[120px]">Next Due</th>
+                    <th className="py-2.5 px-3 whitespace-nowrap min-w-[130px]">Authorization</th>
+                    <th className="py-2.5 px-3 whitespace-nowrap">Assigned</th>
                     <th className="py-2.5 px-2 w-8"></th>
                   </tr>
                 </thead>
