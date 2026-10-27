@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-27 U15 Dev menu set today survives its reload — done
+- Changed: lib/dates.ts persists the override in localStorage and reads it at module load; known-failures (B12 removed)
+- Evidence: verify.mjs exit 0; tests now passing: B12; PR #12
+- Notes: T1 no verifier; override only changes today, an existing persisted store keeps its dates
+
 ## 2026-10-27 U14 Small correctness fixes batch — done
 - Changed: dates.ts Manila formatting + nowInManila + formatDuration, packList copies, record cost fields, task header period label, palette rename, mock timestamps
 - Evidence: verify.mjs exit 0; tests now passing: U14(B15,B22,B23,B25,B28,B29); PR #11

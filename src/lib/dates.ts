@@ -1,10 +1,33 @@
 import { format, parseISO, differenceInCalendarDays, addDays, isSameYear } from 'date-fns';
 import { tz } from '@date-fns/tz';
 
-let devTodayOverride: string | null = null;
+/**
+ * Dev-menu "today" override. It lives in localStorage so it survives the page reload the dev menu triggers,
+ * and it is read when this module loads, before any store seeds itself from today's date.
+ */
+const DEV_TODAY_KEY = 'ox-mock-today';
+
+function readStoredDevToday(): string | null {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    const stored = localStorage.getItem(DEV_TODAY_KEY);
+    return stored && /^\d{4}-\d{2}-\d{2}$/.test(stored) ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
+let devTodayOverride: string | null = readStoredDevToday();
 
 export function setDevToday(date: string | null): void {
   devTodayOverride = date;
+  try {
+    if (typeof localStorage === 'undefined') return;
+    if (date) localStorage.setItem(DEV_TODAY_KEY, date);
+    else localStorage.removeItem(DEV_TODAY_KEY);
+  } catch {
+    // storage unavailable: the override then lasts until the page reloads
+  }
 }
 
 export function getDevToday(): string | null {

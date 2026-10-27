@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { formatTime, formatDateTime, formatDuration, nowInManila } from './dates';
 
 describe('lib/dates Asia/Manila formatting (B25)', () => {
@@ -36,5 +36,55 @@ describe('formatDuration (B23)', () => {
     expect(formatDuration(undefined, '2026-10-24T10:30:00+08:00')).toBe('Not recorded');
     expect(formatDuration('2026-10-24T09:00:00+08:00', undefined)).toBe('Not recorded');
     expect(formatDuration(undefined, undefined)).toBe('Not recorded');
+  });
+});
+
+describe('dev "today" override survives a reload (B12)', () => {
+  const KEY = 'ox-mock-today';
+  const backing = new Map<string, string>();
+
+  beforeEach(() => {
+    backing.clear();
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => backing.get(k) ?? null,
+      setItem: (k: string, v: string) => void backing.set(k, String(v)),
+      removeItem: (k: string) => void backing.delete(k),
+    });
+    vi.resetModules();
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /** A page reload re-evaluates the module; localStorage is all that survives. */
+  const reload = () => import('./dates');
+
+  it('is stored when set and applied as soon as the module loads', async () => {
+    const before = await reload();
+    before.setDevToday('2026-11-03');
+    expect(backing.get(KEY)).toBe('2026-11-03');
+
+    vi.resetModules();
+    const after = await reload();
+    expect(after.getDevToday()).toBe('2026-11-03');
+    expect(after.todayInManila()).toBe('2026-11-03');
+  });
+
+  it('can be cleared, and stays cleared after a reload', async () => {
+    const first = await reload();
+    first.setDevToday('2026-11-03');
+    first.setDevToday(null);
+    expect(backing.has(KEY)).toBe(false);
+
+    vi.resetModules();
+    const after = await reload();
+    expect(after.getDevToday()).toBeNull();
+    expect(after.todayInManila()).not.toBe('2026-11-03');
+  });
+
+  it('ignores a stored value that is not a calendar date', async () => {
+    backing.set(KEY, 'not-a-date');
+    const mod = await reload();
+    expect(mod.getDevToday()).toBeNull();
   });
 });
