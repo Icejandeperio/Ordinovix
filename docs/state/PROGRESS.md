@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-27 U13 Welcome wizard persists what it collects — done
+- Changed: welcome wizard saves each step; Today Getting started card; onboarding progress in settings; lib/onboarding
+- Evidence: verify.mjs exit 0; tests now passing: B30, U13 acceptance (11), onboarding unit tests; PR #18
+- Notes: T1, no verifier; card added per spec 11.3 since none existed; stray draft u13-welcome-setup.spec.ts queued.
+
 ## 2026-10-27 U12 Insights computed from data with filters and helper scoping — done
 - Changed: metrics.ts (+tests), types.ts, mock insights.get, Insights page and heat calendar, useMemberships(enabled)
 - Evidence: verify.mjs exit 0; tests now passing: B20, U12 acceptance (8), metrics hand-count tests, mock filter tests; PR #17
