@@ -236,7 +236,7 @@
       "id": "U07",
       "phase": "P2",
       "tier": "T2",
-      "status": "pending",
+      "status": "blocked",
       "depends_on": [
         "U02",
         "U06"
@@ -259,7 +259,9 @@
       ],
       "tests": [
         "B11"
-      ]
+      ],
+      "pr": 9,
+      "evidence": "verify.mjs exit 0; tests now passing: B11 (on the branch); verifier/PR #9; BLOCKED after three failed verifier rounds; three narrow helper field-level holes remain; decision queued in QUEUE.md"
     },
     {
       "id": "U08",
@@ -290,7 +292,7 @@
       "id": "U09",
       "phase": "P2",
       "tier": "T2",
-      "status": "pending",
+      "status": "in_progress",
       "depends_on": [
         "U00"
       ],
