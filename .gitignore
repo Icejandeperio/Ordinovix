@@ -43,3 +43,16 @@ coverage/
 # Temporary files
 tmp/
 scratch/
+
+# Playwright and gate output
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# PWA dev build (vite-plugin-pwa)
+dev-dist/
+
+# Claude Code personal files (never committed)
+.claude/settings.local.json
+CLAUDE.local.md
