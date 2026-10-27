@@ -224,6 +224,14 @@ export function TasksPage() {
       return;
     }
 
+    // A blocked task moves only through an owner override with a reason (spec 16.4)
+    if (summary.statusGroup === 'blocked' && (targetColStatus === 'submitted' || targetColStatus === 'completed')) {
+      setBoardNotice(
+        `Cannot move to "${targetColLabel}": ${summary.blockingReason || 'the task is blocked'}. Only an owner override with a reason can change it.`
+      );
+      return;
+    }
+
     if (targetColStatus === 'submitted') {
       setSubmittedModalTask(summary.task);
       return;
@@ -851,7 +859,14 @@ export function TasksPage() {
                                       } else if (target === 'completed') {
                                         setCompletedModalTask(task);
                                       } else {
-                                        setTaskStatus.mutate({ id: task.id, to: target });
+                                        setTaskStatus.mutate(
+                                          { id: task.id, to: target },
+                                          {
+                                            onError: (err: any) => {
+                                              setBoardNotice(err?.message || 'Failed to update task status');
+                                            },
+                                          }
+                                        );
                                       }
                                     }}
                                     buttonClassName="text-[10px] h-6 py-0 px-2 bg-sheet-2 border-rule text-ink-2 hover:text-ink w-full font-medium"
