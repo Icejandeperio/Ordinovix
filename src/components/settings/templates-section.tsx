@@ -24,10 +24,10 @@ function TemplateRow({
   const lineCount = detail ? detail.lines.length : null;
 
   return (
-    <div className="p-3.5 rounded-lg border border-[var(--rule)] bg-[var(--sheet)] flex items-center justify-between gap-4">
-      <div className="space-y-1">
+    <div className="p-3.5 rounded-lg border border-[var(--rule)] bg-[var(--sheet)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+      <div className="space-y-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-[var(--neutral-bg)] text-[var(--neutral-fg)] border border-[var(--neutral-bd)]">
+          <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-[var(--neutral-bg)] text-[var(--neutral-fg)] border border-[var(--neutral-bd)] whitespace-nowrap shrink-0">
             {template.code}
           </span>
           <span className="text-sm font-semibold text-[var(--ink)]">{template.name}</span>
