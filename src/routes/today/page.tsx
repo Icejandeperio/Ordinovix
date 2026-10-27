@@ -4,6 +4,7 @@ import { useToday, useSetLineStatus, useSession } from '@/hooks/useData';
 import { formatDate, formatRelative, formatTime } from '@/lib/format';
 import { formatHeaderDate } from '@/lib/dates';
 import { Button } from '@/components/ui/button';
+import { GettingStartedCard } from '@/components/today/getting-started-card';
 import { ModalDialog } from '@/components/ui/modal-dialog';
 import { DueBadge, StatusChip, ReadinessMeter, AuthorizationBadge } from '@/components/ui/status-chip';
 import { ReviewStamp } from '@/components/ui/stamp';
@@ -190,6 +191,8 @@ export function TodayPage() {
           </div>
         )}
       </div>
+
+      <GettingStartedCard />
 
       {/* 11.3 Count Strip (Interactive Buttons) */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
