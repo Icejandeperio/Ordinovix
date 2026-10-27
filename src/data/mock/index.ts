@@ -58,6 +58,44 @@ import type {
 import { generateSeedData } from './seed';
 import { buildDemoData } from './seed-demo';
 import { NotFoundError, ForbiddenError } from '@/domain/errors';
+import {
+  validate,
+  validateReason,
+  ClientWriteSchema,
+  ContactWriteSchema,
+  AuthorizationWriteSchema,
+  TemplateWriteSchema,
+  MarkVerifiedSchema,
+  DeadlineMoveWriteSchema,
+  HolidayWriteSchema,
+  SettingsWriteSchema,
+  MembershipInviteSchema,
+  TaskCreateSchema,
+  TaskUpdateSchema,
+  MarkSubmittedSchema,
+  MarkCompletedSchema,
+  ChangeDueSchema,
+  NextActionSchema,
+  LineStatusExtraSchema,
+  LineWriteSchema,
+  DocumentMetaSchema,
+  DocumentUpdateSchema,
+  FollowUpCreateSchema,
+  MarkSentWriteSchema,
+  LogResponseWriteSchema,
+  MessageWriteSchema,
+  OfficeWriteSchema,
+  VisitWriteSchema,
+  VisitItemWriteSchema,
+  VisitAddItemSchema,
+  OutcomeWriteSchema,
+  FinishVisitSchema,
+  VisitKitWriteSchema,
+  PaymentWriteSchema,
+  NoteWriteSchema,
+  BaselineWriteSchema,
+  PulseWriteSchema,
+} from '@/domain/schemas';
 import { requireClientAccess, requireOwner, canReviewLines, canAccessClient, insightsScope, type PolicyActor } from '@/domain/policy';
 import {
   derivedStatus,
@@ -1086,6 +1124,7 @@ export const mockRepositories: Repositories = {
     async save(s: Partial<OrgSettings>) {
       await simulateLatency();
       assertOwner();
+      validate(SettingsWriteSchema, s);
       store.settings = { ...store.settings, ...s, updatedAt: todayInManila() + 'T00:00:00+08:00', version: store.settings.version + 1 };
       saveStore();
       return store.settings;
@@ -1108,6 +1147,7 @@ export const mockRepositories: Repositories = {
     },
     async invite(m) {
       await simulateLatency();
+      validate(MembershipInviteSchema, m);
       const { user, membership } = getCurrentUser();
       if (membership.role !== 'owner') {
         throw new ForbiddenError('Access denied: Only practice owners can manage operator memberships');
@@ -1444,6 +1484,7 @@ export const mockRepositories: Repositories = {
       await simulateLatency();
       assertPatch('clients.upsert', c);
       if (c.id) assertClient(c.id); else assertOwner();
+      validate(ClientWriteSchema, c);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       if (c.id) {
@@ -1497,6 +1538,7 @@ export const mockRepositories: Repositories = {
     async archive(id, reason) {
       await simulateLatency();
       assertClient(id);
+      validateReason(reason);
       const client = store.clients.find((c) => c.id === id);
       if (client) {
         client.status = 'archived';
@@ -1509,6 +1551,7 @@ export const mockRepositories: Repositories = {
     async restore(id, reason) {
       await simulateLatency();
       assertClient(id);
+      validateReason(reason);
       const client = store.clients.find((c) => c.id === id);
       if (client) {
         client.status = 'active';
@@ -1625,6 +1668,7 @@ export const mockRepositories: Repositories = {
       assertPatch('contacts.upsert', c);
       assertReferences(c, c.clientId ?? store.contacts.find((x) => x.id === c.id)?.clientId);
       assertRecordWrite(store.contacts, c.id, c.clientId);
+      validate(ContactWriteSchema, c);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       if (c.id) {
@@ -1656,6 +1700,7 @@ export const mockRepositories: Repositories = {
     async remove(id, reason) {
       await simulateLatency();
       assertClient(store.contacts.find((x) => x.id === id)?.clientId);
+      validateReason(reason);
       const c = store.contacts.find((item) => item.id === id);
       if (c) {
         c.deletedAt = todayInManila() + 'T00:00:00+08:00';
@@ -1676,6 +1721,7 @@ export const mockRepositories: Repositories = {
       assertPatch('authorizations.upsert', a);
       assertReferences(a, a.clientId ?? store.authorizations.find((x) => x.id === a.id)?.clientId);
       assertRecordWrite(store.authorizations, a.id, a.clientId);
+      validate(AuthorizationWriteSchema, a);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       if (a.id) {
@@ -1710,6 +1756,7 @@ export const mockRepositories: Repositories = {
       await simulateLatency();
       assertPatch('authorizations.upsert', next);
       assertClient(store.authorizations.find((x) => x.id === oldId)?.clientId ?? next.clientId);
+      validate(AuthorizationWriteSchema, next);
       const created = await mockRepositories.authorizations.upsert(next);
       const old = store.authorizations.find((a) => a.id === oldId);
       if (old) {
@@ -1736,6 +1783,7 @@ export const mockRepositories: Repositories = {
     async save(t, lines) {
       await simulateLatency();
       assertOwner();
+      validate(TemplateWriteSchema, t);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       let template: TaskTemplate;
@@ -1770,6 +1818,7 @@ export const mockRepositories: Repositories = {
     async markVerified(id, v) {
       await simulateLatency();
       assertOwner();
+      validate(MarkVerifiedSchema, v);
       const t = store.templates.find((item) => item.id === id);
       if (!t) throw new Error('Template not found');
       t.verified = true;
@@ -1788,6 +1837,7 @@ export const mockRepositories: Repositories = {
     async save(m, applyToOpenTasks) {
       await simulateLatency();
       assertOwner();
+      validate(DeadlineMoveWriteSchema, m);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       const move: DeadlineMove = {
@@ -1818,9 +1868,10 @@ export const mockRepositories: Repositories = {
       saveStore();
       return { move, updatedTaskIds: updatedIds };
     },
-    async remove(id) {
+    async remove(id, reason) {
       await simulateLatency();
       assertOwner();
+      validateReason(reason);
       store.deadlineMoves = store.deadlineMoves.filter((m) => m.id !== id);
       saveStore();
     },
@@ -1834,6 +1885,7 @@ export const mockRepositories: Repositories = {
     async save(h) {
       await simulateLatency();
       assertOwner();
+      validate(HolidayWriteSchema, h);
       const newH: Holiday = {
         id: h.id || generateId(),
         orgId: store.org.id,
@@ -1920,6 +1972,7 @@ export const mockRepositories: Repositories = {
         assertReferences(l, t.clientId);
       }
       assertClient(t.clientId);
+      validate(TaskCreateSchema, t);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       const newTask: Task = {
@@ -1982,6 +2035,7 @@ export const mockRepositories: Repositories = {
       assertReferences(t, store.tasks.find((x) => x.id === id)?.clientId);
       assertTask(id);
       rejectIdentityChange(t, store.tasks.find((x) => x.id === id));
+      validate(TaskUpdateSchema, t);
       const idx = store.tasks.findIndex((item) => item.id === id);
       if (idx === -1) throw new Error('Task not found');
       store.tasks[idx] = { ...store.tasks[idx], ...t, version: store.tasks[idx].version + 1 };
@@ -1992,6 +2046,7 @@ export const mockRepositories: Repositories = {
     async setStatus(id, to, reason) {
       await simulateLatency();
       assertTask(id);
+      if (reason !== undefined) validateReason(reason);
       const { user, membership } = getCurrentUser();
       const task = store.tasks.find((item) => item.id === id);
       if (!task) throw new Error('Task not found');
@@ -2009,6 +2064,7 @@ export const mockRepositories: Repositories = {
     async markSubmitted(id, s) {
       await simulateLatency();
       assertTask(id);
+      validate(MarkSubmittedSchema, s);
       const { membership } = getCurrentUser();
       const task = store.tasks.find((item) => item.id === id);
       if (!task) throw new Error('Task not found');
@@ -2026,6 +2082,7 @@ export const mockRepositories: Repositories = {
     async markCompleted(id, c) {
       await simulateLatency();
       assertTask(id);
+      validate(MarkCompletedSchema, c);
       const { membership } = getCurrentUser();
       const task = store.tasks.find((item) => item.id === id);
       if (!task) throw new Error('Task not found');
@@ -2048,6 +2105,7 @@ export const mockRepositories: Repositories = {
     async override(id, status, reason) {
       await simulateLatency();
       assertOwner();
+      validateReason(reason);
       const { user, membership } = getCurrentUser();
       if (membership.role !== 'owner') throw new ForbiddenError('Only owners can override task status');
       const task = store.tasks.find((item) => item.id === id);
@@ -2067,6 +2125,7 @@ export const mockRepositories: Repositories = {
     async clearOverride(id, reason) {
       await simulateLatency();
       assertOwner();
+      validateReason(reason);
       const task = store.tasks.find((item) => item.id === id);
       if (!task) throw new Error('Task not found');
       delete task.statusOverride;
@@ -2076,9 +2135,10 @@ export const mockRepositories: Repositories = {
       return task;
     },
 
-    async changeDue(id, dueDate, ref, reason) {
+    async changeDue(id, dueDate, ref, reason, url) {
       await simulateLatency();
       assertOwner();
+      validate(ChangeDueSchema, { dueDate, ref, reason, url });
       const task = store.tasks.find((item) => item.id === id);
       if (!task) throw new Error('Task not found');
       task.dueDate = dueDate;
@@ -2092,6 +2152,7 @@ export const mockRepositories: Repositories = {
     async setNextAction(id, next) {
       await simulateLatency();
       assertTask(id);
+      if (next) validate(NextActionSchema, next);
       const task = store.tasks.find((item) => item.id === id);
       if (!task) throw new Error('Task not found');
       task.nextAction = next || undefined;
@@ -2103,6 +2164,7 @@ export const mockRepositories: Repositories = {
     async archive(id, reason) {
       await simulateLatency();
       assertTask(id);
+      validateReason(reason);
       const task = store.tasks.find((item) => item.id === id);
       if (task) {
         task.status = 'archived';
@@ -2115,6 +2177,7 @@ export const mockRepositories: Repositories = {
     async restore(id, reason) {
       await simulateLatency();
       assertTask(id);
+      validateReason(reason);
       const task = store.tasks.find((item) => item.id === id);
       if (task) {
         task.status = 'in_preparation';
@@ -2236,6 +2299,7 @@ export const mockRepositories: Repositories = {
       await simulateLatency();
       assertLine(id);
       if (['under_review', 'accepted', 'incomplete', 'needs_correction'].includes(to)) assertCanReview();
+      if (extra) validate(LineStatusExtraSchema, extra);
       const { user } = getCurrentUser();
       const line = store.taskLines.find((l) => l.id === id);
       if (!line) throw new Error('Line not found');
@@ -2272,6 +2336,7 @@ export const mockRepositories: Repositories = {
       assertPatch('lines.addAdHoc', line);
       assertReferences(line, store.tasks.find((x) => x.id === taskId)?.clientId);
       assertTask(taskId);
+      validate(LineWriteSchema, line);
       const { user } = getCurrentUser();
       const task = store.tasks.find((t) => t.id === taskId);
       if (!task) throw new Error('Task not found');
@@ -2307,6 +2372,7 @@ export const mockRepositories: Repositories = {
       assertReferences(line, store.taskLines.find((x) => x.id === id)?.clientId);
       assertLine(id);
       rejectIdentityChange(line, store.taskLines.find((x) => x.id === id));
+      validate(LineWriteSchema, line);
       const idx = store.taskLines.findIndex((l) => l.id === id);
       if (idx === -1) throw new Error('Line not found');
       store.taskLines[idx] = { ...store.taskLines[idx], ...line, version: store.taskLines[idx].version + 1 };
@@ -2361,6 +2427,7 @@ export const mockRepositories: Repositories = {
       assertPatch('documents.upload', meta);
       assertReferences(meta, meta.clientId);
       assertClient(meta.clientId);
+      validate(DocumentMetaSchema, meta);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       const docId = generateId();
@@ -2468,6 +2535,7 @@ export const mockRepositories: Repositories = {
       assertReferences(d, store.documents.find((x) => x.id === id)?.clientId);
       assertDocument(id);
       rejectIdentityChange(d, store.documents.find((x) => x.id === id));
+      validate(DocumentUpdateSchema, d);
       const doc = store.documents.find((item) => item.id === id);
       if (!doc) throw new Error('Document not found');
       Object.assign(doc, d);
@@ -2478,6 +2546,7 @@ export const mockRepositories: Repositories = {
     async remove(id, reason) {
       await simulateLatency();
       assertDocument(id);
+      validateReason(reason);
       const doc = store.documents.find((d) => d.id === id);
       if (doc) {
         doc.deletedAt = todayInManila() + 'T00:00:00+08:00';
@@ -2548,6 +2617,7 @@ export const mockRepositories: Repositories = {
       assertPatch('followUps.create', f);
       assertReferences(f, f.clientId);
       assertClient(f.clientId);
+      validate(FollowUpCreateSchema, f);
       const { user } = getCurrentUser();
       const newFu: FollowUp = {
         id: generateId(),
@@ -2575,6 +2645,7 @@ export const mockRepositories: Repositories = {
     async markSent(id, a) {
       await simulateLatency();
       assertFollowUp(id);
+      validate(MarkSentWriteSchema, a);
       const { user } = getCurrentUser();
       const fu = store.followUps.find((item) => item.id === id);
       if (!fu) throw new Error('Follow up not found');
@@ -2617,6 +2688,7 @@ export const mockRepositories: Repositories = {
     async logResponse(id, r) {
       await simulateLatency();
       assertFollowUp(id);
+      validate(LogResponseWriteSchema, r);
       const fu = store.followUps.find((item) => item.id === id);
       if (!fu) throw new Error('Follow up not found');
       fu.status = 'answered';
@@ -2654,9 +2726,7 @@ export const mockRepositories: Repositories = {
     async escalate(id, reason) {
       await simulateLatency();
       assertFollowUp(id);
-      if (!reason || reason.trim().length < 10) {
-        throw new Error('Escalation reason must be at least 10 characters');
-      }
+      validateReason(reason);
       const fu = store.followUps.find((item) => item.id === id);
       if (!fu) throw new Error('Follow up not found');
       fu.status = 'escalated';
@@ -2669,6 +2739,7 @@ export const mockRepositories: Repositories = {
     async resolve(id, reason) {
       await simulateLatency();
       assertFollowUp(id);
+      if (reason !== undefined) validateReason(reason);
       const fu = store.followUps.find((item) => item.id === id);
       if (!fu) throw new Error('Follow up not found');
       fu.status = 'resolved';
@@ -2687,6 +2758,7 @@ export const mockRepositories: Repositories = {
     async save(m) {
       await simulateLatency();
       assertOwner();
+      validate(MessageWriteSchema, m);
       const { user } = getCurrentUser();
       const tmpl: MessageTemplate = {
         id: m.id || generateId(),
@@ -2739,6 +2811,7 @@ export const mockRepositories: Repositories = {
     },
     async save(o) {
       await simulateLatency();
+      validate(OfficeWriteSchema, o);
       const { user } = getCurrentUser();
       const existing = o.id ? store.offices.find((item) => item.id === o.id) : undefined;
       if (existing) {
@@ -2851,6 +2924,7 @@ export const mockRepositories: Repositories = {
       assertPatch('visits.create', v);
       for (const item of items ?? []) assertPatch('visits.create.item', item);
       for (const item of items ?? []) assertTask(item.taskId);
+      validate(VisitWriteSchema, v);
       const { user } = getCurrentUser();
       const newV: Visit = {
         id: generateId(),
@@ -2907,6 +2981,7 @@ export const mockRepositories: Repositories = {
       assertPatch('visits.update', v);
       assertVisit(id);
       rejectIdentityChange(v, store.visits.find((x) => x.id === id));
+      validate(VisitWriteSchema, v);
       const visit = store.visits.find((item) => item.id === id);
       if (!visit) throw new Error('Visit not found');
       Object.assign(visit, v);
@@ -2931,6 +3006,7 @@ export const mockRepositories: Repositories = {
       await simulateLatency();
       assertVisit(visitId);
       assertTask(taskId);
+      validate(VisitAddItemSchema, { action });
       const { user } = getCurrentUser();
       const task = store.tasks.find((t) => t.id === taskId);
       if (!task) throw new Error('Task not found');
@@ -2959,6 +3035,7 @@ export const mockRepositories: Repositories = {
       assertPatch('visits.updateItem', i);
       assertVisitItem(itemId);
       rejectIdentityChange(i, store.visitItems.find((x) => x.id === itemId));
+      validate(VisitItemWriteSchema, i);
       const item = store.visitItems.find((vi) => vi.id === itemId);
       if (!item) throw new Error('Visit item not found');
       Object.assign(item, i);
@@ -2994,6 +3071,7 @@ export const mockRepositories: Repositories = {
     async start(id, leaveAnywayReason) {
       await simulateLatency();
       assertVisit(id);
+      if (leaveAnywayReason !== undefined) validateReason(leaveAnywayReason, 'Reason for leaving');
       const v = store.visits.find((item) => item.id === id);
       if (!v) throw new Error('Visit not found');
       v.status = 'in_progress';
@@ -3007,6 +3085,7 @@ export const mockRepositories: Repositories = {
     async recordOutcome(itemId, o) {
       await simulateLatency();
       assertVisitItem(itemId);
+      validate(OutcomeWriteSchema, o);
       const { user } = getCurrentUser();
       const item = store.visitItems.find((vi) => vi.id === itemId);
       if (!item) throw new Error('Visit item not found');
@@ -3117,6 +3196,7 @@ export const mockRepositories: Repositories = {
     async finish(id, f) {
       await simulateLatency();
       assertVisit(id);
+      validate(FinishVisitSchema, f);
       const v = store.visits.find((item) => item.id === id);
       if (!v) throw new Error('Visit not found');
       if (!canFinishVisit(store.visitItems.filter((i) => i.visitId === id))) {
@@ -3133,6 +3213,7 @@ export const mockRepositories: Repositories = {
     async cancel(id, reason) {
       await simulateLatency();
       assertVisit(id);
+      validateReason(reason);
       const v = store.visits.find((item) => item.id === id);
       if (v) {
         v.status = 'cancelled';
@@ -3151,6 +3232,7 @@ export const mockRepositories: Repositories = {
     async save(i) {
       await simulateLatency();
       assertOwner();
+      validate(VisitKitWriteSchema, i);
       const item: VisitKitItem = {
         id: i.id || generateId(),
         orgId: store.org.id,
@@ -3197,6 +3279,7 @@ export const mockRepositories: Repositories = {
       assertPatch('payments.save', p);
       assertReferences(p, p.clientId ?? store.payments.find((x) => x.id === p.id)?.clientId);
       assertRecordWrite(store.payments, p.id, p.clientId);
+      validate(PaymentWriteSchema, p);
       const { user } = getCurrentUser();
 
       const existing = p.id ? store.payments.find((item) => item.id === p.id) : undefined;
@@ -3269,6 +3352,7 @@ export const mockRepositories: Repositories = {
     async remove(id, reason) {
       await simulateLatency();
       assertPayment(id);
+      validateReason(reason);
       const p = store.payments.find((item) => item.id === id);
       if (p) {
         p.deletedAt = todayInManila() + 'T00:00:00+08:00';
@@ -3289,6 +3373,7 @@ export const mockRepositories: Repositories = {
       await simulateLatency();
       assertPatch('notes.save', n);
       assertNoteTarget(n.entity || 'task', n.entityId!);
+      validate(NoteWriteSchema, n);
       const { user } = getCurrentUser();
       const note: Note = {
         id: n.id || generateId(),
@@ -3625,6 +3710,7 @@ export const mockRepositories: Repositories = {
     async save(b) {
       await simulateLatency();
       assertOwner();
+      validate(BaselineWriteSchema, b);
       const { user } = getCurrentUser();
       store.baseline = {
         id: store.baseline?.id || generateId(),
@@ -3657,6 +3743,7 @@ export const mockRepositories: Repositories = {
     async save(p) {
       await simulateLatency();
       assertOwner();
+      validate(PulseWriteSchema, p);
       const pulse: Pulse = {
         id: generateId(),
         orgId: store.org.id,

@@ -228,7 +228,7 @@ describe('mockRepositories.tasks and Task Domain Rules (M4)', () => {
       ).rejects.toMatchObject({ code: 'RULE_VIOLATION' });
       await expect(
         mockRepositories.tasks.markCompleted('task-rsp-0619e', { on: '2026-10-27', noEvidenceReason: 'short' }),
-      ).rejects.toMatchObject({ code: 'RULE_VIOLATION' });
+      ).rejects.toMatchObject({ code: 'VALIDATION' }); // a reason under 10 characters is refused at the boundary (spec 12.1)
 
       const done = await mockRepositories.tasks.markCompleted('task-rsp-0619e', {
         on: '2026-10-27',
