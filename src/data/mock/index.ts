@@ -2172,6 +2172,8 @@ export const mockRepositories: Repositories = {
         thumbnailKey: thumbKey,
         versionNo: old.versionNo + 1,
         replacesId: old.id,
+        deletedAt: undefined,
+        deletedReason: undefined,
         createdAt: now,
         createdBy: user.id,
         updatedAt: now,

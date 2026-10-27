@@ -34,6 +34,17 @@ export async function getFileUrl(key: string): Promise<string> {
   return URL.createObjectURL(blob);
 }
 
+/** Save a stored or seeded file under `filename`: mints a fresh object URL for stored files, clicks a hidden link, then revokes it. */
+export async function saveFile(storageKey: string, filename: string): Promise<void> {
+  const stored = isStoredFileKey(storageKey);
+  const href = stored ? await getFileUrl(storageKey) : storageKey;
+  const a = document.createElement('a');
+  a.href = href;
+  a.download = filename;
+  a.click();
+  if (stored) setTimeout(() => URL.revokeObjectURL(href), 10_000);
+}
+
 // ---- Spec 9.9 display names: {CLIENTCODE}_{TEMPLATECODE}_{PERIOD}_{KIND}_v{N}.{ext} ----
 
 const KIND_SLUGS: Record<DocumentKind, string> = {
@@ -70,7 +81,7 @@ const MIME_EXT: Record<string, string> = {
 
 function extensionOf(originalName: string, mimeType?: string): string {
   const m = /\.([A-Za-z0-9]{2,5})$/.exec(originalName);
-  if (m) return m[1].toLowerCase();
+  if (m) return m[1].toLowerCase().replace(/^jpeg$/, 'jpg');
   return (mimeType && MIME_EXT[mimeType]) || 'pdf';
 }
 

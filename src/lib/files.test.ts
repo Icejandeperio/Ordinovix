@@ -32,7 +32,7 @@ describe('document naming convention (spec 9.9)', () => {
     ).toBe('RSP_1601EQ_2026Q3_ack_v1.pdf');
     expect(
       documentDisplayName({ clientCode: 'BOL', templateCode: 'ECAR-SALE', period: '2026-10-12', kind: 'stamped_copy', versionNo: 2, originalName: 'IMG_0042.jpeg' })
-    ).toBe('BOL_ECARSALE_2026-10-12_stamped_v2.jpeg');
+    ).toBe('BOL_ECARSALE_2026-10-12_stamped_v2.jpg');
   });
 
   it('falls back to the mime type, then pdf, for the extension', () => {

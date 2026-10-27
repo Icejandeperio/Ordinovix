@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { QueryState } from '@/components/ui/query-state';
 import { StoredImage, StoredFileLink } from '@/components/documents/stored-file';
+import { saveFile } from '@/lib/files';
 
 type TabView = 'all' | 'needs_review' | 'evidence' | 'recent';
 
@@ -450,10 +451,7 @@ export function DocumentsPage() {
               document={doc}
               onPreview={setPreviewDoc}
               onDownload={(d) => {
-                const a = document.createElement('a');
-                a.href = d.storageKey;
-                a.download = d.displayName;
-                a.click();
+                void saveFile(d.storageKey, d.displayName);
               }}
               onRemove={(d) => {
                 const reason = prompt('Reason for removing file:');
