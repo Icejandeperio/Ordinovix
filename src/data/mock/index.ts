@@ -47,7 +47,6 @@ import type {
   LineStatus,
   VisitAction,
   Outcome,
-  OutcomeCause,
   NextAction,
   Role,
   ImportPreview,
@@ -115,15 +114,7 @@ import {
   canCompleteWithEvidence,
   RuleViolationError,
 } from '@/domain/rules';
-import {
-  calculateFirstPassRate,
-  countTripsNeedingReturn,
-  calculateVisitsLeftReadyRate,
-  calculateOnTimeRate,
-  calculateDaysToCollect,
-  countLateDiscoveredBlockers,
-  calculateClientResponseDays,
-} from '@/domain/metrics';
+import { calculateFirstPassRate, computeInsights } from '@/domain/metrics';
 import { todayInManila, setDevToday, getDevToday, addDaysToDate, nowInManila } from '@/lib/dates';
 import { generateId } from '@/lib/ids';
 import { describeDevice } from '@/lib/audit';
@@ -854,6 +845,8 @@ function scopedInsightData() {
     taskLines: store.taskLines.filter((l) => ok(l.clientId)),
     visits: store.visits.filter((v) => canReachVisit(v.id)),
     clients: store.clients.filter((c) => ok(c.id)),
+    followUps: store.followUps.filter((u) => ok(u.clientId)),
+    attempts: store.followUpAttempts.filter((a) => store.followUps.some((u) => u.id === a.followUpId && ok(u.clientId))),
   };
 }
 
@@ -3638,88 +3631,21 @@ export const mockRepositories: Repositories = {
     async get(tab: InsightsTab, f?: InsightsFilter) {
       await simulateLatency();
       const scoped = scopedInsightData();
-      const firstPass = calculateFirstPassRate(scoped.visitItems);
-      const { avoidable, total: repeatTotal } = countTripsNeedingReturn(scoped.visitItems);
-      const onTime = calculateOnTimeRate(scoped.tasks);
-      const daysCollect = calculateDaysToCollect(scoped.tasks);
-
-      const overviewData = {
-        firstPassRate: firstPass,
-        repeatTripRate: repeatTotal > 0 ? Math.round((avoidable / repeatTotal) * 100) : 0,
-        onTimeFilingRate: onTime,
-        averageDaysToCollect: daysCollect,
-        baselineComparison: { firstPassBaseline: 55, repeatTripsBaseline: 4 },
-        monthlyTrends: [
-          { month: 'Jun', firstPassRate: 58, repeatTrips: 5, filings: 12 },
-          { month: 'Jul', firstPassRate: 65, repeatTrips: 4, filings: 15 },
-          { month: 'Aug', firstPassRate: 72, repeatTrips: 3, filings: 14 },
-          { month: 'Sep', firstPassRate: 77, repeatTrips: 3, filings: 18 },
-          { month: 'Oct', firstPassRate: firstPass || 86, repeatTrips: 1, filings: 16 },
-        ],
-      };
-
-      const tripsData = {
-        totalTrips: scoped.visits.length,
-        completedTrips: scoped.visits.filter((v) => v.status === 'done').length,
-        avoidableRejectionCount: avoidable,
-        topRejectionCauses: [
-          { cause: 'missing_document' as OutcomeCause, count: 2, avoidable: true },
-          { cause: 'wrong_copy_form' as OutcomeCause, count: 1, avoidable: true },
-          { cause: 'office_system_down' as OutcomeCause, count: 1, avoidable: false },
-        ],
-        officePerformance: [
-          { officeName: 'BIR RDO 39', visits: 8, firstPassRate: 88 },
-          { officeName: 'Land Bank QC Circle', visits: 4, firstPassRate: 100 },
-        ],
-      };
-
-      const chasingData = {
-        averageResponseDays: calculateClientResponseDays(scoped.taskLines) || 2.4,
-        followUpSuccessRate: 91,
-        chasesPerTask: 1.5,
-        lateDiscoveredBlockersCount: countLateDiscoveredBlockers(scoped.taskLines),
-        channelEffectiveness: [
-          { channel: 'viber' as const, attempts: 24, responses: 22 },
-          { channel: 'email' as const, attempts: 10, responses: 7 },
-        ],
-      };
-
-      const deadlinesData = {
-        filingsOnTime: 22,
-        filingsLate: 1,
-        heatCalendar: [
-          { date: todayInManila(), taskCount: 3 },
-          { date: todayInManila(), taskCount: 2 },
-        ],
-      };
-
-      const workloadData = {
-        operatorTasks: 18,
-        helperTasks: 6,
-        tasksByStatusGroup: {
-          blocked: 3,
-          in_progress: 8,
-          ready: 4,
-          submitted: 5,
-          done: 22,
+      const roleOf = new Map(store.memberships.filter((m) => m.userId).map((m) => [m.userId!, m.role]));
+      const data = computeInsights(
+        {
+          ...scoped,
+          deadlineMoves: store.deadlineMoves,
+          templates: store.templates,
+          pulses: store.pulses,
+          baseline: store.baseline,
+          userNames: Object.fromEntries(store.users.map((u) => [u.id, u.name])),
+          userRoles: Object.fromEntries([...roleOf].map(([id, role]) => [id, role === 'owner' ? 'owner' : 'helper'])),
         },
-      };
-
-      const clientsData = {
-        fastestClients: [{ client: scoped.clients[0], avgDays: 1.8 }],
-        slowestClients: [{ client: scoped.clients[1], avgDays: 4.2, unreadReviewsCount: 1 }],
-      };
-
-      const map: InsightsData = {
-        overview: overviewData,
-        trips: tripsData,
-        chasing: chasingData,
-        deadlines: deadlinesData,
-        workload: workloadData,
-        clients: clientsData,
-      };
-
-      return map[tab] as any;
+        f ?? {},
+        todayInManila(),
+      );
+      return data[tab] as any;
     },
   },
 

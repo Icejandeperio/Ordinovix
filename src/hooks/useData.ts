@@ -177,11 +177,12 @@ export function useDocuments(filters?: Parameters<typeof repositories.documents.
   });
 }
 
-export function useMemberships() {
+export function useMemberships(enabled = true) {
   return useQuery({
     queryKey: ['memberships'],
     queryFn: () => repositories.memberships.list(),
     staleTime: 5 * 60 * 1000,
+    enabled,
   });
 }
 
