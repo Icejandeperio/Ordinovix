@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { addDaysToDate } from '@/lib/dates';
 
 // ==========================================
 // 1. SvgLineChart
@@ -628,12 +629,15 @@ export interface HeatCell {
 
 export interface SvgHeatCalendarProps {
   weeks?: number;
+  /** The Monday the first column starts on (YYYY-MM-DD). */
+  startDate: string;
   data: HeatCell[];
   onSelectDate?: (date: string) => void;
 }
 
 export function SvgHeatCalendar({
   weeks = 8,
+  startDate,
   data,
   onSelectDate,
 }: SvgHeatCalendarProps) {
@@ -673,18 +677,18 @@ export function SvgHeatCalendar({
             </span>
             <div className="flex gap-1">
               {Array.from({ length: weeks }).map((_, weekIdx) => {
-                // Mock synthetic weekday date sequence
-                const syntheticCount = (weekIdx * 3 + dayIdx * 2) % 6;
+                const date = addDaysToDate(startDate, weekIdx * 7 + dayIdx);
+                const count = dataMap.get(date) ?? 0;
                 return (
                   <div
                     key={weekIdx}
-                    onClick={() => onSelectDate && onSelectDate(`2026-W${weekIdx + 1}-${dayIdx + 1}`)}
+                    onClick={() => onSelectDate && onSelectDate(date)}
                     className="w-8 h-6 rounded-xs cursor-pointer transition-transform hover:scale-105 flex items-center justify-center text-[9px] font-bold font-mono"
-                    style={{ backgroundColor: getColor(syntheticCount) }}
-                    title={`Week ${weekIdx + 1}, Day ${dName}: ${syntheticCount} tasks due`}
+                    style={{ backgroundColor: getColor(count) }}
+                    title={`${date}: ${count} ${count === 1 ? 'task' : 'tasks'} due`}
                   >
-                    {syntheticCount > 0 && (
-                      <span className="text-white drop-shadow-xs">{syntheticCount}</span>
+                    {count > 0 && (
+                      <span className="text-white drop-shadow-xs">{count}</span>
                     )}
                   </div>
                 );

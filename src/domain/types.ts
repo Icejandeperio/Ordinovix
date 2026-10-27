@@ -718,6 +718,42 @@ export interface InsightsFilter {
   to?: ISODate;
   clientId?: ID;
   assignedUserId?: ID;
+  templateId?: ID;
+}
+
+/** One point of a monthly series; `value` is null for a month with nothing to measure. */
+export interface InsightsMonthPoint {
+  month: string;                        // '2026-10'
+  value: number | null;
+}
+
+export interface InsightsKpi {
+  key: 'firstPass' | 'repeatTrips' | 'leftReady' | 'followUps' | 'onTime' | 'ownership';
+  title: string;
+  value: string;                        // '86%', '1', '—' when there is nothing to measure
+  comparison: string;                   // 'up 9 pts vs Sep'
+  trend: 'up' | 'down' | 'flat' | 'none';
+  improved: boolean | null;             // whether the change is good news; null when unchanged or unknown
+  note: string;                         // baseline line, labelled as self-reported
+}
+
+export interface InsightsOfficeRow {
+  officeName: string;
+  visits: number;
+  firstPassRate: number;
+  medianMinutes: number | null;
+  lastVisited: ISODate;
+}
+
+export interface InsightsClientRow {
+  clientId: ID;
+  code: string;
+  name: string;
+  openTasks: number;
+  avgResponseDays: number;
+  followUps: number;
+  repeatTrips: number;
+  lastCompleted: ISODate | null;
 }
 
 export interface InsightsData {
@@ -728,6 +764,15 @@ export interface InsightsData {
     averageDaysToCollect: number;
     baselineComparison?: { firstPassBaseline: number; repeatTripsBaseline: number };
     monthlyTrends: Array<{ month: string; firstPassRate: number; repeatTrips: number; filings: number }>;
+    months: string[];
+    isEmpty: boolean;
+    kpis: InsightsKpi[];
+    firstPassByMonth: InsightsMonthPoint[];
+    firstPassBaseline: number | null;
+    tripsByMonth: Array<{ month: string; avoidable: number; notAvoidable: number }>;
+    confidenceByMonth: InsightsMonthPoint[];
+    hoursFindingByMonth: InsightsMonthPoint[];
+    takeaways: { firstPass: string; trips: string; confidence: string; hours: string };
   };
   trips: {
     totalTrips: number;
@@ -735,6 +780,15 @@ export interface InsightsData {
     avoidableRejectionCount: number;
     topRejectionCauses: Array<{ cause: OutcomeCause; count: number; avoidable: boolean }>;
     officePerformance: Array<{ officeName: string; visits: number; firstPassRate: number }>;
+    months: string[];
+    isEmpty: boolean;
+    visitsByMonth: Array<{ month: string; count: number }>;
+    itemsPerVisitByMonth: InsightsMonthPoint[];
+    outcomesByMonth: Array<{ month: string; completed: number; submittedPaid: number; moreDocs: number; notAccepted: number }>;
+    costsByMonth: Array<{ month: string; pesos: number }>;
+    offices: InsightsOfficeRow[];
+    leftNotReady: Array<{ visitId: ID; date: ISODate; officeName: string; reason: string }>;
+    takeaways: { visits: string; itemsPerVisit: string; outcomes: string; causes: string; costs: string };
   };
   chasing: {
     averageResponseDays: number;
@@ -742,20 +796,45 @@ export interface InsightsData {
     chasesPerTask: number;
     lateDiscoveredBlockersCount: number;
     channelEffectiveness: Array<{ channel: Channel; attempts: number; responses: number }>;
+    months: string[];
+    isEmpty: boolean;
+    followUpsPerWeek: Array<{ weekStart: ISODate; label: string; count: number }>;
+    chasesPerCompletedTask: Array<{ bucket: '0' | '1' | '2' | '3+'; tasks: number }>;
+    responseDaysByMonth: InsightsMonthPoint[];
+    lateBlockersByMonth: Array<{ month: string; count: number }>;
+    itemsMissing: Array<{ label: string; times: number; avgAttempts: number }>;
+    takeaways: { followUps: string; chases: string; responseDays: string; lateBlockers: string };
   };
   deadlines: {
     filingsOnTime: number;
     filingsLate: number;
     heatCalendar: Array<{ date: ISODate; taskCount: number }>;
+    months: string[];
+    isEmpty: boolean;
+    heatStart: ISODate;
+    onTimeByMonth: Array<{ month: string; rate: number | null }>;
+    overdueByAge: Array<{ label: string; value: number }>;
+    deadlineMoves: Array<{ id: ID; template: string; period: PeriodKey; newDueDate: ISODate; sourceRef: string; sourceUrl?: string }>;
+    takeaways: { onTime: string; overdue: string };
   };
   workload: {
     operatorTasks: number;
     helperTasks: number;
     tasksByStatusGroup: Record<StatusGroup, number>;
+    months: string[];
+    isEmpty: boolean;
+    openByPerson: Array<{ userId: ID; label: string; value: number }>;
+    completedByMonth: Array<{ month: string; byUser: Record<ID, number> }>;
+    people: Array<{ userId: ID; label: string }>;
+    daysToCollectByTemplate: Array<{ templateId: ID; label: string; days: number }>;
+    missingNextAction: Array<{ taskId: ID; clientCode: string; title: string; dueDate: ISODate; ownerName: string }>;
+    takeaways: { people: string; status: string; collect: string };
   };
   clients: {
     fastestClients: Array<{ client: Client; avgDays: number }>;
     slowestClients: Array<{ client: Client; avgDays: number; unreadReviewsCount: number }>;
+    isEmpty: boolean;
+    rows: InsightsClientRow[];
   };
 }
 
