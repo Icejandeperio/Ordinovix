@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-27 U04 Valid notification links, dev tools only in mock mode, pinch zoom — done
+- Changed: mock seed ids for notifications/activity, lib/data-source isMockData gating shell banner/DevMenu/palette persona, index.html viewport, known-failures (B09 removed)
+- Evidence: verify.mjs exit 0; tests now passing: B09, U04(B18,B19); PR #6
+- Notes: verifier PASS; sign-in persona chooser and Reset Sample Data left ungated (QUEUE proposal)
+
 ## 2026-10-27 U03 Templates screen and Welcome read real templates — done
 - Changed: settings TemplatesSection (new) + welcome step 3 read useTemplates; markVerified via hook; hooks useTemplateLines/useMarkTemplateVerified; FREQUENCY_LABELS; known-failures (B07 removed)
 - Evidence: verify.mjs exit 0; tests now passing: B07, U03; PR #5
