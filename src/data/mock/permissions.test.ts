@@ -166,4 +166,26 @@ describe('B11 data-layer permissions', () => {
     const ok = await R.lines.setStatus(received.id, 'accepted');
     expect(ok.status).toBe('accepted');
   });
+
+  it('Duplicate for next period works for a helper on an assigned client and stays FORBIDDEN on an unassigned one', { timeout: 30_000 }, async () => {
+    mockDevControls.setPersona('owner');
+    const source = await R.tasks.get('task-rsp-0619e');
+    const sourceLines = source.lines.map((l) => ({ label: l.label, copyForm: l.copyForm, suppliedBy: l.suppliedBy }));
+    mockDevControls.setPersona('helper');
+
+    const copy = await R.tasks.duplicateForNextPeriod('task-rsp-0619e');
+    expect(copy.clientId).toBe('client-rsp');
+    expect(copy.id).not.toBe('task-rsp-0619e');
+    const created = await R.tasks.get(copy.id);
+    expect(created.lines.map((l) => ({ label: l.label, copyForm: l.copyForm, suppliedBy: l.suppliedBy }))).toEqual(sourceLines);
+    expect(created.lines.every((l) => l.status === 'not_requested' && l.taskId === copy.id)).toBe(true);
+
+    await forbidden(R.tasks.duplicateForNextPeriod(MARIA_TASK));
+  });
+
+  it('Duplicate for next period still works for the owner', { timeout: 30_000 }, async () => {
+    mockDevControls.setPersona('owner');
+    const copy = await R.tasks.duplicateForNextPeriod('task-rsp-0619e');
+    expect(copy.clientId).toBe('client-rsp');
+  });
 });

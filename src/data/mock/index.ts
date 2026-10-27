@@ -2128,7 +2128,18 @@ export const mockRepositories: Repositories = {
       assertTask(id);
       const task = store.tasks.find((item) => item.id === id);
       if (!task) throw new Error('Task not found');
-      const lines = store.taskLines.filter((l) => l.taskId === id);
+      // Pass tasks.create only the line fields it accepts, never the stored records (their id, status and
+      // review fields are not the caller's to set, and a helper's create is held to the helper allowlist)
+      const lines = store.taskLines
+        .filter((l) => l.taskId === id)
+        .map((l) => ({
+          label: l.label,
+          required: l.required,
+          copyForm: l.copyForm,
+          copies: l.copies,
+          suppliedBy: l.suppliedBy,
+          printAndBring: l.printAndBring,
+        }));
       return mockRepositories.tasks.create(
         {
           clientId: task.clientId,
