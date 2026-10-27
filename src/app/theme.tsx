@@ -65,8 +65,8 @@ export const PALETTES: PaletteDefinition[] = [
   },
   {
     id: 'vermilion',
-    name: 'Bureau Vermilion',
-    tagline: 'Carmine seal & golden sand — Decisive BIR stamp tradition',
+    name: 'Vermilion Sand',
+    tagline: 'Vermilion red & golden sand — Bold, warm accent',
     primaryLight: '#BE123C',
     primaryDark: '#FB7185',
     secondaryLight: '#A16207',

@@ -1,4 +1,4 @@
 {
   "_about": "Bug IDs whose acceptance tests may fail until their backlog unit lands. Entries may only be REMOVED (scripts/verify.mjs enforces this against origin/main). Remove an ID in the same PR that makes its tests pass.",
-  "ids": ["B05", "B06", "B08", "B12"]
+  "ids": ["B06", "B08"]
 }

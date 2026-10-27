@@ -53,6 +53,7 @@ import type {
   ImportPreview,
   OpenPeriodPreview,
   OpenPeriodPlan,
+  DocumentKind,
 } from '@/domain/types';
 import { generateSeedData } from './seed';
 import { buildDemoData } from './seed-demo';
@@ -84,8 +85,9 @@ import {
   countLateDiscoveredBlockers,
   calculateClientResponseDays,
 } from '@/domain/metrics';
-import { todayInManila, setDevToday, getDevToday, addDaysToDate } from '@/lib/dates';
+import { todayInManila, setDevToday, getDevToday, addDaysToDate, nowInManila } from '@/lib/dates';
 import { generateId } from '@/lib/ids';
+import { FILE_KEY_PREFIX, documentDisplayName, getFileUrl, isStoredFileKey, putFile } from '@/lib/files';
 
 const STORAGE_KEY = 'ox-mock-data-v2';
 const PERSONA_KEY = 'ox-mock-persona';
@@ -822,6 +824,27 @@ function scopedInsightData() {
   };
 }
 
+/** Spec 9.9 display name for a file attached to a client and, usually, a task. */
+function nameForDocument(
+  meta: { clientId: ID; taskId?: ID; kind: DocumentKind },
+  versionNo: number,
+  originalName: string,
+  mimeType?: string,
+): string {
+  const client = store.clients.find((c) => c.id === meta.clientId);
+  const task = meta.taskId ? store.tasks.find((t) => t.id === meta.taskId) : undefined;
+  const template = task?.templateId ? store.templates.find((t) => t.id === task.templateId) : undefined;
+  return documentDisplayName({
+    clientCode: client?.code ?? 'CLIENT',
+    templateCode: template?.code,
+    period: task?.period ?? task?.transactionDate ?? todayInManila(),
+    kind: meta.kind,
+    versionNo,
+    originalName,
+    mimeType,
+  });
+}
+
 function isClientAllowed(clientId: ID): boolean {
   const { membership } = getCurrentUser();
   if (membership.role === 'owner') return true;
@@ -840,7 +863,7 @@ function logActivity(
   const event: ActivityEvent = {
     id: generateId(),
     orgId: store.org.id,
-    at: `${todayInManila()}T${new Date().toTimeString().slice(0, 8)}+08:00`,
+    at: nowInManila(),
     actorId: user.id,
     entity,
     entityId,
@@ -2116,7 +2139,7 @@ export const mockRepositories: Repositories = {
       }
 
       line.status = to;
-      const now = todayInManila() + 'T00:00:00+08:00';
+      const now = nowInManila();
 
       if (to === 'accepted') {
         line.reviewedBy = user.id;
@@ -2233,8 +2256,14 @@ export const mockRepositories: Repositories = {
       assertSameClient(store.authorizations, meta.authorizationId, meta.clientId);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
+      const docId = generateId();
+      const fileKey = FILE_KEY_PREFIX + docId;
+      const thumbKey = thumb ? FILE_KEY_PREFIX + 'thumb-' + docId : undefined;
+      await putFile(fileKey, file);
+      if (thumb && thumbKey) await putFile(thumbKey, thumb);
+      const originalName = info?.originalName || 'file.pdf';
       const doc: DocumentFile = {
-        id: generateId(),
+        id: docId,
         orgId: store.org.id,
         clientId: meta.clientId,
         taskId: meta.taskId,
@@ -2243,15 +2272,16 @@ export const mockRepositories: Repositories = {
         paymentId: meta.paymentId,
         authorizationId: meta.authorizationId,
         kind: meta.kind,
-        displayName: info?.originalName || 'Uploaded File',
-        originalName: info?.originalName || 'file.pdf',
+        displayName: nameForDocument(meta, 1, originalName, file.type),
+        originalName,
         mimeType: file.type || 'application/pdf',
         sizeBytes: file.size,
         originalSizeBytes: info?.originalSizeBytes || file.size,
         compressed: file.size < (info?.originalSizeBytes || file.size),
         pageCount: info?.pageCount,
         sha256: info?.sha256 || 'fake-hash-' + Date.now(),
-        storageKey: URL.createObjectURL(file),
+        storageKey: fileKey,
+        thumbnailKey: thumbKey,
         versionNo: 1,
         source: meta.source,
         createdAt: now,
@@ -2266,8 +2296,11 @@ export const mockRepositories: Repositories = {
         const line = store.taskLines.find((l) => l.id === meta.lineId);
         if (line) {
           line.documentIds.push(doc.id);
-          line.status = 'received';
-          line.receivedAt = now;
+          // Only move the line when the transition is allowed: an accepted line stays accepted, a received one stays received
+          if (line.status !== 'received' && canTransitionLine(line.status, 'received')) {
+            line.status = 'received';
+            line.receivedAt = now;
+          }
         }
       }
 
@@ -2279,12 +2312,47 @@ export const mockRepositories: Repositories = {
     async replace(id, file, thumb, info) {
       await simulateLatency();
       assertDocument(id);
-      const doc = store.documents.find((d) => d.id === id);
-      if (!doc) throw new Error('Document not found');
-      doc.versionNo += 1;
-      doc.storageKey = URL.createObjectURL(file);
+      const old = store.documents.find((d) => d.id === id);
+      if (!old) throw new Error('Document not found');
+      const { user } = getCurrentUser();
+      const now = todayInManila() + 'T00:00:00+08:00';
+      const newId = generateId();
+      const fileKey = FILE_KEY_PREFIX + newId;
+      const thumbKey = thumb ? FILE_KEY_PREFIX + 'thumb-' + newId : undefined;
+      await putFile(fileKey, file);
+      if (thumb && thumbKey) await putFile(thumbKey, thumb);
+      const originalName = info?.originalName || old.originalName;
+      const next: DocumentFile = {
+        ...old,
+        id: newId,
+        displayName: nameForDocument(old, old.versionNo + 1, originalName, file.type),
+        originalName,
+        mimeType: file.type || old.mimeType,
+        sizeBytes: file.size,
+        originalSizeBytes: info?.originalSizeBytes || file.size,
+        compressed: file.size < (info?.originalSizeBytes || file.size),
+        pageCount: undefined,
+        sha256: info?.sha256 || 'fake-hash-' + Date.now(),
+        storageKey: fileKey,
+        thumbnailKey: thumbKey,
+        versionNo: old.versionNo + 1,
+        replacesId: old.id,
+        deletedAt: undefined,
+        deletedReason: undefined,
+        createdAt: now,
+        createdBy: user.id,
+        updatedAt: now,
+        updatedBy: user.id,
+        version: 1,
+      };
+      store.documents.push(next);
+      if (next.lineId) {
+        const line = store.taskLines.find((l) => l.id === next.lineId);
+        if (line) line.documentIds.push(next.id);
+      }
       saveStore();
-      return doc;
+      logActivity('file_replaced', 'document', next.id, `Replaced ${old.displayName} with ${next.displayName}`, next.clientId);
+      return next;
     },
 
     async update(id, d) {
@@ -2315,7 +2383,8 @@ export const mockRepositories: Repositories = {
       const doc = store.documents.find((d) => d.id === id);
       if (!doc) throw new Error('Document not found');
       logActivity(purpose === 'download' ? 'file_downloaded' : 'file_viewed', 'document', id, `${purpose} document ${doc.displayName}`, doc.clientId);
-      return doc.storageKey;
+      // Stored files mint a fresh object URL from IndexedDB; seeded documents keep their data: URL
+      return isStoredFileKey(doc.storageKey) ? getFileUrl(doc.storageKey) : doc.storageKey;
     },
 
     async findBySha(sha256, clientId) {

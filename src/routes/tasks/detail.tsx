@@ -15,7 +15,7 @@ import { ReviewStamp } from '@/components/ui/stamp';
 import { Button } from '@/components/ui/button';
 import { ModalDialog } from '@/components/ui/modal-dialog';
 import { formatDate } from '@/lib/format';
-import { isLateDiscovered, validAuthorization, authorizationState } from '@/domain/rules';
+import { isLateDiscovered, validAuthorization, authorizationState, periodLabel } from '@/domain/rules';
 import { TASK_STATUS_META } from '@/domain/labels';
 import {
   MarkSubmittedDialog,
@@ -353,7 +353,7 @@ export function TaskDetailPage() {
 
               {task.period && (
                 <span className="px-2 py-0.5 rounded bg-sheet-3 border border-rule text-xs font-semibold text-ink-2">
-                  Period: {task.period}
+                  Period: {periodLabel(task.period)}
                 </span>
               )}
 

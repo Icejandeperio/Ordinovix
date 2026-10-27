@@ -259,7 +259,9 @@
       ],
       "tests": [
         "B11"
-      ]
+      ],
+      "pr": 9,
+      "evidence": "verify.mjs exit 0; tests now passing: B11 (on the branch); verifier/PR #9; BLOCKED after three failed verifier rounds; three narrow helper field-level holes remain; decision queued in QUEUE.md"
     },
     {
       "id": "U08",
@@ -290,7 +292,7 @@
       "id": "U09",
       "phase": "P2",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U00"
       ],
@@ -314,7 +316,9 @@
       ],
       "tests": [
         "B05"
-      ]
+      ],
+      "pr": 10,
+      "evidence": "verify.mjs exit 0; tests now passing: B05, U09(B24); verifier/PR #10; verifier PASS on round 2 (round 1 caught the grid download); one existing documents test retargeted to a waiting line; carries the U07 blocked record"
     },
     {
       "id": "U10",
@@ -420,7 +424,7 @@
       "id": "U14",
       "phase": "P2",
       "tier": "T1",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U05"
       ],
@@ -448,13 +452,15 @@
         "Task header shows 'Sep 2026' style period labels (B28)",
         "Rename the 'Bureau Vermilion — official BIR carmine' palette to a neutral name and description without BIR references (B29)"
       ],
-      "tests": []
+      "tests": [],
+      "pr": 11,
+      "evidence": "verify.mjs exit 0; tests now passing: U14(B15,B22,B23,B25,B28,B29); verifier/PR #11; verifier PASS; B25 test only red on non-Manila devices (CI is UTC); leftovers queued"
     },
     {
       "id": "U15",
       "phase": "P2",
       "tier": "T1",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U00"
       ],
@@ -472,7 +478,9 @@
       ],
       "tests": [
         "B12"
-      ]
+      ],
+      "pr": 12,
+      "evidence": "verify.mjs exit 0; tests now passing: B12; verifier/PR #12; T1 no verifier; override only changes today, an existing persisted store keeps its dates"
     },
     {
       "id": "U16",
