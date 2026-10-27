@@ -22,34 +22,21 @@ export function VisitSummaryPage() {
   const { visitId } = useParams<{ visitId: string }>();
   const { data, isLoading } = useVisit(visitId || '');
 
-  if (isLoading || !data) {
-    return (
-      <div className="space-y-6 animate-pulse">
-        <div className="h-6 w-32 bg-sheet-3 rounded" />
-        <div className="h-48 bg-sheet-3 rounded-panel" />
-      </div>
-    );
-  }
+  const startedAt = data?.visit.startedAt;
+  const finishedAt = data?.visit.finishedAt;
+  const allItems = data?.items;
 
-  const { visit, items, office } = data;
-
-  // Compute duration
+  // Compute duration (hooks run before the loading return)
   const durationText = useMemo(() => {
-    if (!visit.startedAt || !visit.finishedAt) return '1 h 30 min';
-    const start = new Date(visit.startedAt).getTime();
-    const end = new Date(visit.finishedAt).getTime();
+    if (!startedAt || !finishedAt) return '1 h 30 min';
+    const start = new Date(startedAt).getTime();
+    const end = new Date(finishedAt).getTime();
     const diffMinutes = Math.max(1, Math.round((end - start) / (1000 * 60)));
     const hours = Math.floor(diffMinutes / 60);
     const mins = diffMinutes % 60;
     if (hours === 0) return `${mins} min`;
     return `${hours} h ${mins} min`;
-  }, [visit.startedAt, visit.finishedAt]);
-
-  // Compute costs total
-  const costTotalCentavos =
-    (visit.costs?.transport || 0) +
-    (visit.costs?.parking || 0) +
-    (visit.costs?.other || 0);
+  }, [startedAt, finishedAt]);
 
   // Compute repeat trips analysis
   const repeatAnalysis = useMemo(() => {
@@ -57,7 +44,7 @@ export function VisitSummaryPage() {
     let unavoidableCount = 0;
     const avoidableCausesList: string[] = [];
 
-    for (const item of items) {
+    for (const item of allItems ?? []) {
       const outcome = item.item.outcome;
       if (
         outcome === 'more_documents_requested' ||
@@ -81,7 +68,24 @@ export function VisitSummaryPage() {
       unavoidableCount,
       primaryCause: avoidableCausesList[0],
     };
-  }, [items]);
+  }, [allItems]);
+
+  if (isLoading || !data) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="h-6 w-32 bg-sheet-3 rounded" />
+        <div className="h-48 bg-sheet-3 rounded-panel" />
+      </div>
+    );
+  }
+
+  const { visit, items, office } = data;
+
+  // Compute costs total
+  const costTotalCentavos =
+    (visit.costs?.transport || 0) +
+    (visit.costs?.parking || 0) +
+    (visit.costs?.other || 0);
 
   const totalEvidenceCount = items.reduce(
     (acc, i) => acc + (i.item.evidenceDocumentIds?.length || 0),
