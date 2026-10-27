@@ -77,7 +77,7 @@
       "id": "U02",
       "phase": "P0",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U00"
       ],
@@ -102,7 +102,9 @@
       ],
       "tests": [
         "B04"
-      ]
+      ],
+      "pr": 4,
+      "evidence": "verify.mjs exit 0; tests now passing: B04, U02; verifier/PR #4; verifier PASS; gate run on a clean worktree because an untracked draft spec the guard would not let me edit fails locally (see QUEUE)"
     },
     {
       "id": "U03",

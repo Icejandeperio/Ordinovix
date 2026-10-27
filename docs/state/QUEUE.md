@@ -12,6 +12,10 @@ Entry format: a checkbox line `- [ ] <YYYY-MM-DD> U<NN> <short question> (blocks
 lines for Context (one or two lines, link to the PR or draft PR), Options with a recommendation and its reason,
 and, for protected files, the exact change proposed.
 
+- [ ] 2026-10-27 U02 Delete the stray untracked draft tests/acceptance/u02-blocked-task.spec.ts (blocks nothing)
+  - Context: I created it during U02, then the guard refused my edit to fix its viewport (any file already in tests/acceptance counts as existing). It is never committed, so CI and main are unaffected. The corrected test is tests/acceptance/u02-board-blocked.spec.ts. Until the draft is deleted, the gate in this working copy reports a REGRESSION for its two U02 tests, so I run the gate on a clean checkout of the committed branch.
+  - Options: (A, recommended) delete the file by hand, which needs no protected-file change; (B) change the guard to allow edits to untracked files in tests/acceptance.
+
 ## Proposals (ideas outside the backlog; not scheduled)
 
 ## Decided

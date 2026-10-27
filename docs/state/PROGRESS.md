@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-27 U02 Blocked tasks change status only through owner override — done
+- Changed: rules.ts canSetStatus blocked=false + canCompleteWithEvidence; mock setStatus/markSubmitted/markCompleted enforce rules; board shows blocking reason; known-failures (B04 removed); QUEUE item for stray draft spec
+- Evidence: verify.mjs exit 0; tests now passing: B04, U02; PR #4
+- Notes: verifier PASS; gate run on a clean worktree because an untracked draft spec the guard would not let me edit fails locally (see QUEUE)
+
 ## 2026-10-27 U01 Finish visit requires saved outcomes — done
 - Changed: rules.ts canFinishVisit + RuleViolationError, mock visits.finish guard, record.tsx saved-only counter, useRecordVisitOutcome invalidates visit, known-failures (B02 removed)
 - Evidence: verify.mjs exit 0; tests now passing: B02, U01; PR #3

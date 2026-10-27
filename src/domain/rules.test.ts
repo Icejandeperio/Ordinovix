@@ -20,6 +20,7 @@ import {
   defaultDue,
   templateApplies,
   canFinishVisit,
+  canCompleteWithEvidence,
 } from './rules';
 import type { Task, TaskLine, Authorization, FollowUp, Holiday, TaskTemplate, Client, VisitItem } from './types';
 
@@ -321,6 +322,72 @@ describe('domain/rules', () => {
     it('is false when any item has no saved outcome', () => {
       expect(canFinishVisit([item('a', 'completed'), item('b')])).toBe(false);
       expect(canFinishVisit([item('a')])).toBe(false);
+    });
+  });
+
+  describe('canSetStatus (spec table 16.4)', () => {
+    const baseTask: Task = {
+      id: 't', orgId: 'o', clientId: 'c', kind: 'filing', dueDate: '2026-10-31', dueSource: { kind: 'template' },
+      ownerUserId: 'u', officeAction: false, paymentExpected: false, status: 'in_preparation', tags: [],
+      createdAt: '', createdBy: '', updatedAt: '', updatedBy: '', version: 1,
+    };
+    const line = (status: TaskLine['status']): TaskLine => ({
+      id: 'l', orgId: 'o', taskId: 't', clientId: 'c', label: 'Doc', required: true, copyForm: 'digital',
+      suppliedBy: 'client', printAndBring: false, status, sortOrder: 1, lateDiscovered: false, documentIds: [],
+      createdAt: '', createdBy: '', updatedAt: '', updatedBy: '', version: 1,
+    });
+    const accepted = [line('accepted')];
+    const allStatuses = [
+      'intake', 'waiting_on_client', 'review_required', 'needs_correction', 'in_preparation', 'ready_for_review',
+      'ready_next_step', 'submitted', 'awaiting_follow_up', 'completed', 'archived',
+    ] as const;
+    const withStatus = (status: Task['status']): Task => ({ ...baseTask, status });
+    const allowed = (from: Task['status'], role: 'owner' | 'helper' = 'owner') =>
+      allStatuses.filter((to) => to !== from && canSetStatus(withStatus(from), accepted, to, role));
+
+    it('B04 blocked task accepts no manual target for any role', () => {
+      for (const lineStatus of ['not_requested', 'requested', 'received', 'under_review', 'incomplete', 'needs_correction'] as const) {
+        for (const role of ['owner', 'helper'] as const) {
+          for (const to of allStatuses) {
+            expect(canSetStatus(baseTask, [line(lineStatus)], to, role), lineStatus + ' ' + role + ' -> ' + to).toBe(false);
+          }
+        }
+      }
+    });
+
+    it('In preparation -> Ready for review, Ready for next step', () => {
+      expect(allowed('in_preparation')).toEqual(['ready_for_review', 'ready_next_step']);
+    });
+    it('Ready for review -> In preparation, Ready for next step', () => {
+      expect(allowed('ready_for_review')).toEqual(['in_preparation', 'ready_next_step']);
+    });
+    it('Ready for next step -> In preparation, Submitted, Completed', () => {
+      expect(allowed('ready_next_step')).toEqual(['in_preparation', 'submitted', 'completed']);
+    });
+    it('Submitted -> Awaiting follow-up, Completed', () => {
+      expect(allowed('submitted')).toEqual(['awaiting_follow_up', 'completed']);
+    });
+    it('Awaiting follow-up -> Submitted, Completed', () => {
+      expect(allowed('awaiting_follow_up')).toEqual(['submitted', 'completed']);
+    });
+    it('Completed -> In preparation (reopen)', () => {
+      expect(allowed('completed')).toEqual(['in_preparation']);
+    });
+    it('Archived -> restore is owner only', () => {
+      expect(allowed('archived', 'owner').length).toBeGreaterThan(0);
+      expect(allowed('archived', 'helper')).toEqual([]);
+    });
+  });
+
+  describe('canCompleteWithEvidence (spec 12.7)', () => {
+    it('is true with evidence, regardless of reason', () => {
+      expect(canCompleteWithEvidence(true)).toBe(true);
+    });
+    it('without evidence needs a reason of at least 10 characters', () => {
+      expect(canCompleteWithEvidence(false)).toBe(false);
+      expect(canCompleteWithEvidence(false, 'too short')).toBe(false);
+      expect(canCompleteWithEvidence(false, '   ok       ')).toBe(false);
+      expect(canCompleteWithEvidence(false, 'Client collected the stamped copy himself')).toBe(true);
     });
   });
 });

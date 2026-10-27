@@ -69,6 +69,7 @@ import {
   canTransitionLine,
   canSetStatus,
   canFinishVisit,
+  canCompleteWithEvidence,
   RuleViolationError,
 } from '@/domain/rules';
 import {
@@ -670,6 +671,17 @@ function getCurrentUser(): { user: User; membership: Membership } {
   const user = store.users.find((u) => u.email === email)!;
   const membership = store.memberships.find((m) => m.userId === user.id || m.email === email)!;
   return { user, membership };
+}
+
+/** Throws RULE_VIOLATION when canSetStatus refuses; a blocked task says why and that only an owner override can move it. */
+function assertCanSetStatus(task: Task, lines: TaskLine[], to: TaskStatus, role: Role): void {
+  if (canSetStatus(task, lines, to, role)) return;
+  if (isBlocked(task, lines)) {
+    throw new RuleViolationError(
+      `Task is blocked: ${blockingReason(lines) ?? 'required lines are not accepted'}. Only an owner override with a reason can change its status.`,
+    );
+  }
+  throw new RuleViolationError(`Cannot transition task to ${to}`);
 }
 
 function isClientAllowed(clientId: ID): boolean {
@@ -1701,9 +1713,7 @@ export const mockRepositories: Repositories = {
       if (!task) throw new Error('Task not found');
       const lines = store.taskLines.filter((l) => l.taskId === id);
 
-      if (!canSetStatus(task, lines, to, membership.role)) {
-        throw new Error(`Cannot transition task to ${to}`);
-      }
+      assertCanSetStatus(task, lines, to, membership.role);
 
       task.status = to;
       task.version += 1;
@@ -1714,8 +1724,10 @@ export const mockRepositories: Repositories = {
 
     async markSubmitted(id, s) {
       await simulateLatency();
+      const { membership } = getCurrentUser();
       const task = store.tasks.find((item) => item.id === id);
       if (!task) throw new Error('Task not found');
+      assertCanSetStatus(task, store.taskLines.filter((l) => l.taskId === id), 'submitted', membership.role);
       task.status = 'submitted';
       task.submittedAt = s.on + 'T00:00:00+08:00';
       task.submittedVia = s.via;
@@ -1728,8 +1740,16 @@ export const mockRepositories: Repositories = {
 
     async markCompleted(id, c) {
       await simulateLatency();
+      const { membership } = getCurrentUser();
       const task = store.tasks.find((item) => item.id === id);
       if (!task) throw new Error('Task not found');
+      assertCanSetStatus(task, store.taskLines.filter((l) => l.taskId === id), 'completed', membership.role);
+      const hasEvidence = store.documents.some(
+        (d) => d.taskId === id && !d.deletedAt && (d.kind === 'filed_return' || d.kind === 'acknowledgment'),
+      );
+      if (!canCompleteWithEvidence(hasEvidence, c.noEvidenceReason)) {
+        throw new RuleViolationError('Attach the filed return or acknowledgment, or give a reason of at least 10 characters');
+      }
       task.status = 'completed';
       task.completedAt = c.on + 'T00:00:00+08:00';
       task.completionNoEvidenceReason = c.noEvidenceReason;

@@ -201,8 +201,8 @@ export function statusGroup(status: TaskStatus): StatusGroup {
  */
 export function canSetStatus(task: Task, lines: TaskLine[], to: TaskStatus, role: Role): boolean {
   if (isBlocked(task, lines)) {
-    // Owner can override blocked tasks with a reason
-    return role === 'owner';
+    // A blocked task accepts no manual status for any role; the only path is an owner override with a reason
+    return false;
   }
 
   const current = derivedStatus(task, lines);
@@ -226,6 +226,13 @@ export function canSetStatus(task: Task, lines: TaskLine[], to: TaskStatus, role
     default:
       return false;
   }
+}
+
+/**
+ * 12.7 Mark completed: needs filing evidence, or a reason of at least 10 characters when evidence is missing
+ */
+export function canCompleteWithEvidence(hasEvidence: boolean, noEvidenceReason?: string): boolean {
+  return hasEvidence || (noEvidenceReason?.trim().length ?? 0) >= 10;
 }
 
 /**
