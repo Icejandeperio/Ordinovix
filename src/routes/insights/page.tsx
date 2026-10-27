@@ -192,18 +192,22 @@ export function InsightsPage() {
           </div>
         }
       >
-        {!data ? null : tab === 'overview' ? (
-          <OverviewTabContent data={data as InsightsData['overview']} />
-        ) : tab === 'trips' ? (
-          <TripsTabContent data={data as InsightsData['trips']} />
-        ) : tab === 'chasing' ? (
-          <ChasingTabContent data={data as InsightsData['chasing']} />
-        ) : tab === 'deadlines' ? (
-          <DeadlinesTabContent data={data as InsightsData['deadlines']} navigate={navigate} />
-        ) : tab === 'workload' ? (
-          <WorkloadTabContent data={data as InsightsData['workload']} navigate={navigate} />
-        ) : (
-          <ClientsTabContent data={data as InsightsData['clients']} navigate={navigate} />
+        {!data ? null : (
+          <div aria-busy={query.isPlaceholderData} className={query.isPlaceholderData ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
+            {tab === 'overview' ? (
+              <OverviewTabContent data={data as InsightsData['overview']} />
+            ) : tab === 'trips' ? (
+              <TripsTabContent data={data as InsightsData['trips']} />
+            ) : tab === 'chasing' ? (
+              <ChasingTabContent data={data as InsightsData['chasing']} />
+            ) : tab === 'deadlines' ? (
+              <DeadlinesTabContent data={data as InsightsData['deadlines']} navigate={navigate} />
+            ) : tab === 'workload' ? (
+              <WorkloadTabContent data={data as InsightsData['workload']} navigate={navigate} />
+            ) : (
+              <ClientsTabContent data={data as InsightsData['clients']} navigate={navigate} />
+            )}
+          </div>
         )}
       </QueryState>
     </div>

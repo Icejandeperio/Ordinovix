@@ -112,6 +112,8 @@ export function useInsights<T extends InsightsTab>(tab: T, filters?: InsightsFil
     queryKey: ['insights', tab, filters],
     queryFn: () => repositories.insights.get(tab, filters),
     staleTime: 60 * 1000,
+    // A filter change keeps the charts on screen (dimmed) until the new numbers arrive; a tab change does not
+    placeholderData: (previous, previousQuery) => (previousQuery?.queryKey[1] === tab ? previous : undefined),
   });
 }
 
