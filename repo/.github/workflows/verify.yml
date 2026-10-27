@@ -1,0 +1,55 @@
+# Ordinovix gate (human-owned; see docs/adr/ADR-0001). The job name "verify" is the required status check.
+name: verify
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out (full history so the ratchet can read origin/main)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Gate (typecheck, lint, unit, build, acceptance + ratchet)
+        run: node scripts/verify.mjs
+        env:
+          CI: 'true'
+          TZ: Asia/Manila
+
+      - name: Upload test evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-results
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore

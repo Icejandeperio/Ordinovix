@@ -1,0 +1,24 @@
+{
+  "_about": "Packages Claude Code may install without asking (read by .claude/hooks/guard.mjs). Human-owned. Rules: latest stable release at least 7 days old, install with --save-exact, licence MIT/ISC/BSD/Apache-2.0, no major upgrades of existing packages. Anything else goes to docs/state/QUEUE.md.",
+  "packages": [
+    "@playwright/test",
+    "eslint",
+    "@eslint/js",
+    "typescript-eslint",
+    "eslint-plugin-react-hooks",
+    "globals",
+    "fake-indexeddb",
+    "@axe-core/playwright",
+    "vite-plugin-pwa",
+    "idb-keyval",
+    "zod",
+    "@date-fns/tz"
+  ],
+  "groups": {
+    "gate": ["@playwright/test", "eslint", "@eslint/js", "typescript-eslint", "eslint-plugin-react-hooks", "globals"],
+    "test": ["fake-indexeddb", "@axe-core/playwright"],
+    "pwa": ["vite-plugin-pwa"],
+    "already-present": ["idb-keyval", "zod", "@date-fns/tz"]
+  },
+  "npxBins": ["tsc", "vitest", "vite", "eslint", "playwright"]
+}

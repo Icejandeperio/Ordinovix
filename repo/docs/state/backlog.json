@@ -1,0 +1,567 @@
+{
+  "_about": "Ordinovix work queue for Claude Code. Units run in order, respecting depends_on. Claude may edit only status, pr, evidence and notes. Bug IDs refer to docs/state/QA_AUDIT_2026-10-27.md.",
+  "version": 1,
+  "created": "2026-10-27",
+  "stop_after": "U19",
+  "phases": {
+    "P0": "Demo-ready: fix what would break or embarrass the operator preview",
+    "P2": "Contract hardening: make the mock the executable spec for the API",
+    "P3-prep": "Backend preparation, documents only (no cloud actions)"
+  },
+  "units": [
+    {
+      "id": "U00",
+      "phase": "P0",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [],
+      "title": "Quality gate tooling + fix the Rules-of-Hooks crash",
+      "bugs": [
+        "B01"
+      ],
+      "scope": [
+        "package.json",
+        "package-lock.json",
+        "vite.config.ts",
+        "src/routes/visits/record.tsx",
+        "src/routes/visits/summary.tsx",
+        "tests/acceptance/known-failures.json",
+        "docs/state/*"
+      ],
+      "acceptance": [
+        "Install exact-pinned devDependencies from docs/adr/approved-deps.json group 'gate': @playwright/test, eslint, @eslint/js, typescript-eslint, eslint-plugin-react-hooks, globals (latest stable, at least 7 days old, --save-exact)",
+        "vite.config.ts gains a Vitest `test` block that includes only src/**/*.test.{ts,tsx}, so Vitest never runs tests/acceptance",
+        "package.json scripts: lint = eslint ., test:e2e = playwright test, verify = node scripts/verify.mjs, verify:fast = node scripts/verify.mjs --fast",
+        "record.tsx and summary.tsx call every hook before the loading return (B01); `npx eslint .` reports 0 errors",
+        "B01 removed from known-failures.json; `node scripts/verify.mjs` exits 0 with all other regression IDs still listed",
+        "CI workflow .github/workflows/verify.yml passes on the PR"
+      ],
+      "tests": [
+        "B01"
+      ],
+      "notes": "Bootstrap unit: main is red until U00 merges (the gate tooling is not installed yet and CI on main fails). Skip the broken-base check for this unit only. Open the PR and let CI prove the gate."
+    },
+    {
+      "id": "U01",
+      "phase": "P0",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U00"
+      ],
+      "title": "Finish visit requires every outcome to be saved",
+      "bugs": [
+        "B02"
+      ],
+      "scope": [
+        "src/routes/visits/record.tsx",
+        "src/data/mock/index.ts",
+        "src/domain/rules.ts",
+        "src/domain/*.test.ts",
+        "src/data/mock/*.test.ts"
+      ],
+      "acceptance": [
+        "Finish Visit is disabled until every item has a SAVED outcome; the counter shows saved outcomes only",
+        "visits.finish rejects (RULE_VIOLATION) when any item lacks a saved outcome; a Vitest test proves it",
+        "Add pure rule canFinishVisit(items) in rules.ts with tests"
+      ],
+      "tests": [
+        "B02"
+      ]
+    },
+    {
+      "id": "U02",
+      "phase": "P0",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U00"
+      ],
+      "title": "Blocked tasks change status only through an owner override with a reason",
+      "bugs": [
+        "B04"
+      ],
+      "scope": [
+        "src/domain/rules.ts",
+        "src/domain/rules.test.ts",
+        "src/data/mock/index.ts",
+        "src/data/mock/tasks.test.ts",
+        "src/routes/tasks/**",
+        "src/components/tasks/**"
+      ],
+      "acceptance": [
+        "canSetStatus returns false for every target when the task is blocked, for every role",
+        "tasks.setStatus, markSubmitted and markCompleted enforce canSetStatus; markCompleted also enforces the evidence-or-reason rule (spec 12.7)",
+        "tasks.override(id, status, reason) remains the only path for a blocked task; it records statusOverride and an activity event",
+        "Board drag and 'Move to…' show the rule's reason instead of moving a blocked task",
+        "Vitest covers each row of spec table 16.4"
+      ],
+      "tests": [
+        "B04"
+      ]
+    },
+    {
+      "id": "U03",
+      "phase": "P0",
+      "tier": "T1",
+      "status": "pending",
+      "depends_on": [
+        "U00"
+      ],
+      "title": "Task templates screen and Welcome wizard read real templates; no fabricated 'Verified' badges",
+      "bugs": [
+        "B07"
+      ],
+      "scope": [
+        "src/routes/settings/**",
+        "src/routes/welcome/page.tsx",
+        "src/components/settings/**",
+        "src/hooks/useData.ts"
+      ],
+      "acceptance": [
+        "Settings → Task templates lists templates from useTemplates() with their real code, name, frequency, line count and verification state",
+        "Mark verified calls templates.markVerified and requires a source reference (spec 12.10)",
+        "No hard-coded template arrays or legal references remain in settings or welcome pages"
+      ],
+      "tests": [
+        "B07"
+      ]
+    },
+    {
+      "id": "U04",
+      "phase": "P0",
+      "tier": "T1",
+      "status": "pending",
+      "depends_on": [
+        "U00"
+      ],
+      "title": "Valid notification links, dev tools only in mock mode, pinch zoom restored",
+      "bugs": [
+        "B09",
+        "B18",
+        "B19"
+      ],
+      "scope": [
+        "src/data/mock/index.ts",
+        "src/data/mock/seed.ts",
+        "src/app/shell.tsx",
+        "src/app/dev-menu.tsx",
+        "index.html"
+      ],
+      "acceptance": [
+        "Every seeded notification links to an existing task, visit or client",
+        "Dev menu, persona switcher and 'Sample Data Mode' banner render only when VITE_DATA_SOURCE is not 'api'",
+        "index.html viewport no longer sets maximum-scale or user-scalable=no"
+      ],
+      "tests": [
+        "B09"
+      ]
+    },
+    {
+      "id": "U05",
+      "phase": "P0",
+      "tier": "T1",
+      "status": "pending",
+      "depends_on": [
+        "U01",
+        "U02",
+        "U04"
+      ],
+      "title": "Enrich sample data to spec section 18 (demo-ready)",
+      "bugs": [
+        "B21"
+      ],
+      "scope": [
+        "src/data/mock/seed.ts",
+        "src/data/mock/index.ts",
+        "src/data/mock/*.test.ts"
+      ],
+      "acceptance": [
+        "Keep every seed ID listed in .claude/rules/domain-data.md with its starting state; never add items to visit-today",
+        "Add clients up to 8 (spec 18.2), all 9 sample templates (all unverified), about 26 open tasks covering every task status and every line status, visits V1 (not ready), V2 (ready), V3 (done) as NEW visits, follow-ups, payments, documents, notifications, notes, activity",
+        "Add six months of history shaped like spec table 18.6 so Insights can be computed later",
+        "All dates relative to the seed day; seeded visit dates never fall on weekends or seeded holidays",
+        "All regression tests that passed before still pass; mock repository tests updated only where counts changed",
+        "Write 'Demo ready' in the PROGRESS.md entry; continue to the next unit (no stop)"
+      ],
+      "tests": []
+    },
+    {
+      "id": "U06",
+      "phase": "P2",
+      "tier": "T1",
+      "status": "pending",
+      "depends_on": [
+        "U00"
+      ],
+      "title": "Shared QueryState wrapper: loading, error with Retry, 403/404, empty on every data page; real error page",
+      "bugs": [
+        "B03",
+        "B10",
+        "B13",
+        "B14"
+      ],
+      "scope": [
+        "src/components/**",
+        "src/routes/**",
+        "src/app/router.tsx",
+        "src/routes/not-found.tsx"
+      ],
+      "acceptance": [
+        "One QueryState component used by every data-backed page: calendar, clients/page, clients/detail, documents, follow-ups/run, insights, notifications, offices, payments, search, settings, tasks/page, visits/page, visits/detail, visits/print, visits/record, visits/summary (the 17 route files in audit B13)",
+        "Unknown record → not-found message; unassigned client for the helper → no-access message (spec 11.20 copy)",
+        "Router errorElement renders a real error page with an error ID, not the 404 page",
+        "With the dev failure rate at 100%, every page shows its own error and Retry; navigation keeps working"
+      ],
+      "tests": [
+        "B03",
+        "B10"
+      ]
+    },
+    {
+      "id": "U07",
+      "phase": "P2",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U02",
+        "U06"
+      ],
+      "title": "Permission policy enforced in the data layer",
+      "bugs": [
+        "B11"
+      ],
+      "scope": [
+        "src/domain/policy.ts",
+        "src/domain/policy.test.ts",
+        "src/data/mock/index.ts",
+        "src/data/mock/*.test.ts"
+      ],
+      "acceptance": [
+        "src/domain/policy.ts: pure canAccessClient, requireOwner, canReviewLines (respects helpersCanAccept), canViewInsights scope, with Vitest tests",
+        "Every mock repository method calls policy first; helpers get FORBIDDEN on unassigned clients for reads AND writes (contacts, authorizations, tasks, lines, documents, follow-ups, visits, payments, notes, calendar, search, insights, reports)",
+        "Owner-only methods (memberships, templates.save/markVerified, deadlineMoves, holidays, settings.save, tasks.override/changeDue, reports.fullBackup, activity.list org-wide) reject helpers",
+        "Verifier performs a red-on-removal check for at least canAccessClient and requireOwner"
+      ],
+      "tests": [
+        "B11"
+      ]
+    },
+    {
+      "id": "U08",
+      "phase": "P2",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U07"
+      ],
+      "title": "Validate every write with the zod schemas at the repository boundary",
+      "bugs": [
+        "B16"
+      ],
+      "scope": [
+        "src/domain/schemas.ts",
+        "src/data/mock/index.ts",
+        "src/data/mock/*.test.ts",
+        "src/domain/*.test.ts"
+      ],
+      "acceptance": [
+        "Schemas match spec section 12 field rules (lengths, required fields, centavos, YYYY-MM-DD, reason ≥ 10 chars)",
+        "Every write method parses input and throws VALIDATION with field errors; forms show those errors next to the fields",
+        "No form rewrite to react-hook-form is required"
+      ],
+      "tests": []
+    },
+    {
+      "id": "U09",
+      "phase": "P2",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U00"
+      ],
+      "title": "Uploaded files persist across reloads (IndexedDB)",
+      "bugs": [
+        "B05",
+        "B24"
+      ],
+      "scope": [
+        "src/data/mock/**",
+        "src/lib/files.ts",
+        "src/components/documents/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "acceptance": [
+        "Mock stores file bytes and thumbnails in IndexedDB via idb-keyval; documents.getUrl mints a fresh object URL",
+        "Upload applies the spec 9.9 display name convention and respects line transitions instead of forcing Received",
+        "Replace creates a new version record (versionNo + replacesId), never mutating the old one",
+        "fake-indexeddb (approved) may be added for Vitest"
+      ],
+      "tests": [
+        "B05"
+      ]
+    },
+    {
+      "id": "U10",
+      "phase": "P2",
+      "tier": "T1",
+      "status": "pending",
+      "depends_on": [
+        "U08"
+      ],
+      "title": "Settings saves for real: split the 1,870-line page into wired sections",
+      "bugs": [
+        "B06"
+      ],
+      "scope": [
+        "src/routes/settings/**",
+        "src/components/settings/**",
+        "src/hooks/useData.ts"
+      ],
+      "acceptance": [
+        "One component per settings section; each loads from and saves to its repository method (settings.save, prefs.save, messages.save, holidays.*, deadlineMoves.*, visitKit.save)",
+        "Forms initialise from loaded data, not hard-coded defaults; 'Settings saved' only after success; errors shown inline",
+        "Visual layout unchanged"
+      ],
+      "tests": [
+        "B06"
+      ]
+    },
+    {
+      "id": "U11",
+      "phase": "P2",
+      "tier": "T1",
+      "status": "pending",
+      "depends_on": [
+        "U07"
+      ],
+      "title": "Audit log shows real activity",
+      "bugs": [
+        "B08"
+      ],
+      "scope": [
+        "src/routes/audit/page.tsx",
+        "src/hooks/useData.ts",
+        "src/data/mock/index.ts"
+      ],
+      "acceptance": [
+        "Audit page renders activity.list() with the filters and built-in views from spec 11.18; CSV export uses the same data",
+        "No activity event stores a revealed TIN or secret in before/after"
+      ],
+      "tests": [
+        "B08"
+      ]
+    },
+    {
+      "id": "U12",
+      "phase": "P2",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U05",
+        "U07"
+      ],
+      "title": "Insights computed from data with metrics.ts, filters and helper scoping",
+      "bugs": [
+        "B20"
+      ],
+      "scope": [
+        "src/domain/metrics.ts",
+        "src/domain/metrics.test.ts",
+        "src/data/mock/index.ts",
+        "src/routes/insights/**",
+        "src/components/insights/**"
+      ],
+      "acceptance": [
+        "Every KPI and chart in spec 13.3–13.4 is computed by a pure metrics.ts function with a Vitest hand-count test on fixed fixtures",
+        "Insights page contains no hard-coded series; filters (date range, owner, client, template) change the numbers",
+        "Helper sees only assigned clients' numbers",
+        "Charts keep their current look; one y-axis per chart; table view and CSV per chart"
+      ],
+      "tests": []
+    },
+    {
+      "id": "U13",
+      "phase": "P2",
+      "tier": "T1",
+      "status": "pending",
+      "depends_on": [
+        "U10"
+      ],
+      "title": "Welcome wizard persists what it collects",
+      "bugs": [
+        "B30"
+      ],
+      "scope": [
+        "src/routes/welcome/page.tsx",
+        "src/hooks/useData.ts"
+      ],
+      "acceptance": [
+        "Each step saves through the repository (settings, template activation, invite) and the Today 'Getting started' card reflects progress"
+      ],
+      "tests": []
+    },
+    {
+      "id": "U14",
+      "phase": "P2",
+      "tier": "T1",
+      "status": "pending",
+      "depends_on": [
+        "U05"
+      ],
+      "title": "Small correctness fixes batch",
+      "bugs": [
+        "B15",
+        "B22",
+        "B23",
+        "B25",
+        "B28",
+        "B29"
+      ],
+      "scope": [
+        "src/routes/visits/**",
+        "src/domain/rules.ts",
+        "src/lib/dates.ts",
+        "src/routes/tasks/detail.tsx",
+        "src/app/theme.tsx",
+        "src/routes/settings/**"
+      ],
+      "acceptance": [
+        "Visit cost fields start empty (B15); pack list copies default to 1 for Originals and to the template value otherwise (B22)",
+        "Summary shows 'Not recorded' instead of a made-up duration (B23)",
+        "formatTime/formatDateTime render Asia/Manila regardless of device time zone (B25) with tests",
+        "Task header shows 'Sep 2026' style period labels (B28)",
+        "Rename the 'Bureau Vermilion — official BIR carmine' palette to a neutral name and description without BIR references (B29)"
+      ],
+      "tests": []
+    },
+    {
+      "id": "U15",
+      "phase": "P2",
+      "tier": "T1",
+      "status": "pending",
+      "depends_on": [
+        "U00"
+      ],
+      "title": "Dev menu 'set today' survives its reload",
+      "bugs": [
+        "B12"
+      ],
+      "scope": [
+        "src/lib/dates.ts",
+        "src/data/mock/index.ts",
+        "src/app/dev-menu.tsx"
+      ],
+      "acceptance": [
+        "The override persists in localStorage, is applied before the store loads, and can be cleared"
+      ],
+      "tests": [
+        "B12"
+      ]
+    },
+    {
+      "id": "U16",
+      "phase": "P2",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U12",
+        "U13",
+        "U14"
+      ],
+      "title": "Bundle split and dependency cleanup",
+      "bugs": [
+        "B26",
+        "B27"
+      ],
+      "scope": [
+        "src/app/router.tsx",
+        "vite.config.ts",
+        "package.json",
+        "package-lock.json"
+      ],
+      "acceptance": [
+        "All routes except Today lazy-loaded; initial JS ≤ 220 KB gzip (report the number)",
+        "Remove dependencies with zero imports: recharts, react-hook-form, @hookform/resolvers, @tanstack/react-table, @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities, react-day-picker, vaul — re-check with grep first; keep idb-keyval and @date-fns/tz if used",
+        "No major-version upgrades"
+      ],
+      "tests": []
+    },
+    {
+      "id": "U17",
+      "phase": "P2",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U09",
+        "U16"
+      ],
+      "title": "Installable app and offline write queue",
+      "bugs": [
+        "B17"
+      ],
+      "scope": [
+        "vite.config.ts",
+        "src/app/**",
+        "src/lib/**",
+        "src/data/**",
+        "src/hooks/**",
+        "public/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "acceptance": [
+        "vite-plugin-pwa (approved) generates the service worker per spec 19.3; update banner instead of silent reloads",
+        "Offline mutations queue in IndexedDB with idempotency keys, replay in order on reconnect, show in the sync indicator; no duplicates after replay (test with the dev offline toggle)",
+        "PNG icons 192/512/maskable and apple-touch-icon 180 added alongside the SVGs"
+      ],
+      "tests": []
+    },
+    {
+      "id": "U18",
+      "phase": "P2",
+      "tier": "T1",
+      "status": "pending",
+      "depends_on": [
+        "U17"
+      ],
+      "title": "Accessibility and responsive sweep",
+      "bugs": [],
+      "scope": [
+        "src/**",
+        "tests/acceptance/u18-*.spec.ts"
+      ],
+      "acceptance": [
+        "Add @axe-core/playwright (approved) checks for the main routes in both themes; zero serious or critical violations",
+        "No horizontal scroll at 360 px on any route (new acceptance test)",
+        "Visual look unchanged except where an accessibility fix requires it"
+      ],
+      "tests": []
+    },
+    {
+      "id": "U19",
+      "phase": "P3-prep",
+      "tier": "T1",
+      "status": "pending",
+      "depends_on": [
+        "U08",
+        "U11",
+        "U12"
+      ],
+      "title": "Backend plan document (no cloud actions)",
+      "bugs": [],
+      "scope": [
+        "docs/backend/**",
+        "docs/state/*"
+      ],
+      "acceptance": [
+        "docs/backend/BACKEND_PLAN.md maps every Repositories method to an API route, permission rule and D1 tables (spec section 21)",
+        "docs/backend/schema-draft.sql: D1 table draft with indexes from spec 21.6 (not applied anywhere)",
+        "List of owner decisions and accounts needed (Cloudflare, Google OAuth client, secrets) appended to QUEUE.md",
+        "No wrangler, Cloudflare or OAuth commands run"
+      ],
+      "tests": []
+    }
+  ]
+}
