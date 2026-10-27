@@ -77,7 +77,7 @@
       "id": "U02",
       "phase": "P0",
       "tier": "T2",
-      "status": "pending",
+      "status": "in_progress",
       "depends_on": [
         "U00"
       ],
