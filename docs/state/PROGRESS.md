@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-27 U03 Templates screen and Welcome read real templates — done
+- Changed: settings TemplatesSection (new) + welcome step 3 read useTemplates; markVerified via hook; hooks useTemplateLines/useMarkTemplateVerified; FREQUENCY_LABELS; known-failures (B07 removed)
+- Evidence: verify.mjs exit 0; tests now passing: B07, U03; PR #5
+- Notes: T1 no verifier; mock markVerified still lacks sourceRef enforcement (U07/U08); gate run on clean worktree
+
 ## 2026-10-27 U02 Blocked tasks change status only through owner override — done
 - Changed: rules.ts canSetStatus blocked=false + canCompleteWithEvidence; mock setStatus/markSubmitted/markCompleted enforce rules; board shows blocking reason; known-failures (B04 removed); QUEUE item for stray draft spec
 - Evidence: verify.mjs exit 0; tests now passing: B04, U02; PR #4

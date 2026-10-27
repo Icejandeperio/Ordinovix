@@ -47,6 +47,7 @@ import {
 } from 'lucide-react';
 import { DateField } from '@/components/inputs/date-field';
 import { UserFormModal } from '@/components/settings/user-form-modal';
+import { TemplatesSection } from '@/components/settings/templates-section';
 import { RevokeUserDialog } from '@/components/settings/revoke-user-dialog';
 import type { Membership, Role, ID } from '@/domain/types';
 
@@ -147,22 +148,6 @@ export function SettingsPage() {
       setBaselineNote(baselineData.note ?? '');
     }
   }, [baselineData]);
-
-  // Template verification modal state
-  const [verifyTemplateCode, setVerifyTemplateCode] = useState<string | null>(null);
-  const [verifySourceRef, setVerifySourceRef] = useState('');
-  const [verifySourceLink, setVerifySourceLink] = useState('');
-  const [verifyDate, setVerifyDate] = useState('2026-10-25');
-  const [verifyError, setVerifyError] = useState<string | null>(null);
-
-  // Template list state
-  const [templatesList, setTemplatesList] = useState([
-    { code: '1601-EQ', name: 'Quarterly Creditable Withholding Tax', freq: 'Quarterly', verified: true, lines: 4, sourceRef: 'NIRC Sec. 58 / RR 2-98' },
-    { code: '0619-E', name: 'Monthly Remittance of Creditable Withholding Tax', freq: 'Monthly', verified: true, lines: 3, sourceRef: 'NIRC Sec. 58 / RR 11-2018' },
-    { code: '1702-Q', name: 'Quarterly Corporate Income Tax', freq: 'Quarterly', verified: true, lines: 5, sourceRef: 'NIRC Sec. 75 / CREATE Act' },
-    { code: '2551-Q', name: 'Quarterly Percentage Tax Return', freq: 'Quarterly', verified: false, lines: 3, sourceRef: '' },
-    { code: 'BOOK-STAMP', name: 'Annual Books of Accounts Inscription & Stamping', freq: 'Annual', verified: true, lines: 6, sourceRef: 'RMC 29-2019 / RMC 3-2023' },
-  ]);
 
   // Profile state
   const [name, setName] = useState(session?.user.name ?? 'Ana Santos');
@@ -1224,177 +1209,7 @@ export function SettingsPage() {
           )}
 
           {/* TEMPLATES */}
-          {activeTab === 'templates' && (
-            <div className="space-y-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-[var(--ink)]">Obligation Templates</h2>
-                  <p className="text-xs text-[var(--ink-3)] mt-0.5">Standard obligation requirement checklists and schedule rules.</p>
-                </div>
-                {!isOwner && (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--neutral-bg)] text-[var(--neutral-fg)] border border-[var(--neutral-bd)] uppercase">
-                    Read-only (Helper)
-                  </span>
-                )}
-              </div>
-
-              {!isOwner && (
-                <div className="p-3 bg-[var(--sheet-2)] border border-[var(--rule)] rounded-lg text-xs text-[var(--ink-2)]">
-                  You are viewing templates with helper permissions. Only the practice owner can edit requirement lines or certify statutory verification.
-                </div>
-              )}
-
-              <div className="space-y-3">
-                {templatesList.map((t) => (
-                  <div key={t.code} className="p-3.5 rounded-lg border border-[var(--rule)] bg-[var(--sheet)] flex items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-[var(--neutral-bg)] text-[var(--neutral-fg)] border border-[var(--neutral-bd)]">
-                          {t.code}
-                        </span>
-                        <span className="text-sm font-semibold text-[var(--ink)]">{t.name}</span>
-                      </div>
-                      <div className="text-xs text-[var(--ink-3)] flex items-center gap-2">
-                        <span>{t.freq} schedule · {t.lines} requirement lines</span>
-                        {t.sourceRef && (
-                          <span className="font-mono text-[11px] text-[var(--ink-2)]">
-                            &middot; Ref: {t.sourceRef}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      {t.verified ? (
-                        <span className="flex items-center gap-1 text-[11px] font-semibold text-[var(--good-fg)] bg-[var(--good-bg)] px-2.5 py-1 rounded border border-[var(--good-bd)]">
-                          <Check className="w-3 h-3" /> Verified
-                        </span>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="flex items-center gap-1 text-[11px] font-semibold text-[var(--warn-fg)] bg-[var(--warn-bg)] px-2.5 py-1 rounded border border-[var(--warn-bd)]">
-                            <AlertTriangle className="w-3 h-3" /> Unverified
-                          </span>
-                          {isOwner && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setVerifyTemplateCode(t.code);
-                                setVerifySourceRef('');
-                                setVerifySourceLink('');
-                                setVerifyError(null);
-                              }}
-                              className="px-2.5 py-1 rounded bg-[var(--stamp)] text-[var(--on-stamp)] text-xs font-semibold hover:bg-[var(--stamp-strong)] transition-colors"
-                            >
-                              Mark Verified
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Template Verification Dialog */}
-              {verifyTemplateCode && isOwner && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                  <div className="bg-[var(--sheet)] border border-[var(--rule)] rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
-                    <div className="flex items-center justify-between border-b border-[var(--rule)] pb-3">
-                      <div className="flex items-center gap-2">
-                        <FileCheck2 className="w-5 h-5 text-[var(--stamp)]" />
-                        <h3 className="text-sm font-bold text-[var(--ink)]">
-                          Certify Template Verification ({verifyTemplateCode})
-                        </h3>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setVerifyTemplateCode(null)}
-                        className="p-1 rounded text-[var(--ink-3)] hover:text-[var(--ink)]"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    <div className="space-y-3 text-xs">
-                      <p className="text-[var(--ink-2)]">
-                        Section 12.10 requires a statutory or circular reference before any obligation template can be marked verified.
-                      </p>
-
-                      <div>
-                        <label className="block font-semibold text-[var(--ink-3)] uppercase tracking-wider mb-1">
-                          Source Reference (Required) *
-                        </label>
-                        <input
-                          type="text"
-                          value={verifySourceRef}
-                          onChange={(e) => {
-                            setVerifySourceRef(e.target.value);
-                            if (verifyError) setVerifyError(null);
-                          }}
-                          placeholder="e.g. NIRC Sec. 116 / RR 8-2018"
-                          className="w-full h-9 px-3 rounded border border-[var(--rule)] bg-[var(--sheet)] text-[var(--ink)] text-xs focus:ring-2 focus:ring-[var(--stamp)] focus:outline-none"
-                        />
-                        {verifyError && (
-                          <p className="text-[var(--critical-fg)] text-[11px] mt-1">{verifyError}</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block font-semibold text-[var(--ink-3)] uppercase tracking-wider mb-1">
-                          Source Link (Optional)
-                        </label>
-                        <input
-                          type="url"
-                          value={verifySourceLink}
-                          onChange={(e) => setVerifySourceLink(e.target.value)}
-                          placeholder="https://www.bir.gov.ph/revenue-regulations/..."
-                          className="w-full h-9 px-3 rounded border border-[var(--rule)] bg-[var(--sheet)] text-[var(--ink)] text-xs focus:ring-2 focus:ring-[var(--stamp)] focus:outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block font-semibold text-[var(--ink-3)] uppercase tracking-wider mb-1">
-                          Verified Date
-                        </label>
-                        <DateField value={verifyDate} onChange={(val) => setVerifyDate(val || '')} placeholder="YYYY-MM-DD" />
-                      </div>
-                    </div>
-
-                    <div className="pt-3 border-t border-[var(--rule)] flex justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setVerifyTemplateCode(null)}
-                        className="px-3 py-1.5 rounded border border-[var(--rule)] bg-[var(--sheet)] text-xs font-medium text-[var(--ink-2)] hover:bg-[var(--sheet-2)]"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!verifySourceRef.trim()) {
-                            setVerifyError('Statutory source reference is required to certify template.');
-                            return;
-                          }
-                          setTemplatesList((prev) =>
-                            prev.map((item) =>
-                              item.code === verifyTemplateCode
-                                ? { ...item, verified: true, sourceRef: verifySourceRef.trim() }
-                                : item
-                            )
-                          );
-                          setVerifyTemplateCode(null);
-                          handleSave();
-                        }}
-                        className="px-3 py-1.5 rounded bg-[var(--stamp)] text-[var(--on-stamp)] text-xs font-semibold hover:bg-[var(--stamp-strong)]"
-                      >
-                        Confirm Verification
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {activeTab === 'templates' && <TemplatesSection isOwner={isOwner} />}
 
           {/* MESSAGES (OWNER ONLY) */}
           {activeTab === 'messages' && isOwner && (
