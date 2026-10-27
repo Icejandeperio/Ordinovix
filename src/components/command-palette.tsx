@@ -1,3 +1,4 @@
+import { isMockData } from '@/lib/data-source';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Command } from 'cmdk';
@@ -296,6 +297,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 </div>
               </Command.Item>
 
+              {isMockData && (
               <Command.Item
                 value="action switch persona operator helper ana ben"
                 onSelect={() =>
@@ -312,6 +314,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                   </span>
                 </div>
               </Command.Item>
+              )}
 
               <Command.Item
                 value="action sign out logout leave session"

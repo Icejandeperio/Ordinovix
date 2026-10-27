@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DevMenu } from './dev-menu';
+import { isMockData } from '@/lib/data-source';
 import { CommandPalette } from '@/components/command-palette';
 import { NotificationsPopover } from '@/components/notifications-popover';
 import { useIsCenterModalOpen } from '@/lib/modal-store';
@@ -293,7 +294,8 @@ export function AppShell() {
         Skip to content
       </a>
 
-      {/* Sample data banner */}
+      {/* Sample data banner (mock mode only) */}
+      {isMockData && (
       <div
         className={`shrink-0 bg-stamp-soft text-stamp-strong border-b border-rule px-4 py-1 text-center text-xs font-semibold flex items-center justify-center gap-2 z-30 sample-data-banner transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isModalOpen ? '-translate-y-full pointer-events-none opacity-0 h-0 py-0 overflow-hidden border-b-0' : 'translate-y-0 opacity-100'
@@ -306,6 +308,7 @@ export function AppShell() {
           Persona: <strong>{currentPersona === 'owner' ? 'Ana Santos (Owner)' : 'Ben Morales (Helper)'}</strong>
         </span>
       </div>
+      )}
 
       {/* Offline Status Banner (Section 19.3) */}
       {isDevOffline && (
@@ -763,8 +766,8 @@ export function AppShell() {
         </div>
       )}
 
-      {/* Developer Drawer */}
-      <DevMenu />
+      {/* Developer Drawer (mock mode only) */}
+      {isMockData && <DevMenu />}
 
       {/* Global Command Palette (cmdk) */}
       <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
