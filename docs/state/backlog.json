@@ -292,7 +292,7 @@
       "id": "U09",
       "phase": "P2",
       "tier": "T2",
-      "status": "in_progress",
+      "status": "done",
       "depends_on": [
         "U00"
       ],
@@ -316,7 +316,9 @@
       ],
       "tests": [
         "B05"
-      ]
+      ],
+      "pr": 10,
+      "evidence": "verify.mjs exit 0; tests now passing: B05, U09(B24); verifier/PR #10; verifier PASS on round 2 (round 1 caught the grid download); one existing documents test retargeted to a waiting line; carries the U07 blocked record"
     },
     {
       "id": "U10",
