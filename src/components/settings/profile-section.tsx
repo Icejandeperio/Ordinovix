@@ -16,8 +16,9 @@ interface ProfileSectionProps {
 /** Operator profile. Display name and mobile number live in the practice settings; only the owner can save them. */
 export function ProfileSection({ user, membership, settings, isOwner, onSaved, onSignOut }: ProfileSectionProps) {
   const save = useSaveSettings();
-  const [displayName, setDisplayName] = useState(settings.operatorDisplayName);
-  const [phone, setPhone] = useState(settings.mobileE164 ?? '');
+  // The owner edits the practice's operator name and mobile; a helper sees their own, read-only
+  const [displayName, setDisplayName] = useState(isOwner ? settings.operatorDisplayName : user.displayName ?? user.name);
+  const [phone, setPhone] = useState(isOwner ? settings.mobileE164 ?? '' : user.mobileE164 ?? '');
   const [error, setError] = useState<string | null>(null);
 
   const handleSave = () => {

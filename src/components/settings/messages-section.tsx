@@ -19,7 +19,7 @@ function TemplateCard({ template, onSaved }: { template: MessageTemplate; onSave
   return (
     <div className="p-3.5 rounded-lg border border-[var(--rule)] bg-[var(--sheet-2)]">
       <div className="text-xs font-bold text-[var(--ink)] uppercase tracking-wider mb-2">
-        {template.name} ({LANGUAGE_LABELS[template.language]})
+        {template.name.includes(LANGUAGE_LABELS[template.language]) ? template.name : `${template.name} (${LANGUAGE_LABELS[template.language]})`}
       </div>
       <textarea
         aria-label={`${template.name} message`}
