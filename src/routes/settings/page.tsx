@@ -9,6 +9,7 @@ import {
   useUpdateMembership,
   useRevokeMembership,
   useClients,
+  useSaveSettings,
 } from '@/hooks/useData';
 import { devControls } from '@/data';
 import { useTheme, PALETTES } from '@/app/theme';
@@ -48,6 +49,13 @@ import {
 import { DateField } from '@/components/inputs/date-field';
 import { UserFormModal } from '@/components/settings/user-form-modal';
 import { TemplatesSection } from '@/components/settings/templates-section';
+import { ProfileSection } from '@/components/settings/profile-section';
+import { PracticeSection } from '@/components/settings/practice-section';
+import { NotificationsSection } from '@/components/settings/notifications-section';
+import { SecuritySection } from '@/components/settings/security-section';
+import { MessagesSection } from '@/components/settings/messages-section';
+import { CalendarSection } from '@/components/settings/calendar-section';
+import { VisitKitSection } from '@/components/settings/visit-kit-section';
 import { QueryState } from '@/components/ui/query-state';
 import { RevokeUserDialog } from '@/components/settings/revoke-user-dialog';
 import type { Membership, Role, ID } from '@/domain/types';
@@ -150,23 +158,6 @@ export function SettingsPage() {
     }
   }, [baselineData]);
 
-  // Profile state
-  const [name, setName] = useState(session?.user.name ?? 'Ana Santos');
-  const [displayName, setDisplayName] = useState('Ana S.');
-  const [phone, setPhone] = useState(session?.user.mobileE164 ?? '+63 917 555 0101');
-  const [initials, setInitials] = useState(session?.user.initials ?? 'AS');
-
-
-  // Practice state
-  const [practiceName, setPracticeName] = useState(session?.settings.practiceName ?? session?.org.name ?? 'Santos Tax Advisory Services');
-  const [tin, setTin] = useState('123-456-789-000');
-  const [accreditationNo, setAccreditationNo] = useState('BIR-TA-2024-009182');
-  const [accreditationExpiry, setAccreditationExpiry] = useState('2027-12-31');
-
-  // Security state
-  const [idleLock, setIdleLock] = useState<'off' | '5' | '15' | '30'>('15');
-  const [privacyOnStart, setPrivacyOnStart] = useState(false);
-
   const isOwner = session?.membership.role === 'owner';
 
   // Super Admin: Users & Access Management
@@ -183,7 +174,12 @@ export function SettingsPage() {
   const [userFilterRole, setUserFilterRole] = useState<'all' | 'owner' | 'helper'>('all');
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userActionNotice, setUserActionNotice] = useState<string | null>(null);
-  const [helpersCanAccept, setHelpersCanAccept] = useState(true);
+  const saveSettingsMutation = useSaveSettings();
+  // Flips at once so the checkbox feels instant, follows the saved value, and goes back if the save fails
+  const savedHelpersCanAccept = session?.settings.helpersCanAccept ?? true;
+  const [helpersCanAccept, setHelpersCanAccept] = useState(savedHelpersCanAccept);
+  useEffect(() => setHelpersCanAccept(savedHelpersCanAccept), [savedHelpersCanAccept]);
+  const [helpersAcceptError, setHelpersAcceptError] = useState<string | null>(null);
 
   const clientNameMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -346,92 +342,16 @@ export function SettingsPage() {
         {/* Content Pane */}
         <div className="bg-[var(--sheet)] border border-[var(--rule)] rounded-lg p-6 max-w-2xl shadow-sm">
           {/* PROFILE */}
-          {activeTab === 'profile' && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-base font-bold text-[var(--ink)]">Operator Profile</h2>
-                <p className="text-xs text-[var(--ink-3)] mt-0.5">Your personal credentials and display identity in client correspondence.</p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-1">Full Name</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full h-10 px-3 rounded-md border border-[var(--rule)] bg-[var(--sheet)] text-[var(--ink)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--stamp)]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-1">Display Name (in messages)</label>
-                    <input
-                      type="text"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      className="w-full h-10 px-3 rounded-md border border-[var(--rule)] bg-[var(--sheet)] text-[var(--ink)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--stamp)]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-1">Initials (Stamp)</label>
-                    <input
-                      type="text"
-                      value={initials}
-                      onChange={(e) => setInitials(e.target.value)}
-                      maxLength={3}
-                      className="w-full h-10 px-3 rounded-md border border-[var(--rule)] bg-[var(--sheet)] text-[var(--ink)] text-sm uppercase font-mono focus:outline-none focus:ring-2 focus:ring-[var(--stamp)]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-1">Mobile Number (PH)</label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full h-10 px-3 rounded-md border border-[var(--rule)] bg-[var(--sheet)] text-[var(--ink)] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[var(--stamp)]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-1">Role & Authority</label>
-                  <div className="p-3 rounded-md bg-[var(--sheet-2)] border border-[var(--rule)] text-xs text-[var(--ink-2)] flex items-center justify-between">
-                    <div>
-                      <span className="font-semibold text-[var(--ink)] uppercase">{session?.membership.role}</span>
-                      <p className="text-[11px] text-[var(--ink-3)] mt-0.5">
-                        {isOwner ? 'Full administrative authority and unmasked data view.' : 'Scoped strictly to assigned client matters.'}
-                      </p>
-                    </div>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--info-bg)] text-[var(--info-fg)] border border-[var(--info-bd)] uppercase">
-                      Active
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-[var(--rule)] flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => navigate('/sign-in')}
-                  className="flex items-center gap-2 px-3.5 py-2 rounded-md border border-[var(--critical-bd)] bg-[var(--sheet)] hover:bg-[var(--critical-bg)] text-[var(--critical-fg)] font-medium text-xs sm:text-sm transition-colors cursor-pointer"
-                  title="Sign out of your active session"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>Sign out of session</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  className="flex items-center gap-2 px-4 py-2 rounded-md bg-[var(--stamp)] text-[var(--on-stamp)] font-medium text-sm hover:bg-[var(--stamp-strong)] transition-colors cursor-pointer"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>Save changes</span>
-                </button>
-              </div>
-            </div>
+          {activeTab === 'profile' && session && (
+            <ProfileSection
+              key={session.settings.version}
+              user={session.user}
+              membership={session.membership}
+              settings={session.settings}
+              isOwner={isOwner}
+              onSaved={handleSave}
+              onSignOut={() => navigate('/sign-in')}
+            />
           )}
 
           {/* APPEARANCE */}
@@ -750,125 +670,13 @@ export function SettingsPage() {
           )}
 
           {/* NOTIFICATIONS */}
-          {activeTab === 'notifications' && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-base font-bold text-[var(--ink)]">Notification Preferences</h2>
-                <p className="text-xs text-[var(--ink-3)] mt-0.5">Control browser notifications, alert frequencies, and quiet hours.</p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="p-4 rounded-lg bg-[var(--sheet-2)] border border-[var(--rule)] flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-bold text-[var(--ink)]">Browser Push Alerts</div>
-                    <div className="text-xs text-[var(--ink-3)]">Receive critical deadline alerts even when the tab is closed.</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => alert('Push permissions mock activated')}
-                    className="px-3 py-1.5 rounded-md border border-[var(--rule-strong)] text-xs font-semibold text-[var(--ink)] hover:bg-[var(--sheet-3)] transition-colors"
-                  >
-                    Enable Push
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  {[
-                    { label: 'Deadlines due within 3 days', checked: true },
-                    { label: 'Authorizations expiring in 30 days', checked: true },
-                    { label: 'Client uploaded a missing document', checked: true },
-                    { label: 'Visit trip readiness updates', checked: false },
-                    { label: 'Daily 7:00 AM dispatch summary', checked: true },
-                  ].map((item, idx) => (
-                    <label key={idx} className="flex items-center justify-between p-3 rounded-md border border-[var(--rule)] bg-[var(--sheet)] hover:bg-[var(--sheet-2)] cursor-pointer">
-                      <span className="text-sm text-[var(--ink)]">{item.label}</span>
-                      <input type="checkbox" defaultChecked={item.checked} className="w-4 h-4 accent-[var(--stamp)] rounded" />
-                    </label>
-                  ))}
-                </div>
-
-                <div className="p-3 rounded-md bg-[var(--sheet-2)] border border-[var(--rule)]">
-                  <div className="text-xs font-bold text-[var(--ink)] mb-1">Quiet Hours</div>
-                  <div className="text-xs text-[var(--ink-3)]">No notification sounds or badges between 8:00 PM and 7:00 AM (Asia/Manila).</div>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-[var(--rule)] flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  className="flex items-center gap-2 px-4 py-2 rounded-md bg-[var(--stamp)] text-[var(--on-stamp)] font-medium text-sm hover:bg-[var(--stamp-strong)] transition-colors"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>Save changes</span>
-                </button>
-              </div>
-            </div>
+          {activeTab === 'notifications' && session && (
+            <NotificationsSection key={`${session.settings.version}-${session.prefs.pushTypes.join()}`} settings={session.settings} prefs={session.prefs} onSaved={handleSave} />
           )}
 
           {/* PRACTICE (OWNER ONLY) */}
-          {activeTab === 'practice' && isOwner && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-base font-bold text-[var(--ink)]">Practice Configuration</h2>
-                <p className="text-xs text-[var(--ink-3)] mt-0.5">Firm accreditation details, default tax operator credentials, and stationery defaults.</p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-1">Practice Firm Name</label>
-                  <input
-                    type="text"
-                    value={practiceName}
-                    onChange={(e) => setPracticeName(e.target.value)}
-                    className="w-full h-10 px-3 rounded-md border border-[var(--rule)] bg-[var(--sheet)] text-[var(--ink)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--stamp)]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-1">Practice TIN</label>
-                    <input
-                      type="text"
-                      value={tin}
-                      onChange={(e) => setTin(e.target.value)}
-                      className="w-full h-10 px-3 rounded-md border border-[var(--rule)] bg-[var(--sheet)] text-[var(--ink)] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[var(--stamp)]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-1">BIR Tax Agent Accreditation No.</label>
-                    <input
-                      type="text"
-                      value={accreditationNo}
-                      onChange={(e) => setAccreditationNo(e.target.value)}
-                      className="w-full h-10 px-3 rounded-md border border-[var(--rule)] bg-[var(--sheet)] text-[var(--ink)] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[var(--stamp)]"
-                    />
-                  </div>
-                </div>
-
-                <DateField
-                  label="Accreditation Validity Date"
-                  value={accreditationExpiry}
-                  onChange={(val) => setAccreditationExpiry(val || '')}
-                  showRelativeHint={true}
-                />
-
-                <div className="p-3 rounded-md bg-[var(--info-bg)] border border-[var(--info-bd)] text-xs text-[var(--info-fg)]">
-                  <strong>Accreditation Reminder:</strong> Ordinovix generates automated warning banners 60 days prior to accreditation expiry to prevent interruption of counter representation privileges.
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-[var(--rule)] flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  className="flex items-center gap-2 px-4 py-2 rounded-md bg-[var(--stamp)] text-[var(--on-stamp)] font-medium text-sm hover:bg-[var(--stamp-strong)] transition-colors"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>Save changes</span>
-                </button>
-              </div>
-            </div>
+          {activeTab === 'practice' && isOwner && session && (
+            <PracticeSection key={session.settings.version} settings={session.settings} onSaved={handleSave} />
           )}
 
           {/* SUPER ADMIN: USERS & ACCESS CONTROL (OWNER ONLY) */}
@@ -1183,10 +991,26 @@ export function SettingsPage() {
                     id="helpers-accept-toggle"
                     type="checkbox"
                     checked={helpersCanAccept}
-                    onChange={(e) => setHelpersCanAccept(e.target.checked)}
+                    onChange={(e) => {
+                      setHelpersAcceptError(null);
+                      setHelpersCanAccept(e.target.checked);
+                      saveSettingsMutation.mutate(
+                        { helpersCanAccept: e.target.checked },
+                        {
+                          onSuccess: handleSave,
+                          onError: (err) => {
+                            setHelpersCanAccept(savedHelpersCanAccept);
+                            setHelpersAcceptError((err as Error).message);
+                          },
+                        }
+                      );
+                    }}
                     className="w-4 h-4 mt-1 accent-[var(--stamp)] rounded cursor-pointer"
                   />
                 </div>
+                {helpersAcceptError && (
+                  <p role="alert" className="text-xs text-[var(--critical-fg)]">{helpersAcceptError}</p>
+                )}
 
                 <div className="p-3 rounded-md bg-[var(--sheet)] border border-[var(--rule)] text-xs text-[var(--ink-2)] flex items-start gap-2.5">
                   <KeyRound className="w-4 h-4 text-[var(--stamp)] shrink-0 mt-0.5" />
@@ -1221,100 +1045,13 @@ export function SettingsPage() {
           {activeTab === 'templates' && <TemplatesSection isOwner={isOwner} />}
 
           {/* MESSAGES (OWNER ONLY) */}
-          {activeTab === 'messages' && isOwner && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-base font-bold text-[var(--ink)]">Message Templates</h2>
-                <p className="text-xs text-[var(--ink-3)] mt-0.5">Pre-composed messages for Viber and WhatsApp follow-ups with variable chips.</p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="p-3.5 rounded-lg border border-[var(--rule)] bg-[var(--sheet-2)]">
-                  <div className="text-xs font-bold text-[var(--ink)] uppercase tracking-wider mb-2">Request Missing Items (English)</div>
-                  <pre className="text-xs text-[var(--ink-2)] bg-[var(--sheet)] p-3 rounded border border-[var(--rule)] font-mono whitespace-pre-wrap leading-relaxed">
-{`Good day {contact_name},
-
-This is {operator_name} following up on {task_title} for {client_name}.
-We are currently missing:
-{missing_items_bulleted}
-
-Kindly send these at your earliest convenience so we can beat the deadline on {due_date}. Thank you!`}
-                  </pre>
-                </div>
-
-                <div className="p-3.5 rounded-lg border border-[var(--rule)] bg-[var(--sheet-2)]">
-                  <div className="text-xs font-bold text-[var(--ink)] uppercase tracking-wider mb-2">Request Missing Items (Taglish / Filipino)</div>
-                  <pre className="text-xs text-[var(--ink-2)] bg-[var(--sheet)] p-3 rounded border border-[var(--rule)] font-mono whitespace-pre-wrap leading-relaxed">
-{`Magandang araw po {contact_name},
-
-Follow up lang po mula sa tax preparation ng {client_name}.
-Kailangan pa po natin ng:
-{missing_items_bulleted}
-
-Paki-send po bago mag-{due_date} para ma-process agad. Salamat po!`}
-                  </pre>
-                </div>
-              </div>
-            </div>
-          )}
+          {activeTab === 'messages' && isOwner && <MessagesSection onSaved={handleSave} />}
 
           {/* CALENDAR (OWNER ONLY) */}
-          {activeTab === 'calendar' && isOwner && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-base font-bold text-[var(--ink)]">Deadlines & Statutory Holidays</h2>
-                <p className="text-xs text-[var(--ink-3)] mt-0.5">Statutory holiday rules and deadline move parameters.</p>
-              </div>
-
-              <div className="space-y-3">
-                <div className="text-xs font-bold text-[var(--ink-3)] uppercase tracking-wider">Default Thresholds</div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 rounded border border-[var(--rule)] bg-[var(--sheet-2)]">
-                    <div className="text-xs text-[var(--ink-3)]">Due-soon Window</div>
-                    <div className="text-lg font-bold text-[var(--ink)] mt-1">7 Days</div>
-                  </div>
-                  <div className="p-3 rounded border border-[var(--rule)] bg-[var(--sheet-2)]">
-                    <div className="text-xs text-[var(--ink-3)]">Follow-up Chasing Interval</div>
-                    <div className="text-lg font-bold text-[var(--ink)] mt-1">3 Days</div>
-                  </div>
-                  <div className="p-3 rounded border border-[var(--rule)] bg-[var(--sheet-2)]">
-                    <div className="text-xs text-[var(--ink-3)]">Authorization Expiry Warning</div>
-                    <div className="text-lg font-bold text-[var(--ink)] mt-1">30 Days</div>
-                  </div>
-                  <div className="p-3 rounded border border-[var(--rule)] bg-[var(--sheet-2)]">
-                    <div className="text-xs text-[var(--ink-3)]">Timezone Standard</div>
-                    <div className="text-sm font-bold text-[var(--ink)] font-mono mt-1">Asia/Manila (UTC+8)</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {activeTab === 'calendar' && isOwner && session && <CalendarSection settings={session.settings} onSaved={handleSave} />}
 
           {/* VISIT KIT (OWNER ONLY) */}
-          {activeTab === 'visit-kit' && isOwner && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-base font-bold text-[var(--ink)]">Standard Visit Kit</h2>
-                <p className="text-xs text-[var(--ink-3)] mt-0.5">Items automatically included on every field trip pack list.</p>
-              </div>
-
-              <div className="space-y-2">
-                {[
-                  'Operator Valid Government ID (2 originals: PRC ID, Passport/Driver License)',
-                  'BIR Tax Agent ID & Certificate of Accreditation photocopy',
-                  'Client SPA / Authorization Letters (original with wet signatures)',
-                  'Black ballpoint pens (0.5mm) & document fastener clips',
-                  'Official Documentary Stamp Taxes (DST) loose stamps',
-                  'Long and short document plastic envelopes with zip locks',
-                ].map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-3 rounded border border-[var(--rule)] bg-[var(--sheet)] text-sm text-[var(--ink)]">
-                    <Check className="w-4 h-4 text-[var(--good-solid)] shrink-0" />
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {activeTab === 'visit-kit' && isOwner && <VisitKitSection onSaved={handleSave} />}
 
           {/* ACCESS DENIED GUARD FOR HELPER */}
           {!isOwner && ['practice', 'users', 'messages', 'calendar', 'visit-kit', 'baseline', 'data'].includes(activeTab) && (
@@ -1588,70 +1325,18 @@ Paki-send po bago mag-{due_date} para ma-process agad. Salamat po!`}
           )}
 
           {/* SECURITY */}
-          {activeTab === 'security' && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-base font-bold text-[var(--ink)]">Security & Session Privacy</h2>
-                <p className="text-xs text-[var(--ink-3)] mt-0.5">Enforce idle lock timers and protect sensitive client taxpayer records.</p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-3)] mb-2">Idle Lock Timeout</label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {[
-                      { id: 'off', label: 'Off' },
-                      { id: '5', label: '5 min' },
-                      { id: '15', label: '15 min (Recommended)' },
-                      { id: '30', label: '30 min' },
-                    ].map((lock) => (
-                      <button
-                        key={lock.id}
-                        type="button"
-                        onClick={() => setIdleLock(lock.id as any)}
-                        className={`p-2.5 rounded-md border text-center text-xs font-medium transition-colors ${
-                          idleLock === lock.id
-                            ? 'border-[var(--stamp)] bg-[var(--stamp-soft)] text-[var(--stamp-ink)] font-bold'
-                            : 'border-[var(--rule)] bg-[var(--sheet-2)] text-[var(--ink-2)]'
-                        }`}
-                      >
-                        {lock.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-3.5 rounded-lg bg-[var(--sheet-2)] border border-[var(--rule)]">
-                  <div>
-                    <div className="text-sm font-semibold text-[var(--ink)]">Privacy Mode on Startup</div>
-                    <div className="text-xs text-[var(--ink-3)]">Mask all Taxpayer Identification Numbers (TINs) and revenue figures by default.</div>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={privacyOnStart}
-                    onChange={(e) => setPrivacyOnStart(e.target.checked)}
-                    className="w-4 h-4 accent-[var(--stamp)] rounded cursor-pointer"
-                  />
-                </div>
-
-                <div className="p-4 rounded-lg bg-[var(--critical-bg)] border border-[var(--critical-bd)] text-[var(--critical-fg)] flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-bold">Sign Out Everywhere</div>
-                    <div className="text-xs opacity-90">Invalidates all cached browser tokens and active sessions.</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      alert('Signed out of all devices');
-                      navigate('/sign-in');
-                    }}
-                    className="px-3 py-1.5 rounded-md bg-[var(--critical-solid)] text-[var(--on-critical-solid)] text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer"
-                  >
-                    Sign Out All
-                  </button>
-                </div>
-              </div>
-            </div>
+          {activeTab === 'security' && session && (
+            <SecuritySection
+              key={`${session.settings.version}-${session.prefs.privacyModeOnStart}`}
+              settings={session.settings}
+              prefs={session.prefs}
+              isOwner={isOwner}
+              onSaved={handleSave}
+              onSignOutEverywhere={() => {
+                alert('Signed out of all devices');
+                navigate('/sign-in');
+              }}
+            />
           )}
 
           {/* ABOUT */}

@@ -326,7 +326,7 @@
       "id": "U10",
       "phase": "P2",
       "tier": "T1",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U08"
       ],
@@ -346,7 +346,9 @@
       ],
       "tests": [
         "B06"
-      ]
+      ],
+      "pr": 15,
+      "evidence": "verify.mjs exit 0; tests now passing: B06; verifier/PR #15; verifier PASS on round 2 (round 1: helper profile regression, fixed); Practice TIN removed; stray drafts queued"
     },
     {
       "id": "U11",
