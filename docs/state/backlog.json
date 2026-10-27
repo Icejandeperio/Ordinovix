@@ -202,7 +202,7 @@
       "id": "U06",
       "phase": "P2",
       "tier": "T1",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U00"
       ],
@@ -228,7 +228,9 @@
       "tests": [
         "B03",
         "B10"
-      ]
+      ],
+      "pr": 8,
+      "evidence": "verify.mjs exit 0; tests now passing: B03, B10, U06(B13,B14); verifier/PR #8; verifier PASS; settings gated on session only; other pages queued; gate run on clean worktree"
     },
     {
       "id": "U07",

@@ -21,12 +21,13 @@ import { ClientFormSheet } from '@/components/clients/client-form-sheet';
 import { AuthorizationBadge, DueBadge, ClientFlag } from '@/components/ui/status-chip';
 import { exportToCsv } from '@/lib/export';
 import type { EntityType, VatStatus, FilingChannel, EfpsGroup } from '@/domain/types';
+import { QueryState } from '@/components/ui/query-state';
 
 type ViewTab = 'active' | 'blocked' | 'auth_attention' | 'archived';
 
 export function ClientsPage() {
   const navigate = useNavigate();
-  const { data: clientsData, isLoading } = useClients();
+  const { data: clientsData, isLoading, isError, error, refetch } = useClients();
   const { data: memberships } = useMemberships();
 
   // View tabs
@@ -378,7 +379,11 @@ export function ClientsPage() {
       </div>
 
       {/* Clients Directory List */}
-      {isLoading ? (
+      {isError ? (
+        <QueryState isLoading={false} isError error={error} onRetry={() => refetch()} subject="clients">
+          {null}
+        </QueryState>
+      ) : isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-16 bg-sheet rounded-panel border border-rule animate-pulse" />

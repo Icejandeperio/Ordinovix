@@ -21,6 +21,7 @@ import {
   Edit2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { QueryState } from '@/components/ui/query-state';
 
 type PaymentTab = 'all' | 'proof_missing' | 'to_be_reimbursed';
 
@@ -42,7 +43,7 @@ export function PaymentsPage() {
   const [copiedRef, setCopiedRef] = useState<string | null>(null);
 
   // Fetch payments
-  const { data, isLoading } = usePayments({
+  const { data, isLoading, isError, error, refetch } = usePayments({
     clientId: selectedClientId || undefined,
   });
   const allPayments = data?.items || [];
@@ -289,7 +290,11 @@ export function PaymentsPage() {
       </div>
 
       {/* Main Payments Register Table */}
-      {isLoading ? (
+      {isError ? (
+        <QueryState isLoading={false} isError error={error} onRetry={() => refetch()} subject="payments">
+          {null}
+        </QueryState>
+      ) : isLoading ? (
         <div className="h-48 bg-sheet-3 rounded-panel animate-pulse" />
       ) : filteredPayments.length === 0 ? (
         <div className="p-12 text-center bg-sheet border border-rule rounded-panel text-ink-3 space-y-3">

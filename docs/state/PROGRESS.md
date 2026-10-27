@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-27 U06 QueryState on every data page, 403/404 views, real error page — done
+- Changed: ui/query-state, domain/errors, routes/error-page, router errorElement, 17 routes gated, typed throws in mock get, main.tsx retry, known-failures (B03, B10 removed)
+- Evidence: verify.mjs exit 0; tests now passing: B03, B10, U06(B13,B14); PR #8
+- Notes: verifier PASS; settings gated on session only; other pages queued; gate run on clean worktree
+
 ## 2026-10-27 U05 Enrich sample data to spec section 18 — done
 - Changed: new seed-demo.ts generator merged into the mock store; 8 clients, 9 unverified templates, 26 open tasks, V1/V2/V3, six months of history; seed-links test uses list calls
 - Evidence: verify.mjs exit 0; tests now passing: demo-seed unit tests (2 seed days); PR #7

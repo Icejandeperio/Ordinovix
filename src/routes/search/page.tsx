@@ -1,3 +1,4 @@
+import { QueryState } from '@/components/ui/query-state';
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { repositories } from '@/data';
@@ -53,6 +54,8 @@ export function SearchPage() {
   const [searchTerm, setSearchTerm] = useState(initialQuery);
   const [results, setResults] = useState<SearchResults | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchError, setSearchError] = useState<unknown>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   // Expanded categories toggle (per Spec 11.16 "each showing the top 5 with Show all")
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
@@ -87,6 +90,7 @@ export function SearchPage() {
     if (initialQuery) {
       setSearchTerm(initialQuery);
       setIsLoading(true);
+      setSearchError(null);
       repositories.search
         .query(initialQuery)
         .then((res) => {
@@ -94,11 +98,15 @@ export function SearchPage() {
           setIsLoading(false);
           saveRecentSearch(initialQuery);
         })
-        .catch(() => setIsLoading(false));
+        .catch((err) => {
+          setSearchError(err ?? new Error('Search failed'));
+          setIsLoading(false);
+        });
     } else {
       setResults(null);
+      setSearchError(null);
     }
-  }, [initialQuery]);
+  }, [initialQuery, retryNonce]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,6 +193,12 @@ export function SearchPage() {
         )}
       </div>
 
+      {searchError != null && !isLoading && (
+        <QueryState isLoading={false} isError error={searchError} onRetry={() => setRetryNonce((n) => n + 1)} subject="search results">
+          {null}
+        </QueryState>
+      )}
+
       {/* Loading state */}
       {isLoading && (
         <div className="p-12 text-center space-y-2 bg-sheet border border-rule rounded-panel">
@@ -194,7 +208,7 @@ export function SearchPage() {
       )}
 
       {/* Results View */}
-      {!isLoading && results && (
+      {!isLoading && searchError == null && results && (
         <div className="space-y-6">
           <div className="flex items-center justify-between text-xs text-ink-3 border-b border-rule pb-2">
             <span>

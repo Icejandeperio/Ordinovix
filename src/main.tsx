@@ -9,12 +9,14 @@ import { router } from '@/app/router';
 import '@/styles/tokens.css';
 import '@/styles/base.css';
 import '@/styles/print.css';
+import { classifyError } from '@/domain/errors';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      retry: 1,
+      // A 403 or 404 will not change on a second try; anything else gets one retry
+      retry: (failureCount, error) => failureCount < 1 && !['forbidden', 'not_found'].includes(classifyError(error)),
       staleTime: 30 * 1000,
     },
   },

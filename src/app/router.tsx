@@ -21,6 +21,7 @@ import { OfficesPage } from '@/routes/offices/page';
 import { NotificationsPage } from '@/routes/notifications/page';
 import { SearchPage } from '@/routes/search/page';
 import { NotFoundPage } from '@/routes/not-found';
+import { RouteErrorPage } from '@/routes/error-page';
 import { SignInPage } from '@/routes/sign-in/page';
 import { AccessPendingPage } from '@/routes/access-pending/page';
 import { WelcomePage } from '@/routes/welcome/page';
@@ -55,22 +56,22 @@ export const router = createBrowserRouter([
   {
     path: '/sign-in',
     element: <SignInPage />,
-    errorElement: <NotFoundPage />,
+    errorElement: <RouteErrorPage />,
   },
   {
     path: '/access-pending',
     element: <AccessPendingPage />,
-    errorElement: <NotFoundPage />,
+    errorElement: <RouteErrorPage />,
   },
   {
     path: '/welcome',
     element: <WelcomePage />,
-    errorElement: <NotFoundPage />,
+    errorElement: <RouteErrorPage />,
   },
   {
     path: '/',
     element: <AppShell />,
-    errorElement: <NotFoundPage />,
+    errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <TodayPage /> },
       { path: 'tasks', element: <TasksPage /> },

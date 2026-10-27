@@ -4,11 +4,16 @@ import { useVisit, useOrgSettings } from '@/hooks/useData';
 import { formatDate } from '@/lib/format';
 import { maskTin } from '@/lib/format';
 import { ArrowLeft, Printer } from 'lucide-react';
+import { QueryState } from '@/components/ui/query-state';
 
 export function VisitPrintPage() {
   const { visitId } = useParams<{ visitId: string }>();
-  const { data, isLoading } = useVisit(visitId || '');
+  const { data, isLoading, isError, error, refetch } = useVisit(visitId || '');
   const { data: orgSettings } = useOrgSettings();
+
+  if (isError) {
+    return <QueryState isLoading={false} isError error={error} onRetry={() => refetch()} subject="this visit">{null}</QueryState>;
+  }
 
   if (isLoading || !data) {
     return <div className="p-8 text-center text-xs text-ink-3">Loading trip pack for printing...</div>;

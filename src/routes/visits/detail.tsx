@@ -29,11 +29,12 @@ import {
   CheckCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { QueryState } from '@/components/ui/query-state';
 
 export function VisitDetailPage() {
   const { visitId } = useParams<{ visitId: string }>();
   const navigate = useNavigate();
-  const { data, isLoading } = useVisit(visitId || '');
+  const { data, isLoading, isError, error, refetch } = useVisit(visitId || '');
 
   const setPackedMutation = useSetVisitPacked();
   const startVisitMutation = useStartVisit();
@@ -46,6 +47,10 @@ export function VisitDetailPage() {
 
   // Questions to raise edited state per item
   const [itemQuestions, setItemQuestions] = useState<Record<string, string>>({});
+
+  if (isError) {
+    return <QueryState isLoading={false} isError error={error} onRetry={() => refetch()} subject="this visit">{null}</QueryState>;
+  }
 
   if (isLoading || !data) {
     return (
