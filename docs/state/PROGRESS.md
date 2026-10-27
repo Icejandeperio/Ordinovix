@@ -1,9 +1,14 @@
 # Progress Log
 
+## 2026-10-27 U07 Permission policy enforced in the data layer — done
+- Changed: policy.ts, helper allowlists on every generic write, shared reference check, policy-based filters, table-driven permission tests; duplicateForNextPeriod passes tasks.create only accepted line fields; known-failures (B11 removed)
+- Evidence: verify.mjs exit 0; tests now passing: B11; PR #9
+- Notes: owner decision C; verifier PASS under the run-wide blocking rule; accepted gaps (logResponse/recordOutcome references, stored-client checks, read paths ignoring active) owned by U20
+
 ## 2026-10-27 U07 Permission policy enforced in the data layer — blocked
-- Changed: policy.ts, helper allowlists, shared reference check, table-driven tests on branch u07-permission-policy (draft PR #9), not merged
+- Changed: policy.ts, helper allowlists, shared reference check, policy-based filters and table-driven tests on branch u07-permission-policy (draft PR #9), not merged
 - Evidence: verify.mjs exit 0; tests now passing: B11 (on the branch); PR #9
-- Notes: BLOCKED: owner-authorised final attempt failed verification (4 blocking findings); no further attempt; decision queued in QUEUE.md (A, B or C)
+- Notes: BLOCKED: the owner-authorised final attempt failed verification (4 blocking findings in docs/state/reviews/U07.md); per the owner's conditions no further attempt; decision queued (options A, B, C)
 
 ## 2026-10-27 U15 Dev menu set today survives its reload — done
 - Changed: lib/dates.ts persists the override in localStorage and reads it at module load; known-failures (B12 removed)

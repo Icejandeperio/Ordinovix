@@ -236,7 +236,7 @@
       "id": "U07",
       "phase": "P2",
       "tier": "T2",
-      "status": "blocked",
+      "status": "done",
       "depends_on": [
         "U02",
         "U06"
@@ -261,7 +261,7 @@
         "B11"
       ],
       "pr": 9,
-      "evidence": "verify.mjs exit 0; tests now passing: B11 (on the branch); verifier/PR #9; BLOCKED: owner-authorised final attempt failed verification (4 blocking findings); no further attempt; decision queued in QUEUE.md (A, B or C)"
+      "evidence": "verify.mjs exit 0; tests now passing: B11; verifier/PR #9; owner decision C; verifier PASS under the run-wide blocking rule; accepted gaps (logResponse/recordOutcome references, stored-client checks, read paths ignoring active) owned by U20"
     },
     {
       "id": "U08",
@@ -569,7 +569,8 @@
       "depends_on": [
         "U08",
         "U11",
-        "U12"
+        "U12",
+        "U20"
       ],
       "title": "Backend plan document (no cloud actions)",
       "bugs": [],
@@ -584,6 +585,37 @@
         "No wrangler, Cloudflare or OAuth commands run"
       ],
       "tests": []
+    },
+    {
+      "id": "U20",
+      "phase": "P2",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U07"
+      ],
+      "title": "Close the remaining helper permission gaps from the U07 review",
+      "bugs": [
+        "B11"
+      ],
+      "scope": [
+        "src/data/mock/*",
+        "src/domain/policy.ts",
+        "src/domain/policy.test.ts",
+        "src/data/mock/*.test.ts"
+      ],
+      "acceptance": [
+        "followUps.logResponse rejects receivedLineIds that belong to another client",
+        "visits.recordOutcome rejects affectedLineIds and evidenceDocumentIds from another client, and any review-state change it makes on a line goes through canReviewLines",
+        "payments.save checks proof documents against the stored payment's client; rejectIdentityChange covers contacts, authorizations and payments",
+        "activity.list, calendar.range, search.query, today.queue and offices.get use canAccessClient or canReachVisit, so a revoked membership reaches nothing and an active helper sees only reachable visits; offices.save is owner-only",
+        "The revoked-membership test covers every read method in the repository table",
+        "A helper's visit whose items all belong to unassigned clients is not shown on Today as an empty visit ('0 of 0 ready'); it is hidden or shown without readiness numbers (found in the U07 final review)"
+      ],
+      "tests": [
+        "B11"
+      ],
+      "notes": "Opened by the owner decision for U07 (QUEUE.md, Decided). Append new findings of these same classes from later verifier reviews to this acceptance list instead of blocking the unit that found them."
     }
   ]
 }

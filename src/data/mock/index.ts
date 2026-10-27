@@ -58,6 +58,7 @@ import type {
 import { generateSeedData } from './seed';
 import { buildDemoData } from './seed-demo';
 import { NotFoundError, ForbiddenError } from '@/domain/errors';
+import { requireClientAccess, requireOwner, canReviewLines, canAccessClient, insightsScope, type PolicyActor } from '@/domain/policy';
 import {
   derivedStatus,
   dueState,
@@ -714,6 +715,108 @@ function assertCanSetStatus(task: Task, lines: TaskLine[], to: TaskStatus, role:
   throw new RuleViolationError(`Cannot transition task to ${to}`);
 }
 
+// ---- Policy guards (src/domain/policy.ts): every repository method calls one before it reads or writes ----
+function actor(): PolicyActor {
+  return getCurrentUser().membership;
+}
+function assertOwner(): void {
+  requireOwner(actor());
+}
+/** A write with no resolvable client can only be done by the owner; a helper is refused, never silently allowed. */
+function assertClient(clientId?: ID): void {
+  if (!clientId) {
+    requireOwner(actor());
+    return;
+  }
+  requireClientAccess(actor(), clientId);
+}
+/** An update patch may not re-point a record: identity and parent ids stay as stored (moving to an unreachable client is FORBIDDEN first). */
+function rejectIdentityChange(patch: object, existing: object | undefined): void {
+  if (!existing) return;
+  for (const key of ['id', 'orgId', 'clientId', 'taskId', 'visitId'] as const) {
+    if (!(key in patch)) continue;
+    const next = (patch as Record<string, unknown>)[key];
+    if (next === (existing as Record<string, unknown>)[key]) continue;
+    if (key === 'clientId' && typeof next === 'string') assertClient(next);
+    throw new RuleViolationError(`${key} cannot be changed`);
+  }
+}
+/** Writes to a stored record check the record's own client as well as the client the caller supplied. */
+function assertRecordWrite(list: Array<{ id: ID; clientId: ID }>, id: ID | undefined, suppliedClientId?: ID): void {
+  const stored = id ? list.find((x) => x.id === id) : undefined;
+  if (stored) assertClient(stored.clientId);
+  assertClient(suppliedClientId ?? stored?.clientId);
+}
+function assertTask(id: ID): void {
+  const t = store.tasks.find((x) => x.id === id);
+  if (!t || t.deletedAt) throw new NotFoundError('Task not found');
+  assertClient(t.clientId);
+}
+function assertLine(id: ID): void {
+  const l = store.taskLines.find((x) => x.id === id);
+  if (!l) throw new NotFoundError('Line not found');
+  assertClient(l.clientId);
+}
+function assertDocument(id: ID): void {
+  const d = store.documents.find((x) => x.id === id);
+  if (!d) throw new NotFoundError('Document not found');
+  assertClient(d.clientId);
+}
+function assertFollowUp(id: ID): void {
+  const f = store.followUps.find((x) => x.id === id);
+  if (!f) throw new NotFoundError('Follow-up not found');
+  assertClient(f.clientId);
+}
+function assertPayment(id: ID): void {
+  const p = store.payments.find((x) => x.id === id);
+  if (!p) throw new NotFoundError('Payment not found');
+  assertClient(p.clientId);
+}
+/** A helper reaches a visit when it is theirs or when it carries an item for one of their clients. */
+function canReachVisit(visitId: ID): boolean {
+  const a = actor();
+  if (!a.active) return false;
+  if (a.role === 'owner') return true;
+  const { user } = getCurrentUser();
+  const visit = store.visits.find((v) => v.id === visitId);
+  if (!visit) return false;
+  if (visit.assigneeUserId === user.id) return true;
+  return store.visitItems.some((i) => i.visitId === visitId && canAccessClient(a, i.clientId));
+}
+function assertVisit(id: ID): void {
+  const v = store.visits.find((x) => x.id === id);
+  if (!v || v.deletedAt) throw new NotFoundError('Visit not found');
+  if (!canReachVisit(id)) throw new ForbiddenError("You don't have access to this visit");
+}
+function assertVisitItem(id: ID): void {
+  const i = store.visitItems.find((x) => x.id === id);
+  if (!i) throw new NotFoundError('Visit item not found');
+  assertClient(i.clientId);
+}
+function assertNoteTarget(entity: 'client' | 'task' | 'visit', entityId: ID): void {
+  if (entity === 'client') assertClient(entityId);
+  else if (entity === 'task') assertTask(entityId);
+  else assertVisit(entityId);
+}
+function assertCanReview(): void {
+  if (!canReviewLines(actor(), store.settings)) {
+    throw new ForbiddenError('The practice owner has turned off line review for helpers');
+  }
+}
+
+/** Records Insights may count for the current user: everything for the owner, assigned clients only for a helper. */
+function scopedInsightData() {
+  const scope = insightsScope(actor());
+  const ok = (clientId: ID) => scope.kind === 'all' || scope.clientIds.includes(clientId);
+  return {
+    visitItems: store.visitItems.filter((i) => ok(i.clientId)),
+    tasks: store.tasks.filter((t) => ok(t.clientId)),
+    taskLines: store.taskLines.filter((l) => ok(l.clientId)),
+    visits: store.visits.filter((v) => canReachVisit(v.id)),
+    clients: store.clients.filter((c) => ok(c.id)),
+  };
+}
+
 /** Spec 9.9 display name for a file attached to a client and, usually, a task. */
 function nameForDocument(
   meta: { clientId: ID; taskId?: ID; kind: DocumentKind },
@@ -735,10 +838,98 @@ function nameForDocument(
   });
 }
 
+// ---- Class-level write guards -------------------------------------------------------------------------------
+// Fields a HELPER may send to each generic create, update or upsert. The lists are the fields the screens
+// actually send; every other field is FORBIDDEN for a helper. Status, review, due-date and override fields
+// change only through setStatus, changeDue and override. The owner is not restricted by these lists.
+export const HELPER_FIELDS: Record<string, readonly string[]> = {
+  'tasks.create': ['clientId', 'templateId', 'title', 'kind', 'period', 'transactionDate', 'dueDate', 'dueSource', 'channel', 'ownerUserId', 'officeAction', 'paymentExpected', 'tags', 'notes'],
+  'tasks.update': ['ownerUserId'],
+  'lines.addAdHoc': ['label', 'required', 'copyForm', 'copies', 'suppliedBy', 'printAndBring', 'reviewNote', 'neededBy'],
+  'lines.update': [],
+  'documents.upload': ['clientId', 'taskId', 'lineId', 'visitItemId', 'paymentId', 'authorizationId', 'kind', 'source'],
+  'documents.update': [],
+  'visits.create': ['officeId', 'officeType', 'officeName', 'rdoCode', 'plannedDate', 'arriveBy', 'assigneeUserId', 'purpose'],
+  'visits.create.item': ['taskId', 'action', 'questions'],
+  'visits.update': ['plannedDate'],
+  'visits.updateItem': ['questions'],
+  'payments.save': ['id', 'clientId', 'taskId', 'amount', 'paidOn', 'channel', 'provider', 'referenceNo', 'paidBy', 'reimbursement', 'proofDocumentIds', 'note'],
+  'contacts.upsert': ['id', 'clientId', 'name', 'title', 'role', 'phoneE164', 'email', 'preferredChannel', 'language', 'isSignatory', 'notes'],
+  'authorizations.upsert': ['id', 'clientId', 'type', 'granteeUserId', 'scope', 'issuedOn', 'validUntil', 'notarized'],
+  'clients.upsert': ['id', 'displayName', 'code', 'entityType', 'rdoCode', 'registeredName', 'tinMasked', 'hasTin', 'vatStatus', 'sizeClass', 'filingChannel', 'efpsGroup', 'orusEnrolled', 'accessHolder', 'usesInvoicingSoftware', 'fiscalYearEndMonth', 'preferredLanguage'],
+  'followUps.create': ['clientId', 'taskId', 'contactId', 'channel', 'language', 'templateId', 'expectedBy', 'lineIds'],
+  'notes.save': ['id', 'entity', 'entityId', 'body', 'pinned'],
+};
+
+/** A helper may send only allowlisted fields (a key with an undefined value is not sent). */
+function assertPatch(method: string, patch: object | undefined): void {
+  if (!patch || actor().role === 'owner') return;
+  const allowed = HELPER_FIELDS[method];
+  if (!allowed) throw new ForbiddenError(`Helpers cannot use ${method}`);
+  for (const [key, value] of Object.entries(patch)) {
+    if (value !== undefined && !allowed.includes(key)) {
+      throw new ForbiddenError(`Helpers cannot set ${key} through ${method}`);
+    }
+  }
+}
+
+// Every key ending in Id or Ids names another record. Which collection it points into:
+const REFERENCE_COLLECTIONS: Record<string, () => Array<{ id: ID; clientId?: ID }>> = {
+  taskId: () => store.tasks,
+  lineId: () => store.taskLines,
+  lineIds: () => store.taskLines,
+  packedLineIds: () => store.taskLines,
+  documentId: () => store.documents,
+  documentIds: () => store.documents,
+  evidenceDocumentIds: () => store.documents,
+  proofDocumentIds: () => store.documents,
+  replacesId: () => store.documents,
+  paymentId: () => store.payments,
+  visitItemId: () => store.visitItems,
+  authorizationId: () => store.authorizations,
+  replacedById: () => store.authorizations,
+  contactId: () => store.contacts,
+  followUpId: () => store.followUps,
+  visitId: () => store.visits,
+};
+/** Keys that end in Id but do not point at client-scoped records: the record itself, people, offices, templates. */
+const NON_CLIENT_REFERENCES = new Set(['id', 'orgId', 'clientId', 'officeId', 'rdoOfficeId', 'templateId', 'taskTemplateId', 'requirementTemplateId', 'kitItemId', 'batchId']);
+const isUserReference = (key: string) => /(^|[a-z])UserIds?$/.test(key) || key === 'userId';
+
+/**
+ * Shared reference check for every create and update: each Id or Ids key must point at a record that belongs to
+ * the same client as the record being written, and one the current user can reach. A reference that matches
+ * no record is left alone. For a helper an unrecognised reference key is refused.
+ */
+function assertReferences(record: object | undefined, clientId: ID | undefined): void {
+  if (!record) return;
+  const isHelper = actor().role !== 'owner';
+  for (const [key, value] of Object.entries(record)) {
+    if (value === undefined || value === null || !/Ids?$/.test(key)) continue;
+    if (NON_CLIENT_REFERENCES.has(key) || isUserReference(key)) continue;
+    const source = REFERENCE_COLLECTIONS[key];
+    if (!source) {
+      if (isHelper) throw new ForbiddenError(`Helpers cannot set ${key}`);
+      continue;
+    }
+    const ids = Array.isArray(value) ? value : [value];
+    for (const refId of ids) {
+      const target = source().find((x) => x.id === refId);
+      if (!target) continue;
+      if (key === 'visitId') {
+        if (!canReachVisit(target.id)) throw new ForbiddenError("You don't have access to this visit");
+        continue;
+      }
+      if (target.clientId) assertClient(target.clientId);
+      if (clientId && target.clientId && target.clientId !== clientId) {
+        throw new RuleViolationError(`${key} points at a record of another client`);
+      }
+    }
+  }
+}
+
 function isClientAllowed(clientId: ID): boolean {
-  const { membership } = getCurrentUser();
-  if (membership.role === 'owner') return true;
-  return membership.clientIds.includes(clientId);
+  return canAccessClient(actor(), clientId);
 }
 
 function logActivity(
@@ -834,7 +1025,7 @@ function buildClientSummary(client: Client): ClientSummary {
 }
 
 function buildVisitSummary(visit: Visit): VisitSummary {
-  const items = store.visitItems.filter((vi) => vi.visitId === visit.id);
+  const items = store.visitItems.filter((vi) => vi.visitId === visit.id && isClientAllowed(vi.clientId));
   const reasons: string[] = [];
   let readyCount = 0;
 
@@ -894,6 +1085,7 @@ export const mockRepositories: Repositories = {
   settings: {
     async save(s: Partial<OrgSettings>) {
       await simulateLatency();
+      assertOwner();
       store.settings = { ...store.settings, ...s, updatedAt: todayInManila() + 'T00:00:00+08:00', version: store.settings.version + 1 };
       saveStore();
       return store.settings;
@@ -903,6 +1095,7 @@ export const mockRepositories: Repositories = {
   memberships: {
     async list() {
       await simulateLatency();
+      assertOwner();
       return store.memberships.filter((m) => !m.deletedAt).map((m) => {
         const u = store.users.find((user) => user.id === m.userId || user.email === m.email);
         return {
@@ -917,7 +1110,7 @@ export const mockRepositories: Repositories = {
       await simulateLatency();
       const { user, membership } = getCurrentUser();
       if (membership.role !== 'owner') {
-        throw new Error('Access denied: Only practice owners can manage operator memberships');
+        throw new ForbiddenError('Access denied: Only practice owners can manage operator memberships');
       }
       const name = m.name || m.email.split('@')[0];
       const initials = name.split(' ').map((p: string) => p[0]).join('').slice(0, 2).toUpperCase() || 'OP';
@@ -959,7 +1152,7 @@ export const mockRepositories: Repositories = {
       await simulateLatency();
       const { membership: callerMembership } = getCurrentUser();
       if (callerMembership.role !== 'owner') {
-        throw new Error('Access denied: Only practice owners can manage operator memberships');
+        throw new ForbiddenError('Access denied: Only practice owners can manage operator memberships');
       }
       const index = store.memberships.findIndex((item) => item.id === id);
       if (index === -1) throw new Error('Membership not found');
@@ -987,7 +1180,7 @@ export const mockRepositories: Repositories = {
       await simulateLatency();
       const { membership: callerMembership } = getCurrentUser();
       if (callerMembership.role !== 'owner') {
-        throw new Error('Access denied: Only practice owners can manage operator memberships');
+        throw new ForbiddenError('Access denied: Only practice owners can manage operator memberships');
       }
       const m = store.memberships.find((item) => item.id === id);
       if (m) {
@@ -1249,6 +1442,8 @@ export const mockRepositories: Repositories = {
 
     async upsert(c) {
       await simulateLatency();
+      assertPatch('clients.upsert', c);
+      if (c.id) assertClient(c.id); else assertOwner();
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       if (c.id) {
@@ -1301,6 +1496,7 @@ export const mockRepositories: Repositories = {
 
     async archive(id, reason) {
       await simulateLatency();
+      assertClient(id);
       const client = store.clients.find((c) => c.id === id);
       if (client) {
         client.status = 'archived';
@@ -1312,6 +1508,7 @@ export const mockRepositories: Repositories = {
 
     async restore(id, reason) {
       await simulateLatency();
+      assertClient(id);
       const client = store.clients.find((c) => c.id === id);
       if (client) {
         client.status = 'active';
@@ -1322,6 +1519,7 @@ export const mockRepositories: Repositories = {
 
     async revealTin(id) {
       await simulateLatency();
+      assertClient(id);
       const client = store.clients.find((c) => c.id === id);
       if (!client) throw new Error('Client not found');
       logActivity('tin_revealed', 'client', id, `Revealed TIN for ${client.displayName}`, id);
@@ -1330,6 +1528,7 @@ export const mockRepositories: Repositories = {
 
     async findDuplicates(c) {
       await simulateLatency();
+      assertOwner();
       const matches = store.clients.filter(
         (item) =>
           (c.code && item.code.toLowerCase() === c.code.toLowerCase()) ||
@@ -1341,6 +1540,7 @@ export const mockRepositories: Repositories = {
 
     async importPreview(rows, mapping) {
       await simulateLatency();
+      assertOwner();
       const valid: Partial<Client>[] = [];
       const errors: ImportPreview['errors'] = [];
       const batchId = generateId();
@@ -1381,6 +1581,7 @@ export const mockRepositories: Repositories = {
 
     async importCommit(preview) {
       await simulateLatency();
+      assertOwner();
       const createdIds: ID[] = [];
       for (const row of preview.validRows) {
         const client = await mockRepositories.clients.upsert(row);
@@ -1396,6 +1597,7 @@ export const mockRepositories: Repositories = {
 
     async importUndo(batchId) {
       await simulateLatency();
+      assertOwner();
       const batches = (store as any)._importBatches || {};
       const ids: ID[] = batches[batchId] || [];
       const now = todayInManila() + 'T00:00:00+08:00';
@@ -1415,10 +1617,14 @@ export const mockRepositories: Repositories = {
   contacts: {
     async listByClient(clientId) {
       await simulateLatency();
+      assertClient(clientId);
       return store.contacts.filter((c) => c.clientId === clientId && !c.deletedAt);
     },
     async upsert(c) {
       await simulateLatency();
+      assertPatch('contacts.upsert', c);
+      assertReferences(c, c.clientId ?? store.contacts.find((x) => x.id === c.id)?.clientId);
+      assertRecordWrite(store.contacts, c.id, c.clientId);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       if (c.id) {
@@ -1449,6 +1655,7 @@ export const mockRepositories: Repositories = {
     },
     async remove(id, reason) {
       await simulateLatency();
+      assertClient(store.contacts.find((x) => x.id === id)?.clientId);
       const c = store.contacts.find((item) => item.id === id);
       if (c) {
         c.deletedAt = todayInManila() + 'T00:00:00+08:00';
@@ -1461,10 +1668,14 @@ export const mockRepositories: Repositories = {
   authorizations: {
     async listByClient(clientId) {
       await simulateLatency();
+      assertClient(clientId);
       return store.authorizations.filter((a) => a.clientId === clientId && !a.deletedAt);
     },
     async upsert(a) {
       await simulateLatency();
+      assertPatch('authorizations.upsert', a);
+      assertReferences(a, a.clientId ?? store.authorizations.find((x) => x.id === a.id)?.clientId);
+      assertRecordWrite(store.authorizations, a.id, a.clientId);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       if (a.id) {
@@ -1497,6 +1708,8 @@ export const mockRepositories: Repositories = {
     },
     async replace(oldId, next) {
       await simulateLatency();
+      assertPatch('authorizations.upsert', next);
+      assertClient(store.authorizations.find((x) => x.id === oldId)?.clientId ?? next.clientId);
       const created = await mockRepositories.authorizations.upsert(next);
       const old = store.authorizations.find((a) => a.id === oldId);
       if (old) {
@@ -1522,6 +1735,7 @@ export const mockRepositories: Repositories = {
     },
     async save(t, lines) {
       await simulateLatency();
+      assertOwner();
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       let template: TaskTemplate;
@@ -1555,6 +1769,7 @@ export const mockRepositories: Repositories = {
     },
     async markVerified(id, v) {
       await simulateLatency();
+      assertOwner();
       const t = store.templates.find((item) => item.id === id);
       if (!t) throw new Error('Template not found');
       t.verified = true;
@@ -1572,6 +1787,7 @@ export const mockRepositories: Repositories = {
     },
     async save(m, applyToOpenTasks) {
       await simulateLatency();
+      assertOwner();
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       const move: DeadlineMove = {
@@ -1604,6 +1820,7 @@ export const mockRepositories: Repositories = {
     },
     async remove(id) {
       await simulateLatency();
+      assertOwner();
       store.deadlineMoves = store.deadlineMoves.filter((m) => m.id !== id);
       saveStore();
     },
@@ -1616,6 +1833,7 @@ export const mockRepositories: Repositories = {
     },
     async save(h) {
       await simulateLatency();
+      assertOwner();
       const newH: Holiday = {
         id: h.id || generateId(),
         orgId: store.org.id,
@@ -1634,6 +1852,7 @@ export const mockRepositories: Repositories = {
     },
     async remove(id) {
       await simulateLatency();
+      assertOwner();
       store.holidays = store.holidays.filter((h) => h.id !== id);
       saveStore();
     },
@@ -1694,6 +1913,13 @@ export const mockRepositories: Repositories = {
 
     async create(t, lines) {
       await simulateLatency();
+      assertPatch('tasks.create', t);
+      assertReferences(t, t.clientId);
+      for (const l of lines ?? []) {
+        assertPatch('lines.addAdHoc', l);
+        assertReferences(l, t.clientId);
+      }
+      assertClient(t.clientId);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       const newTask: Task = {
@@ -1752,6 +1978,10 @@ export const mockRepositories: Repositories = {
 
     async update(id, t) {
       await simulateLatency();
+      assertPatch('tasks.update', t);
+      assertReferences(t, store.tasks.find((x) => x.id === id)?.clientId);
+      assertTask(id);
+      rejectIdentityChange(t, store.tasks.find((x) => x.id === id));
       const idx = store.tasks.findIndex((item) => item.id === id);
       if (idx === -1) throw new Error('Task not found');
       store.tasks[idx] = { ...store.tasks[idx], ...t, version: store.tasks[idx].version + 1 };
@@ -1761,6 +1991,7 @@ export const mockRepositories: Repositories = {
 
     async setStatus(id, to, reason) {
       await simulateLatency();
+      assertTask(id);
       const { user, membership } = getCurrentUser();
       const task = store.tasks.find((item) => item.id === id);
       if (!task) throw new Error('Task not found');
@@ -1777,6 +2008,7 @@ export const mockRepositories: Repositories = {
 
     async markSubmitted(id, s) {
       await simulateLatency();
+      assertTask(id);
       const { membership } = getCurrentUser();
       const task = store.tasks.find((item) => item.id === id);
       if (!task) throw new Error('Task not found');
@@ -1793,6 +2025,7 @@ export const mockRepositories: Repositories = {
 
     async markCompleted(id, c) {
       await simulateLatency();
+      assertTask(id);
       const { membership } = getCurrentUser();
       const task = store.tasks.find((item) => item.id === id);
       if (!task) throw new Error('Task not found');
@@ -1814,8 +2047,9 @@ export const mockRepositories: Repositories = {
 
     async override(id, status, reason) {
       await simulateLatency();
+      assertOwner();
       const { user, membership } = getCurrentUser();
-      if (membership.role !== 'owner') throw new Error('Only owners can override task status');
+      if (membership.role !== 'owner') throw new ForbiddenError('Only owners can override task status');
       const task = store.tasks.find((item) => item.id === id);
       if (!task) throw new Error('Task not found');
       task.statusOverride = {
@@ -1832,6 +2066,7 @@ export const mockRepositories: Repositories = {
 
     async clearOverride(id, reason) {
       await simulateLatency();
+      assertOwner();
       const task = store.tasks.find((item) => item.id === id);
       if (!task) throw new Error('Task not found');
       delete task.statusOverride;
@@ -1843,6 +2078,7 @@ export const mockRepositories: Repositories = {
 
     async changeDue(id, dueDate, ref, reason) {
       await simulateLatency();
+      assertOwner();
       const task = store.tasks.find((item) => item.id === id);
       if (!task) throw new Error('Task not found');
       task.dueDate = dueDate;
@@ -1855,6 +2091,7 @@ export const mockRepositories: Repositories = {
 
     async setNextAction(id, next) {
       await simulateLatency();
+      assertTask(id);
       const task = store.tasks.find((item) => item.id === id);
       if (!task) throw new Error('Task not found');
       task.nextAction = next || undefined;
@@ -1865,6 +2102,7 @@ export const mockRepositories: Repositories = {
 
     async archive(id, reason) {
       await simulateLatency();
+      assertTask(id);
       const task = store.tasks.find((item) => item.id === id);
       if (task) {
         task.status = 'archived';
@@ -1876,6 +2114,7 @@ export const mockRepositories: Repositories = {
 
     async restore(id, reason) {
       await simulateLatency();
+      assertTask(id);
       const task = store.tasks.find((item) => item.id === id);
       if (task) {
         task.status = 'in_preparation';
@@ -1886,9 +2125,21 @@ export const mockRepositories: Repositories = {
 
     async duplicateForNextPeriod(id) {
       await simulateLatency();
+      assertTask(id);
       const task = store.tasks.find((item) => item.id === id);
       if (!task) throw new Error('Task not found');
-      const lines = store.taskLines.filter((l) => l.taskId === id);
+      // Pass tasks.create only the line fields it accepts, never the stored records (their id, status and
+      // review fields are not the caller's to set, and a helper's create is held to the helper allowlist)
+      const lines = store.taskLines
+        .filter((l) => l.taskId === id)
+        .map((l) => ({
+          label: l.label,
+          required: l.required,
+          copyForm: l.copyForm,
+          copies: l.copies,
+          suppliedBy: l.suppliedBy,
+          printAndBring: l.printAndBring,
+        }));
       return mockRepositories.tasks.create(
         {
           clientId: task.clientId,
@@ -1904,6 +2155,7 @@ export const mockRepositories: Repositories = {
 
     async previewOpenPeriod(period, clientIds) {
       await simulateLatency();
+      assertOwner();
       const applicable: OpenPeriodPreview['applicableTasks'] = [];
       const clients = store.clients.filter((c) => clientIds.includes(c.id));
 
@@ -1926,6 +2178,7 @@ export const mockRepositories: Repositories = {
 
     async openPeriod(plan) {
       await simulateLatency();
+      assertOwner();
       const createdIds: ID[] = [];
       let skipped = 0;
       for (const item of plan.selections) {
@@ -1981,6 +2234,8 @@ export const mockRepositories: Repositories = {
   lines: {
     async setStatus(id, to, extra) {
       await simulateLatency();
+      assertLine(id);
+      if (['under_review', 'accepted', 'incomplete', 'needs_correction'].includes(to)) assertCanReview();
       const { user } = getCurrentUser();
       const line = store.taskLines.find((l) => l.id === id);
       if (!line) throw new Error('Line not found');
@@ -2014,6 +2269,9 @@ export const mockRepositories: Repositories = {
 
     async addAdHoc(taskId, line) {
       await simulateLatency();
+      assertPatch('lines.addAdHoc', line);
+      assertReferences(line, store.tasks.find((x) => x.id === taskId)?.clientId);
+      assertTask(taskId);
       const { user } = getCurrentUser();
       const task = store.tasks.find((t) => t.id === taskId);
       if (!task) throw new Error('Task not found');
@@ -2045,6 +2303,10 @@ export const mockRepositories: Repositories = {
 
     async update(id, line) {
       await simulateLatency();
+      assertPatch('lines.update', line);
+      assertReferences(line, store.taskLines.find((x) => x.id === id)?.clientId);
+      assertLine(id);
+      rejectIdentityChange(line, store.taskLines.find((x) => x.id === id));
       const idx = store.taskLines.findIndex((l) => l.id === id);
       if (idx === -1) throw new Error('Line not found');
       store.taskLines[idx] = { ...store.taskLines[idx], ...line, version: store.taskLines[idx].version + 1 };
@@ -2054,6 +2316,11 @@ export const mockRepositories: Repositories = {
 
     async reorder(taskId, orderedIds) {
       await simulateLatency();
+      assertTask(taskId);
+      for (const lid of orderedIds) {
+        const l = store.taskLines.find((x) => x.id === lid);
+        if (!l || l.taskId !== taskId) throw new RuleViolationError('Line does not belong to this task');
+      }
       orderedIds.forEach((id, index) => {
         const line = store.taskLines.find((l) => l.id === id && l.taskId === taskId);
         if (line) line.sortOrder = index + 1;
@@ -2063,6 +2330,7 @@ export const mockRepositories: Repositories = {
 
     async history(id) {
       await simulateLatency();
+      assertLine(id);
       return store.activity.filter((a) => a.entity === 'line' && a.entityId === id);
     },
   },
@@ -2090,6 +2358,9 @@ export const mockRepositories: Repositories = {
 
     async upload(meta, file, thumb, info) {
       await simulateLatency();
+      assertPatch('documents.upload', meta);
+      assertReferences(meta, meta.clientId);
+      assertClient(meta.clientId);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       const docId = generateId();
@@ -2147,6 +2418,7 @@ export const mockRepositories: Repositories = {
 
     async replace(id, file, thumb, info) {
       await simulateLatency();
+      assertDocument(id);
       const old = store.documents.find((d) => d.id === id);
       if (!old) throw new Error('Document not found');
       const { user } = getCurrentUser();
@@ -2192,6 +2464,10 @@ export const mockRepositories: Repositories = {
 
     async update(id, d) {
       await simulateLatency();
+      assertPatch('documents.update', d);
+      assertReferences(d, store.documents.find((x) => x.id === id)?.clientId);
+      assertDocument(id);
+      rejectIdentityChange(d, store.documents.find((x) => x.id === id));
       const doc = store.documents.find((item) => item.id === id);
       if (!doc) throw new Error('Document not found');
       Object.assign(doc, d);
@@ -2201,6 +2477,7 @@ export const mockRepositories: Repositories = {
 
     async remove(id, reason) {
       await simulateLatency();
+      assertDocument(id);
       const doc = store.documents.find((d) => d.id === id);
       if (doc) {
         doc.deletedAt = todayInManila() + 'T00:00:00+08:00';
@@ -2211,6 +2488,7 @@ export const mockRepositories: Repositories = {
 
     async getUrl(id, purpose) {
       await simulateLatency();
+      assertDocument(id);
       const doc = store.documents.find((d) => d.id === id);
       if (!doc) throw new Error('Document not found');
       logActivity(purpose === 'download' ? 'file_downloaded' : 'file_viewed', 'document', id, `${purpose} document ${doc.displayName}`, doc.clientId);
@@ -2220,6 +2498,7 @@ export const mockRepositories: Repositories = {
 
     async findBySha(sha256, clientId) {
       await simulateLatency();
+      assertClient(clientId);
       return store.documents.filter((d) => d.sha256 === sha256 && d.clientId === clientId);
     },
   },
@@ -2252,6 +2531,7 @@ export const mockRepositories: Repositories = {
 
     async get(id) {
       await simulateLatency();
+      assertFollowUp(id);
       const fu = store.followUps.find((item) => item.id === id);
       if (!fu) throw new Error('Follow up not found');
       const client = store.clients.find((c) => c.id === fu.clientId) || store.clients[0];
@@ -2265,6 +2545,9 @@ export const mockRepositories: Repositories = {
 
     async create(f) {
       await simulateLatency();
+      assertPatch('followUps.create', f);
+      assertReferences(f, f.clientId);
+      assertClient(f.clientId);
       const { user } = getCurrentUser();
       const newFu: FollowUp = {
         id: generateId(),
@@ -2291,6 +2574,7 @@ export const mockRepositories: Repositories = {
 
     async markSent(id, a) {
       await simulateLatency();
+      assertFollowUp(id);
       const { user } = getCurrentUser();
       const fu = store.followUps.find((item) => item.id === id);
       if (!fu) throw new Error('Follow up not found');
@@ -2332,6 +2616,7 @@ export const mockRepositories: Repositories = {
 
     async logResponse(id, r) {
       await simulateLatency();
+      assertFollowUp(id);
       const fu = store.followUps.find((item) => item.id === id);
       if (!fu) throw new Error('Follow up not found');
       fu.status = 'answered';
@@ -2368,6 +2653,7 @@ export const mockRepositories: Repositories = {
 
     async escalate(id, reason) {
       await simulateLatency();
+      assertFollowUp(id);
       if (!reason || reason.trim().length < 10) {
         throw new Error('Escalation reason must be at least 10 characters');
       }
@@ -2382,6 +2668,7 @@ export const mockRepositories: Repositories = {
 
     async resolve(id, reason) {
       await simulateLatency();
+      assertFollowUp(id);
       const fu = store.followUps.find((item) => item.id === id);
       if (!fu) throw new Error('Follow up not found');
       fu.status = 'resolved';
@@ -2399,6 +2686,7 @@ export const mockRepositories: Repositories = {
     },
     async save(m) {
       await simulateLatency();
+      assertOwner();
       const { user } = getCurrentUser();
       const tmpl: MessageTemplate = {
         id: m.id || generateId(),
@@ -2496,7 +2784,7 @@ export const mockRepositories: Repositories = {
   visits: {
     async list(f) {
       await simulateLatency();
-      let list = store.visits.filter((v) => !v.deletedAt);
+      let list = store.visits.filter((v) => !v.deletedAt && canReachVisit(v.id));
       if (f?.status) list = list.filter((v) => f.status!.includes(v.status));
       const summaries = list.map(buildVisitSummary);
       return { items: summaries, total: summaries.length };
@@ -2506,8 +2794,10 @@ export const mockRepositories: Repositories = {
       await simulateLatency();
       const visit = store.visits.find((v) => v.id === id);
       if (!visit || visit.deletedAt) throw new NotFoundError('Visit not found');
+      if (!canReachVisit(id)) throw new ForbiddenError("You don't have access to this visit");
       const office = store.offices.find((o) => o.id === visit.officeId);
-      const items = store.visitItems.filter((vi) => vi.visitId === id);
+      // A helper sees only the items that belong to their own clients
+      const items = store.visitItems.filter((vi) => vi.visitId === id && isClientAllowed(vi.clientId));
 
       const detailedItems = items.map((vi) => {
         const task = store.tasks.find((t) => t.id === vi.taskId)!;
@@ -2558,6 +2848,9 @@ export const mockRepositories: Repositories = {
 
     async create(v, items) {
       await simulateLatency();
+      assertPatch('visits.create', v);
+      for (const item of items ?? []) assertPatch('visits.create.item', item);
+      for (const item of items ?? []) assertTask(item.taskId);
       const { user } = getCurrentUser();
       const newV: Visit = {
         id: generateId(),
@@ -2611,6 +2904,9 @@ export const mockRepositories: Repositories = {
 
     async update(id, v) {
       await simulateLatency();
+      assertPatch('visits.update', v);
+      assertVisit(id);
+      rejectIdentityChange(v, store.visits.find((x) => x.id === id));
       const visit = store.visits.find((item) => item.id === id);
       if (!visit) throw new Error('Visit not found');
       Object.assign(visit, v);
@@ -2621,6 +2917,7 @@ export const mockRepositories: Repositories = {
 
     async suggestTasks(visitId) {
       await simulateLatency();
+      assertVisit(visitId);
       const readyTasks = store.tasks.filter((t) => {
         if (!isClientAllowed(t.clientId)) return false;
         if (t.status === 'completed' || t.status === 'archived') return false;
@@ -2632,6 +2929,8 @@ export const mockRepositories: Repositories = {
 
     async addItem(visitId, taskId, action) {
       await simulateLatency();
+      assertVisit(visitId);
+      assertTask(taskId);
       const { user } = getCurrentUser();
       const task = store.tasks.find((t) => t.id === taskId);
       if (!task) throw new Error('Task not found');
@@ -2657,6 +2956,9 @@ export const mockRepositories: Repositories = {
 
     async updateItem(itemId, i) {
       await simulateLatency();
+      assertPatch('visits.updateItem', i);
+      assertVisitItem(itemId);
+      rejectIdentityChange(i, store.visitItems.find((x) => x.id === itemId));
       const item = store.visitItems.find((vi) => vi.id === itemId);
       if (!item) throw new Error('Visit item not found');
       Object.assign(item, i);
@@ -2666,12 +2968,16 @@ export const mockRepositories: Repositories = {
 
     async removeItem(itemId) {
       await simulateLatency();
+      assertVisitItem(itemId);
       store.visitItems = store.visitItems.filter((vi) => vi.id !== itemId);
       saveStore();
     },
 
     async setPacked(visitId, ref, packed) {
       await simulateLatency();
+      assertVisit(visitId);
+      const packedLine = ref.lineId ? store.taskLines.find((x) => x.id === ref.lineId) : undefined;
+      if (packedLine) assertClient(packedLine.clientId);
       const v = store.visits.find((item) => item.id === visitId);
       if (!v) throw new Error('Visit not found');
       if (ref.lineId) {
@@ -2687,6 +2993,7 @@ export const mockRepositories: Repositories = {
 
     async start(id, leaveAnywayReason) {
       await simulateLatency();
+      assertVisit(id);
       const v = store.visits.find((item) => item.id === id);
       if (!v) throw new Error('Visit not found');
       v.status = 'in_progress';
@@ -2699,6 +3006,7 @@ export const mockRepositories: Repositories = {
 
     async recordOutcome(itemId, o) {
       await simulateLatency();
+      assertVisitItem(itemId);
       const { user } = getCurrentUser();
       const item = store.visitItems.find((vi) => vi.id === itemId);
       if (!item) throw new Error('Visit item not found');
@@ -2808,6 +3116,7 @@ export const mockRepositories: Repositories = {
 
     async finish(id, f) {
       await simulateLatency();
+      assertVisit(id);
       const v = store.visits.find((item) => item.id === id);
       if (!v) throw new Error('Visit not found');
       if (!canFinishVisit(store.visitItems.filter((i) => i.visitId === id))) {
@@ -2823,6 +3132,7 @@ export const mockRepositories: Repositories = {
 
     async cancel(id, reason) {
       await simulateLatency();
+      assertVisit(id);
       const v = store.visits.find((item) => item.id === id);
       if (v) {
         v.status = 'cancelled';
@@ -2840,6 +3150,7 @@ export const mockRepositories: Repositories = {
     },
     async save(i) {
       await simulateLatency();
+      assertOwner();
       const item: VisitKitItem = {
         id: i.id || generateId(),
         orgId: store.org.id,
@@ -2883,6 +3194,9 @@ export const mockRepositories: Repositories = {
 
     async save(p) {
       await simulateLatency();
+      assertPatch('payments.save', p);
+      assertReferences(p, p.clientId ?? store.payments.find((x) => x.id === p.id)?.clientId);
+      assertRecordWrite(store.payments, p.id, p.clientId);
       const { user } = getCurrentUser();
 
       const existing = p.id ? store.payments.find((item) => item.id === p.id) : undefined;
@@ -2954,6 +3268,7 @@ export const mockRepositories: Repositories = {
 
     async remove(id, reason) {
       await simulateLatency();
+      assertPayment(id);
       const p = store.payments.find((item) => item.id === id);
       if (p) {
         p.deletedAt = todayInManila() + 'T00:00:00+08:00';
@@ -2967,10 +3282,13 @@ export const mockRepositories: Repositories = {
   notes: {
     async list(entity, entityId) {
       await simulateLatency();
+      assertNoteTarget(entity, entityId);
       return store.notes.filter((n) => n.entity === entity && n.entityId === entityId && !n.deletedAt);
     },
     async save(n) {
       await simulateLatency();
+      assertPatch('notes.save', n);
+      assertNoteTarget(n.entity || 'task', n.entityId!);
       const { user } = getCurrentUser();
       const note: Note = {
         id: n.id || generateId(),
@@ -3213,10 +3531,11 @@ export const mockRepositories: Repositories = {
   insights: {
     async get(tab: InsightsTab, f?: InsightsFilter) {
       await simulateLatency();
-      const firstPass = calculateFirstPassRate(store.visitItems);
-      const { avoidable, total: repeatTotal } = countTripsNeedingReturn(store.visitItems);
-      const onTime = calculateOnTimeRate(store.tasks);
-      const daysCollect = calculateDaysToCollect(store.tasks);
+      const scoped = scopedInsightData();
+      const firstPass = calculateFirstPassRate(scoped.visitItems);
+      const { avoidable, total: repeatTotal } = countTripsNeedingReturn(scoped.visitItems);
+      const onTime = calculateOnTimeRate(scoped.tasks);
+      const daysCollect = calculateDaysToCollect(scoped.tasks);
 
       const overviewData = {
         firstPassRate: firstPass,
@@ -3234,8 +3553,8 @@ export const mockRepositories: Repositories = {
       };
 
       const tripsData = {
-        totalTrips: store.visits.length,
-        completedTrips: store.visits.filter((v) => v.status === 'done').length,
+        totalTrips: scoped.visits.length,
+        completedTrips: scoped.visits.filter((v) => v.status === 'done').length,
         avoidableRejectionCount: avoidable,
         topRejectionCauses: [
           { cause: 'missing_document' as OutcomeCause, count: 2, avoidable: true },
@@ -3249,10 +3568,10 @@ export const mockRepositories: Repositories = {
       };
 
       const chasingData = {
-        averageResponseDays: calculateClientResponseDays(store.taskLines) || 2.4,
+        averageResponseDays: calculateClientResponseDays(scoped.taskLines) || 2.4,
         followUpSuccessRate: 91,
         chasesPerTask: 1.5,
-        lateDiscoveredBlockersCount: countLateDiscoveredBlockers(store.taskLines),
+        lateDiscoveredBlockersCount: countLateDiscoveredBlockers(scoped.taskLines),
         channelEffectiveness: [
           { channel: 'viber' as const, attempts: 24, responses: 22 },
           { channel: 'email' as const, attempts: 10, responses: 7 },
@@ -3281,8 +3600,8 @@ export const mockRepositories: Repositories = {
       };
 
       const clientsData = {
-        fastestClients: [{ client: store.clients[0], avgDays: 1.8 }],
-        slowestClients: [{ client: store.clients[1], avgDays: 4.2, unreadReviewsCount: 1 }],
+        fastestClients: [{ client: scoped.clients[0], avgDays: 1.8 }],
+        slowestClients: [{ client: scoped.clients[1], avgDays: 4.2, unreadReviewsCount: 1 }],
       };
 
       const map: InsightsData = {
@@ -3305,6 +3624,7 @@ export const mockRepositories: Repositories = {
     },
     async save(b) {
       await simulateLatency();
+      assertOwner();
       const { user } = getCurrentUser();
       store.baseline = {
         id: store.baseline?.id || generateId(),
@@ -3336,6 +3656,7 @@ export const mockRepositories: Repositories = {
     },
     async save(p) {
       await simulateLatency();
+      assertOwner();
       const pulse: Pulse = {
         id: generateId(),
         orgId: store.org.id,
@@ -3357,6 +3678,7 @@ export const mockRepositories: Repositories = {
   reports: {
     async clientChecklist(clientId) {
       await simulateLatency();
+      assertClient(clientId);
       const client = store.clients.find((c) => c.id === clientId)!;
       const tasks = store.tasks.filter((t) => t.clientId === clientId);
       const res = tasks.map((t) => ({
@@ -3371,6 +3693,7 @@ export const mockRepositories: Repositories = {
     },
     async clientHistory(clientId, year) {
       await simulateLatency();
+      assertClient(clientId);
       const client = store.clients.find((c) => c.id === clientId)!;
       const tasks = store.tasks.filter((t) => t.clientId === clientId && t.dueDate.startsWith(`${year}`));
       const payments = store.payments.filter((p) => p.clientId === clientId);
@@ -3384,6 +3707,7 @@ export const mockRepositories: Repositories = {
     },
     async monthlySummary(month) {
       await simulateLatency();
+      assertOwner();
       return {
         month,
         filingsCount: 16,
@@ -3395,11 +3719,13 @@ export const mockRepositories: Repositories = {
     },
     async exportCsv(kind) {
       await simulateLatency();
+      assertOwner();
       const csv = `Entity,ID,Timestamp\n${kind},${generateId()},${todayInManila()}`;
       return new Blob([csv], { type: 'text/csv' });
     },
     async fullBackup() {
       await simulateLatency();
+      assertOwner();
       return new Blob([JSON.stringify(store, null, 2)], { type: 'application/json' });
     },
   },
@@ -3408,8 +3734,9 @@ export const mockRepositories: Repositories = {
     async list(f) {
       await simulateLatency();
       const { membership } = getCurrentUser();
+      if (f?.clientId) assertClient(f.clientId);
       if (!f?.clientId && !f?.entityId && membership.role !== 'owner') {
-        throw new Error('Access denied: Practice-wide audit log is restricted to practice owners');
+        throw new ForbiddenError('Access denied: Practice-wide audit log is restricted to practice owners');
       }
       let list = store.activity;
       if (membership.role === 'helper' && membership.clientIds) {
