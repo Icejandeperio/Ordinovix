@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-27 U16 Bundle split and dependency cleanup — done
+- Changed: router lazy routes, lazy mock layer, LazyMotion, chrono on demand, nine unused packages removed, bundle-size script
+- Evidence: verify.mjs exit 0; tests now passing: B26, B27, bundle.test.ts (4); PR #19
+- Notes: Initial JS 208.7 KB gzip (was ~398); verifier PASS; proposals queued.
+
 ## 2026-10-27 U13 Welcome wizard persists what it collects — done
 - Changed: welcome wizard saves each step; Today Getting started card; onboarding progress in settings; lib/onboarding
 - Evidence: verify.mjs exit 0; tests now passing: B30, U13 acceptance (11), onboarding unit tests; PR #18

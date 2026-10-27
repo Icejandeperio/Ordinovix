@@ -496,7 +496,7 @@
       "id": "U16",
       "phase": "P2",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U12",
         "U13",
@@ -518,7 +518,9 @@
         "Remove dependencies with zero imports: recharts, react-hook-form, @hookform/resolvers, @tanstack/react-table, @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities, react-day-picker, vaul — re-check with grep first; keep idb-keyval and @date-fns/tz if used",
         "No major-version upgrades"
       ],
-      "tests": []
+      "tests": [],
+      "pr": 19,
+      "evidence": "verify.mjs exit 0; tests now passing: B26, B27, bundle.test.ts (4); verifier/PR #19; Initial JS 208.7 KB gzip (was ~398); verifier PASS; proposals queued."
     },
     {
       "id": "U17",
