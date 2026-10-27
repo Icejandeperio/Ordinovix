@@ -1013,6 +1013,23 @@ export function useSaveSettings() {
   });
 }
 
+export function useSaveTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { template: Parameters<typeof repositories.templates.save>[0]; lines?: Parameters<typeof repositories.templates.save>[1] }) =>
+      repositories.templates.save(v.template, v.lines ?? []),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['templates'] });
+    },
+  });
+}
+
+export function useSubscribePush() {
+  return useMutation({
+    mutationFn: (sub: Parameters<typeof repositories.push.subscribe>[0]) => repositories.push.subscribe(sub),
+  });
+}
+
 export function useSavePrefs() {
   const qc = useQueryClient();
   return useMutation({

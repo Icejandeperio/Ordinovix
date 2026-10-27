@@ -76,6 +76,14 @@ export interface Org {
   createdAt: ISODateTime;
 }
 
+/** The five first-run setup steps (spec 11.2). */
+export type OnboardingStep = 'details' | 'clients' | 'templates' | 'helper' | 'phone';
+
+export interface OnboardingProgress {
+  done: OnboardingStep[];
+  dismissed?: boolean;                  // the owner hid the Today "Getting started" card
+}
+
 export interface OrgSettings {
   orgId: ID;
   practiceName: string;
@@ -93,6 +101,7 @@ export interface OrgSettings {
   weekStartsOn: 0 | 1;                  // 0 = Sunday (default)
   retentionYears: number;               // confirm with the operator
   supportContact?: string;
+  onboarding?: OnboardingProgress;      // first-run setup progress; undefined until the owner starts
   updatedAt: ISODateTime;
   version: number;
 }
