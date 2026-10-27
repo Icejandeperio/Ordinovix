@@ -41,6 +41,7 @@ import {
   ExternalLink,
   GripVertical,
 } from 'lucide-react';
+import { QueryState } from '@/components/ui/query-state';
 
 type TabView =
   | 'all_open'
@@ -90,7 +91,7 @@ export function TasksPage() {
   }, [boardNotice]);
 
   // Load all tasks (we do client-side filtering for ultra-responsive tabs & filters)
-  const { data, isLoading } = useTasks();
+  const { data, isLoading, isError, error, refetch } = useTasks();
   const allSummaries = data?.items || [];
   const clients = clientsData?.items || [];
 
@@ -456,7 +457,11 @@ export function TasksPage() {
       </div>
 
       {/* 4. Content Views */}
-      {isLoading ? (
+      {isError ? (
+        <QueryState isLoading={false} isError error={error} onRetry={() => refetch()} subject="tasks">
+          {null}
+        </QueryState>
+      ) : isLoading ? (
         <div className="space-y-3">
           <div className="h-16 bg-sheet-3 rounded-panel animate-pulse" />
           <div className="h-16 bg-sheet-3 rounded-panel animate-pulse" />

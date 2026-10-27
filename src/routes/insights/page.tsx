@@ -24,6 +24,7 @@ import {
   SvgHeatCalendar,
 } from '@/components/insights/svg-charts';
 import type { InsightsTab } from '@/domain/types';
+import { QueryState } from '@/components/ui/query-state';
 
 export function InsightsPage() {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ export function InsightsPage() {
 
   const { data: clientsData } = useClients();
   const { data: templatesData } = useTemplates();
-  const { data, isLoading } = useInsights(tab, {
+  const { data, isLoading, isError, error, refetch } = useInsights(tab, {
     clientId: clientFilter !== 'all' ? clientFilter : undefined,
     assignedUserId: ownerFilter !== 'all' ? ownerFilter : undefined,
   });
@@ -140,7 +141,11 @@ export function InsightsPage() {
       </div>
 
       {/* TAB CONTENT */}
-      {isLoading ? (
+      {isError ? (
+        <QueryState isLoading={false} isError error={error} onRetry={() => refetch()} subject="insights">
+          {null}
+        </QueryState>
+      ) : isLoading ? (
         <div className="h-72 bg-[var(--sheet-2)] rounded-panel animate-pulse flex items-center justify-center text-xs text-[var(--ink-3)]">
           Loading metrics and computing aggregations...
         </div>

@@ -55,6 +55,7 @@ import { formatDate, formatDateTime, formatRelative } from '@/lib/format';
 import { formatPeso } from '@/lib/money';
 import type { Contact, Authorization, TaskKind, DueState } from '@/domain/types';
 import { authorizationState } from '@/domain/rules';
+import { QueryState } from '@/components/ui/query-state';
 
 type TabKey =
   | 'overview'
@@ -90,7 +91,7 @@ export function ClientDetailPage() {
   };
 
   // Queries
-  const { data: clientData, isLoading: clientLoading } = useClient(clientId);
+  const { data: clientData, isLoading: clientLoading, isError: clientError, error: clientErr, refetch: refetchClient } = useClient(clientId);
   const { data: tasksData } = useTasks({ clientId });
   const { data: contacts = [] } = useContacts(clientId);
   const { data: authorizations = [] } = useAuthorizations(clientId);
@@ -126,6 +127,10 @@ export function ClientDetailPage() {
   // Notes input
   const [noteBody, setNoteBody] = useState('');
   const [notePinned, setNotePinned] = useState(false);
+
+  if (clientError) {
+    return <QueryState isLoading={false} isError error={clientErr} onRetry={() => refetchClient()} subject="this client">{null}</QueryState>;
+  }
 
   if (clientLoading || !clientData) {
     return (

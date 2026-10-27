@@ -33,6 +33,7 @@ import {
   ArrowRight,
   MoreVertical,
 } from 'lucide-react';
+import { QueryState } from '@/components/ui/query-state';
 
 type TabView = 'all' | 'needs_review' | 'evidence' | 'recent';
 
@@ -49,7 +50,7 @@ export function DocumentsPage() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   // Data queries
-  const { data: docsData, isLoading } = useDocuments();
+  const { data: docsData, isLoading, isError, error, refetch } = useDocuments();
   const { data: clientsData } = useClients();
   const { data: tasksData } = useTasks();
 
@@ -283,7 +284,11 @@ export function DocumentsPage() {
       </div>
 
       {/* 4. Content Views */}
-      {isLoading ? (
+      {isError ? (
+        <QueryState isLoading={false} isError error={error} onRetry={() => refetch()} subject="documents">
+          {null}
+        </QueryState>
+      ) : isLoading ? (
         <div className="space-y-3">
           <div className="h-16 bg-sheet-3 rounded-panel animate-pulse" />
           <div className="h-16 bg-sheet-3 rounded-panel animate-pulse" />

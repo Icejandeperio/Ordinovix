@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
+import { QueryState } from '@/components/ui/query-state';
 
 function getOfficeIcon(type: OfficeType) {
   switch (type) {
@@ -35,7 +36,7 @@ function getOfficeIcon(type: OfficeType) {
 }
 
 export function OfficesPage() {
-  const { data: offices = [], isLoading } = useOffices();
+  const { data: offices = [], isLoading, isError, error, refetch } = useOffices();
 
   const [activeTypeTab, setActiveTypeTab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -160,7 +161,11 @@ export function OfficesPage() {
       </div>
 
       {/* Offices Grid */}
-      {isLoading ? (
+      {isError ? (
+        <QueryState isLoading={false} isError error={error} onRetry={() => refetch()} subject="offices">
+          {null}
+        </QueryState>
+      ) : isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-pulse">
           <div className="h-40 bg-sheet-3 rounded-panel" />
           <div className="h-40 bg-sheet-3 rounded-panel" />

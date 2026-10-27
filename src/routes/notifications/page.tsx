@@ -5,11 +5,12 @@ import { formatTime, formatDate, formatRelative } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Bell, CheckCheck, Inbox, Check } from 'lucide-react';
 import type { Notification } from '@/domain/types';
+import { QueryState } from '@/components/ui/query-state';
 
 export function NotificationsPage() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
-  const { data, isLoading } = useNotifications();
+  const { data, isLoading, isError, error, refetch } = useNotifications();
   const markRead = useMarkNotificationsRead();
 
   const notifications = data?.items || [];
@@ -98,7 +99,11 @@ export function NotificationsPage() {
       </div>
 
       {/* Notifications grouped by day */}
-      {isLoading ? (
+      {isError ? (
+        <QueryState isLoading={false} isError error={error} onRetry={() => refetch()} subject="notifications">
+          {null}
+        </QueryState>
+      ) : isLoading ? (
         <div className="p-12 text-center space-y-2 bg-sheet border border-rule rounded-panel">
           <div className="w-6 h-6 border-2 border-stamp border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-xs text-ink-3">Loading notifications...</p>

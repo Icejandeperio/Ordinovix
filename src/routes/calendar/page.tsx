@@ -1,3 +1,4 @@
+import { QueryState } from '@/components/ui/query-state';
 import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -128,7 +129,7 @@ export function CalendarPage() {
     }
   }, [currentDate, view, weekStartsOn]);
 
-  const { data: rawItems = [], isLoading } = useCalendar(fromStr, toStr);
+  const { data: rawItems = [], isLoading, isError, error, refetch } = useCalendar(fromStr, toStr);
 
   // Filtered calendar items
   const calendarItems = useMemo(() => {
@@ -232,6 +233,11 @@ export function CalendarPage() {
 
   return (
     <div className="space-y-6">
+      {isError && (
+        <QueryState isLoading={false} isError error={error} onRetry={() => refetch()} subject="the calendar">
+          {null}
+        </QueryState>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>

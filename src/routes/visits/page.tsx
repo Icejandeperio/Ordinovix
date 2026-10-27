@@ -19,6 +19,7 @@ import {
   Search,
   CheckCheck,
 } from 'lucide-react';
+import { QueryState } from '@/components/ui/query-state';
 
 type VisitTab = 'upcoming' | 'done' | 'cancelled' | 'all';
 
@@ -38,7 +39,7 @@ function getOfficeIcon(type: OfficeType) {
 }
 
 export function VisitsPage() {
-  const { data, isLoading } = useVisits();
+  const { data, isLoading, isError, error, refetch } = useVisits();
   const visits = data?.items || [];
   const { data: memberships = [] } = useMemberships();
 
@@ -192,7 +193,11 @@ export function VisitsPage() {
       </div>
 
       {/* Main Content List */}
-      {isLoading ? (
+      {isError ? (
+        <QueryState isLoading={false} isError error={error} onRetry={() => refetch()} subject="visits">
+          {null}
+        </QueryState>
+      ) : isLoading ? (
         <div className="space-y-3 animate-pulse">
           <div className="h-28 bg-sheet-3 rounded-panel" />
           <div className="h-28 bg-sheet-3 rounded-panel" />

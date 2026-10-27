@@ -37,11 +37,12 @@ import {
   DollarSign,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { QueryState } from '@/components/ui/query-state';
 
 export function VisitRecordPage() {
   const { visitId } = useParams<{ visitId: string }>();
   const navigate = useNavigate();
-  const { data, isLoading } = useVisit(visitId || '');
+  const { data, isLoading, isError, error, refetch } = useVisit(visitId || '');
 
   const recordOutcomeMutation = useRecordVisitOutcome();
   const finishVisitMutation = useFinishVisit();
@@ -83,6 +84,10 @@ export function VisitRecordPage() {
   // Only SAVED outcomes count (product rule 3); a selected-but-unsaved form does not.
   // Not memoized: the mock mutates records in place, so the query data keeps its identity after a save.
   const allRecorded = canFinishVisit((data?.items ?? []).map((i) => i.item));
+
+  if (isError) {
+    return <QueryState isLoading={false} isError error={error} onRetry={() => refetch()} subject="this visit">{null}</QueryState>;
+  }
 
   if (isLoading || !data) {
     return (

@@ -48,6 +48,7 @@ import {
 import { DateField } from '@/components/inputs/date-field';
 import { UserFormModal } from '@/components/settings/user-form-modal';
 import { TemplatesSection } from '@/components/settings/templates-section';
+import { QueryState } from '@/components/ui/query-state';
 import { RevokeUserDialog } from '@/components/settings/revoke-user-dialog';
 import type { Membership, Role, ID } from '@/domain/types';
 
@@ -67,7 +68,7 @@ type SettingsTab =
   | 'about';
 
 export function SettingsPage() {
-  const { data: session } = useSession();
+  const { data: session, isError: sessionError, error: sessionErr, refetch: refetchSession } = useSession();
   const {
     theme,
     setTheme,
@@ -293,6 +294,14 @@ export function SettingsPage() {
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2400);
   };
+
+  if (sessionError) {
+    return (
+      <QueryState isLoading={false} isError error={sessionErr} onRetry={() => refetchSession()} subject="settings">
+        {null}
+      </QueryState>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">

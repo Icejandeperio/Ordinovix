@@ -18,10 +18,11 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { QueryState } from '@/components/ui/query-state';
 
 export function FollowUpsRunPage() {
   const navigate = useNavigate();
-  const { data, isLoading } = useFollowUps();
+  const { data, isLoading, isError, error, refetch } = useFollowUps();
   const markSentMutation = useMarkFollowUpSent();
 
   // Filter to queue items that need action (due today or overdue)
@@ -72,6 +73,14 @@ export function FollowUpsRunPage() {
     setIsEscalateOpen(false);
     handleNext();
   };
+
+  if (isError) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <QueryState isLoading={false} isError error={error} onRetry={() => refetch()} subject="the follow-up queue">{null}</QueryState>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
