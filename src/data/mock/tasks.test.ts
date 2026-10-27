@@ -168,4 +168,80 @@ describe('mockRepositories.tasks and Task Domain Rules (M4)', () => {
     };
     expect(isLateDiscovered(relaxedTask, today, 3)).toBe(false);
   });
+
+  describe('U02 blocked tasks and completion rules (B04)', () => {
+    const BLOCKED = 'task-cruz-1601c'; // Waiting on client in the seed
+
+    /** Accept every required line of the RSP task and move it to Ready for next step (non-blocked, no evidence). */
+    async function readyRspTask() {
+      const detail = await mockRepositories.tasks.get('task-rsp-0619e');
+      for (const l of detail.lines.filter((x) => x.required && x.status === 'received')) {
+        await mockRepositories.lines.setStatus(l.id, 'accepted');
+      }
+      await mockRepositories.tasks.setStatus('task-rsp-0619e', 'ready_next_step');
+      return mockRepositories.tasks.get('task-rsp-0619e');
+    }
+
+    beforeEach(() => {
+      mockDevControls.reset();
+      mockDevControls.setPersona('owner');
+    });
+
+    it('B04 setStatus on a blocked task is rejected for the owner, with the blocking reason', async () => {
+      const before = await mockRepositories.tasks.get(BLOCKED);
+      expect(before.summary.displayedStatus).toBe('waiting_on_client');
+      await expect(mockRepositories.tasks.setStatus(BLOCKED, 'completed')).rejects.toMatchObject({
+        code: 'RULE_VIOLATION',
+        message: expect.stringMatching(/blocked/i),
+      });
+      const after = await mockRepositories.tasks.get(BLOCKED);
+      expect(after.task.status).toBe(before.task.status);
+    });
+
+    it('B04 markSubmitted and markCompleted are rejected on a blocked task', async () => {
+      await expect(
+        mockRepositories.tasks.markSubmitted(BLOCKED, { on: '2026-10-27', via: 'office' }),
+      ).rejects.toMatchObject({ code: 'RULE_VIOLATION' });
+      await expect(
+        mockRepositories.tasks.markCompleted(BLOCKED, { on: '2026-10-27', noEvidenceReason: 'Owner says it is fine to close' }),
+      ).rejects.toMatchObject({ code: 'RULE_VIOLATION' });
+      const after = await mockRepositories.tasks.get(BLOCKED);
+      expect(after.task.status).not.toBe('completed');
+      expect(after.task.status).not.toBe('submitted');
+    });
+
+    it('B04 override is the only path for a blocked task: it records statusOverride and an activity event', async () => {
+      const reason = 'Client confirmed by phone that figures are final';
+      const t = await mockRepositories.tasks.override(BLOCKED, 'ready_next_step', reason);
+      expect(t.statusOverride).toMatchObject({ status: 'ready_next_step', reason });
+      const events = await mockRepositories.activity.list({ entity: 'task', entityId: BLOCKED });
+      expect(events.items.some((e) => e.action === 'overridden' && e.reason === reason)).toBe(true);
+    });
+
+    it('markCompleted without evidence needs a reason of at least 10 characters', async () => {
+      const ready = await readyRspTask();
+      const hasEvidence = ready.documents.some((d) => d.kind === 'filed_return' || d.kind === 'acknowledgment');
+      expect(hasEvidence).toBe(false);
+
+      await expect(
+        mockRepositories.tasks.markCompleted('task-rsp-0619e', { on: '2026-10-27' }),
+      ).rejects.toMatchObject({ code: 'RULE_VIOLATION' });
+      await expect(
+        mockRepositories.tasks.markCompleted('task-rsp-0619e', { on: '2026-10-27', noEvidenceReason: 'short' }),
+      ).rejects.toMatchObject({ code: 'RULE_VIOLATION' });
+
+      const done = await mockRepositories.tasks.markCompleted('task-rsp-0619e', {
+        on: '2026-10-27',
+        noEvidenceReason: 'Client collected the stamped copy himself',
+      });
+      expect(done.status).toBe('completed');
+      expect(done.completionNoEvidenceReason).toBe('Client collected the stamped copy himself');
+    });
+
+    it('markSubmitted works on a non-blocked task in Ready for next step', async () => {
+      await readyRspTask();
+      const t = await mockRepositories.tasks.markSubmitted('task-rsp-0619e', { on: '2026-10-27', via: 'office' });
+      expect(t.status).toBe('submitted');
+    });
+  });
 });
