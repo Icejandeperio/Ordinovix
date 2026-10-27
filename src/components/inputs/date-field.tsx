@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from 'motion/react';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -21,7 +21,6 @@ import {
   addDays,
   nextMonday,
 } from 'date-fns';
-import * as chrono from 'chrono-node';
 import { todayInManila, formatRelative, formatDate } from '@/lib/dates';
 
 export interface DateFieldProps {
@@ -117,17 +116,21 @@ export function DateField({
       return;
     }
 
-    // Try Chrono NLP parsing (e.g. 'Oct 28', 'tomorrow', 'next fri', 'today')
-    try {
-      const parsedDate = chrono.parseDate(text, todayDate);
-      if (parsedDate && isValid(parsedDate)) {
-        const iso = format(parsedDate, 'yyyy-MM-dd');
-        onChange(iso);
-        setCurrentMonth(parsedDate);
-      }
-    } catch {
-      // Keep typing
-    }
+    // Try Chrono NLP parsing (e.g. 'Oct 28', 'tomorrow', 'next fri', 'today'). The parser loads on first use so it
+    // is not part of the first-load bundle; a result for text that has since changed is dropped.
+    void import('chrono-node')
+      .then((chrono) => {
+        if (inputRef.current && inputRef.current.value !== text) return;
+        const parsedDate = chrono.parseDate(text, todayDate);
+        if (parsedDate && isValid(parsedDate)) {
+          const iso = format(parsedDate, 'yyyy-MM-dd');
+          onChange(iso);
+          setCurrentMonth(parsedDate);
+        }
+      })
+      .catch(() => {
+        // Keep typing
+      });
   };
 
   const handleSelectDate = (date: Date) => {
@@ -210,7 +213,7 @@ export function DateField({
       {/* Custom Designed Calendar Popover */}
       <AnimatePresence>
         {open && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0, scale: 0.95, y: -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -4 }}
@@ -361,7 +364,7 @@ export function DateField({
               </button>
             </div>
           </div>
-        </motion.div>
+        </m.div>
       )}
     </AnimatePresence>
     </div>

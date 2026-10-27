@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
+import { m, AnimatePresence, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/cn';
 
 export interface SlideSheetProps {
@@ -75,7 +75,7 @@ export function SlideSheet({
           data-printable-drawer={isPrintable ? 'true' : undefined}
         >
           {/* Backdrop with gradual fade and gradual backdrop blur */}
-          <motion.div
+          <m.div
             key="sheet-backdrop"
             initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
             animate={{ opacity: 1, backdropFilter: 'blur(6px)' }}
@@ -90,7 +90,7 @@ export function SlideSheet({
           />
 
           {/* Smooth Sliding Drawer Panel */}
-          <motion.div
+          <m.div
             key="sheet-panel"
             initial={{ x: shouldReduceMotion ? 0 : slideInitial }}
             animate={{ x: 0 }}
@@ -108,7 +108,7 @@ export function SlideSheet({
             data-printable-drawer={isPrintable ? 'true' : undefined}
           >
             {children}
-          </motion.div>
+          </m.div>
         </div>
       )}
     </AnimatePresence>

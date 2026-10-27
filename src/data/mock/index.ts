@@ -119,11 +119,9 @@ import { todayInManila, setDevToday, getDevToday, addDaysToDate, nowInManila } f
 import { generateId } from '@/lib/ids';
 import { describeDevice } from '@/lib/audit';
 import { FILE_KEY_PREFIX, documentDisplayName, getFileUrl, isStoredFileKey, putFile } from '@/lib/files';
+import { FAILURE_RATE_KEY, OFFLINE_KEY, PERSONA_KEY } from '@/data/dev-state';
 
 const STORAGE_KEY = 'ox-mock-data-v2';
-const PERSONA_KEY = 'ox-mock-persona';
-const FAILURE_RATE_KEY = 'ox-mock-failure-rate';
-const OFFLINE_KEY = 'ox-mock-offline';
 
 interface StoreData {
   org: Org;
