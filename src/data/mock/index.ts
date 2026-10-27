@@ -720,8 +720,19 @@ function actor(): PolicyActor {
 function assertOwner(): void {
   requireOwner(actor());
 }
+/** A write with no resolvable client can only be done by the owner; a helper is refused, never silently allowed. */
 function assertClient(clientId?: ID): void {
-  if (clientId) requireClientAccess(actor(), clientId);
+  if (!clientId) {
+    requireOwner(actor());
+    return;
+  }
+  requireClientAccess(actor(), clientId);
+}
+/** Writes to a stored record check the record's own client as well as the client the caller supplied. */
+function assertRecordWrite(list: Array<{ id: ID; clientId: ID }>, id: ID | undefined, suppliedClientId?: ID): void {
+  const stored = id ? list.find((x) => x.id === id) : undefined;
+  if (stored) assertClient(stored.clientId);
+  assertClient(suppliedClientId ?? stored?.clientId);
 }
 function assertTask(id: ID): void {
   const t = store.tasks.find((x) => x.id === id);
@@ -1487,7 +1498,7 @@ export const mockRepositories: Repositories = {
     },
     async upsert(c) {
       await simulateLatency();
-      assertClient(c.clientId ?? store.contacts.find((x) => x.id === c.id)?.clientId);
+      assertRecordWrite(store.contacts, c.id, c.clientId);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       if (c.id) {
@@ -1536,7 +1547,7 @@ export const mockRepositories: Repositories = {
     },
     async upsert(a) {
       await simulateLatency();
-      assertClient(a.clientId ?? store.authorizations.find((x) => x.id === a.id)?.clientId);
+      assertRecordWrite(store.authorizations, a.id, a.clientId);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       if (a.id) {
@@ -1833,6 +1844,8 @@ export const mockRepositories: Repositories = {
     async update(id, t) {
       await simulateLatency();
       assertTask(id);
+      const movedTo = (t as { clientId?: ID }).clientId;
+      if (movedTo) assertClient(movedTo);
       const idx = store.tasks.findIndex((item) => item.id === id);
       if (idx === -1) throw new Error('Task not found');
       store.tasks[idx] = { ...store.tasks[idx], ...t, version: store.tasks[idx].version + 1 };
@@ -2626,6 +2639,7 @@ export const mockRepositories: Repositories = {
 
     async create(v, items) {
       await simulateLatency();
+      for (const item of items ?? []) assertTask(item.taskId);
       const { user } = getCurrentUser();
       const newV: Visit = {
         id: generateId(),
@@ -2963,7 +2977,7 @@ export const mockRepositories: Repositories = {
 
     async save(p) {
       await simulateLatency();
-      assertClient(p.clientId);
+      assertRecordWrite(store.payments, p.id, p.clientId);
       const { user } = getCurrentUser();
 
       const existing = p.id ? store.payments.find((item) => item.id === p.id) : undefined;
@@ -3500,6 +3514,7 @@ export const mockRepositories: Repositories = {
     async list(f) {
       await simulateLatency();
       const { membership } = getCurrentUser();
+      if (f?.clientId) assertClient(f.clientId);
       if (!f?.clientId && !f?.entityId && membership.role !== 'owner') {
         throw new ForbiddenError('Access denied: Practice-wide audit log is restricted to practice owners');
       }

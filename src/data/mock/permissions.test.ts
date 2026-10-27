@@ -62,6 +62,25 @@ describe('B11 data-layer permissions', () => {
     await forbidden(R.visits.addItem('visit-today', MARIA_TASK, 'submit'));
   });
 
+  it('checks the stored record and never lets a missing client id through', { timeout: 30_000 }, async () => {
+    // Overwriting an unassigned client's payment, with or without a client id of the caller's choosing
+    await forbidden(R.payments.save({ id: 'pay-demo-2', amount: 1 } as never));
+    await forbidden(R.payments.save({ id: 'pay-demo-2', clientId: 'client-rsp', amount: 1 } as never));
+    // Moving an unassigned client's authorization to a client the helper owns
+    await forbidden(R.authorizations.upsert({ id: 'auth-maria-letter', clientId: 'client-rsp' }));
+    await forbidden(R.authorizations.upsert({ id: 'auth-maria-letter', notes: 'x' }));
+    // Planning a visit that carries an unassigned client's task
+    await forbidden(R.visits.create({ officeId: 'off-rdo39', plannedDate: '2026-11-03' } as never, [{ taskId: MARIA_TASK, action: 'submit' }] as never));
+    // Writes that name no client at all are refused for a helper
+    await forbidden(R.documents.upload({ kind: 'other', displayName: 'x.pdf' } as never, new Blob(['x']), undefined, {} as never));
+    await forbidden(R.followUps.create({ channel: 'viber', language: 'en' } as never));
+    await forbidden(R.documents.findBySha('abc', undefined as never));
+    // Re-pointing an assigned task at an unassigned client
+    await forbidden(R.tasks.update('task-rsp-0619e', { clientId: MARIA } as never));
+    // The audit trail of an unassigned client
+    await forbidden(R.activity.list({ clientId: MARIA }));
+  });
+
   it('refuses a visit whose items all belong to unassigned clients, and hides those items in shared visits', async () => {
     await forbidden(R.visits.get('visit-v3'));
     await forbidden(R.visits.recordOutcome('vitem-v3-1', { outcome: 'completed' } as never));
