@@ -236,7 +236,7 @@
       "id": "U07",
       "phase": "P2",
       "tier": "T2",
-      "status": "pending",
+      "status": "in_progress",
       "depends_on": [
         "U02",
         "U06"
