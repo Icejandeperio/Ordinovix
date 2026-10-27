@@ -12,8 +12,9 @@ Entry format: a checkbox line `- [ ] <YYYY-MM-DD> U<NN> <short question> (blocks
 lines for Context (one or two lines, link to the PR or draft PR), Options with a recommendation and its reason,
 and, for protected files, the exact change proposed.
 
-- [ ] 2026-10-27 U10 Delete the stray untracked drafts tests/acceptance/u10-settings.spec.ts and u10-verifier.spec.ts (block nothing)
+- [ ] 2026-10-27 U10 Delete the stray untracked drafts tests/acceptance/u10-settings.spec.ts, u10-verifier.spec.ts, u11-audit.spec.ts and u11-audit-log.spec.ts (block nothing)
   - Context: I wrote it during U10 with a race (it counts the visit-kit rows before they load); the guard refuses edits to files already in tests/acceptance, so the corrected tests are in tests/acceptance/u10-settings-sections.spec.ts. The draft was never committed, so CI and main are unaffected, but `node scripts/verify.mjs` in this working copy reports its two failures, so I run the gate on a clean checkout. Same pattern as the U02 and U06 drafts you deleted.
+  - U11 added a third, tests/acceptance/u11-audit.spec.ts (two of its tests have flaws of their own: they read CSS-uppercased text and assert on a table that is replaced by the empty state); the corrected tests are in u11-audit-trail.spec.ts. u11-audit-log.spec.ts was a second attempt whose file contained a literal byte order mark inside a regex, which fails the lint rule no-irregular-whitespace; it was removed from the branch before pushing.
   - The verifier left a second one, tests/acceptance/u10-verifier.spec.ts (its test 6 has a bug of its own and the guard refused its edit). Delete both.
   - Options: (A, recommended) delete the files by hand; (B) let the guard allow edits to untracked files in tests/acceptance.
   - Also from U10: the Practice TIN field was a hard-coded fake and OrgSettings has no field for it, so U10 removed it from the Practice section. Say if you want a practice TIN stored (it needs a new OrgSettings field, a types.ts change).
