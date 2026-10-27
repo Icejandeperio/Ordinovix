@@ -32,4 +32,7 @@ and, for protected files, the exact change proposed.
 
 - 2026-10-27 (from U06 review) Error handling gaps outside the audit B13 list: Today, tasks/detail, audit, reports and clients/import have no error state; Settings gates only on `useSession` (its memberships, baseline and clients queries have none); Calendar shows the error panel above an empty grid rather than replacing it; `visits.get` has no helper scoping check (covered by U07).
 
+- 2026-10-27 (from U09 review) Flaky test, not retried to green: `src/data/mock/tasks.test.ts` "guarantees open period idempotence" takes 4.0–4.7 s against Vitest's 5 s timeout on `main` too (it failed once in a verifier gate run). Give it a longer timeout or fewer simulated-latency calls.
+- 2026-10-27 (from U09 review) `mockDevControls.reset()` leaves orphaned file blobs in IndexedDB (`ordinovix-files`); clear that store on reset.
+
 ## Decided
