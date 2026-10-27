@@ -1098,3 +1098,14 @@ export function useSaveVisitKitItem() {
     },
   });
 }
+
+// ---- Audit log ----
+
+export function useActivity(filters?: Parameters<typeof repositories.activity.list>[0], enabled = true) {
+  return useQuery({
+    queryKey: ['activity', filters],
+    queryFn: () => repositories.activity.list(filters),
+    enabled,
+    staleTime: 10 * 1000,
+  });
+}
