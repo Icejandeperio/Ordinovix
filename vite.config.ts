@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
@@ -17,6 +17,9 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+  },
+  test: {
+    include: ['src/**/*.test.{ts,tsx}'],
   },
   build: {
     rollupOptions: {
