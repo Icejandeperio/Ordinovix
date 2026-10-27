@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import {
   Building2,
   Users,
@@ -17,29 +18,56 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { DateField } from '@/components/inputs/date-field';
-import { useTemplates } from '@/hooks/useData';
+import {
+  useTemplates,
+  useSession,
+  useSaveSettings,
+  useSaveTemplate,
+  useInviteMembership,
+  useSubscribePush,
+  useClients,
+} from '@/hooks/useData';
 import { FREQUENCY_LABELS } from '@/domain/labels';
+import { withStepDone, firstOpenStep, toE164 } from '@/lib/onboarding';
+import type { OnboardingProgress, OnboardingStep } from '@/domain/types';
 
 export function WelcomePage() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<number>(1);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [params] = useSearchParams();
+  const { data: session } = useSession();
+  const settings = session?.settings;
+  const saveSettings = useSaveSettings();
+  const saveTemplate = useSaveTemplate();
+  const inviteMember = useInviteMembership();
+  const subscribePush = useSubscribePush();
 
-  // Step 1: Operator & Practice details
-  const [displayName, setDisplayName] = useState('Ana Santos');
-  const [practiceName, setPracticeName] = useState('Santos Tax Advisory');
-  const [mobile, setMobile] = useState('+63 917 555 0101');
-  const [accreditationNo, setAccreditationNo] = useState('BIR-TA-2024-009182');
-  const [accreditationExpiry, setAccreditationExpiry] = useState('2027-12-31');
+  const totalSteps = 5;
+  const requested = Number(params.get('step'));
+  const [step, setStep] = useState<number>(requested >= 1 && requested <= totalSteps ? requested : firstOpenStep(settings?.onboarding));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Step 1: Operator & Practice details; each field starts from what is saved and only changes once typed in
+  const [edits, setEdits] = useState<{ displayName?: string; practiceName?: string; mobile?: string; accreditationNo?: string; accreditationExpiry?: string }>({});
+  const displayName = edits.displayName ?? settings?.operatorDisplayName ?? '';
+  const practiceName = edits.practiceName ?? settings?.practiceName ?? '';
+  const mobile = edits.mobile ?? settings?.mobileE164 ?? '';
+  const accreditationNo = edits.accreditationNo ?? settings?.accreditation?.number ?? '';
+  const accreditationExpiry = edits.accreditationExpiry ?? settings?.accreditation?.validUntil ?? '';
+  const setDisplayName = (v: string) => setEdits((e) => ({ ...e, displayName: v }));
+  const setPracticeName = (v: string) => setEdits((e) => ({ ...e, practiceName: v }));
+  const setMobile = (v: string) => setEdits((e) => ({ ...e, mobile: v }));
+  const setAccreditationNo = (v: string) => setEdits((e) => ({ ...e, accreditationNo: v }));
+  const setAccreditationExpiry = (v: string) => setEdits((e) => ({ ...e, accreditationExpiry: v }));
 
   // Step 2: Client addition choice
   const [clientChoice, setClientChoice] = useState<'import' | 'manual' | 'later'>('later');
+  const { data: clientsData } = useClients();
 
-  // Step 3: Task types
-  const { data: templates, isLoading: templatesLoading, isError: templatesError, refetch: refetchTemplates } =
-    useTemplates({ active: true });
-  // Unchecked templates are the exception; everything the repository lists starts selected
-  const [deselectedTemplates, setDeselectedTemplates] = useState<Record<string, boolean>>({});
+  // Step 3: Task types: every template the repository lists, checked when it is active
+  const { data: templates, isLoading: templatesLoading, isError: templatesError, refetch: refetchTemplates } = useTemplates();
+  const [templateChoice, setTemplateChoice] = useState<Record<string, boolean>>({});
+  const isOn = (id: string, active: boolean) => templateChoice[id] ?? active;
 
   // Step 4: Invite helper
   const [helperEmail, setHelperEmail] = useState('');
@@ -48,29 +76,84 @@ export function WelcomePage() {
   // Step 5: Reminders permission
   const [remindersEnabled, setRemindersEnabled] = useState(false);
 
-  const totalSteps = 5;
+  // Nothing can be saved until the saved settings (and, on step 3, the templates) have loaded
+  const notReady = !settings || (step === 3 && templatesLoading);
 
-  const nextStep = () => {
-    if (step < totalSteps) {
-      setStep(step + 1);
-    } else {
-      finishSetup();
+  // Progress comes from what the last save returned, so a step saved a moment ago is never overwritten by a stale read
+  const savedProgress = useRef<OnboardingProgress | undefined>(undefined);
+  const markDone = (key: OnboardingStep) => withStepDone(savedProgress.current ?? settings?.onboarding, key);
+  const saveProgress = async (s: Parameters<typeof saveSettings.mutateAsync>[0]) => {
+    const saved = await saveSettings.mutateAsync(s);
+    savedProgress.current = saved.onboarding;
+  };
+
+  /** Saves what the current step collected through the repository. Returns false when it failed (the error is shown). */
+  const saveStep = async (): Promise<boolean> => {
+    setError(null);
+    try {
+      if (step === 1) {
+        const e164 = toE164(mobile);
+        if (mobile.trim() && !e164) throw new Error('Enter a Philippine mobile number, like +63 917 555 0101');
+        await saveProgress({
+          practiceName: practiceName.trim(),
+          operatorDisplayName: displayName.trim(),
+          mobileE164: e164 ?? undefined,
+          accreditation: accreditationNo.trim() ? { number: accreditationNo.trim(), validUntil: accreditationExpiry || undefined } : undefined,
+          onboarding: markDone('details'),
+        });
+      } else if (step === 2) {
+        if (clientChoice !== 'later') await saveProgress({ onboarding: markDone('clients') });
+      } else if (step === 3) {
+        for (const t of templates ?? []) {
+          if (isOn(t.id, t.active) !== t.active) await saveTemplate.mutateAsync({ template: { id: t.id, active: !t.active } });
+        }
+        await saveProgress({ onboarding: markDone('templates') });
+      } else if (step === 4) {
+        const email = helperEmail.trim();
+        if (email) {
+          const clientIds = helperScope === 'all' ? (clientsData?.items ?? []).map((s) => s.client.id) : [];
+          await inviteMember.mutateAsync({ email, role: 'helper', clientIds });
+          await saveProgress({ onboarding: markDone('helper') });
+        }
+      } else if (step === 5) {
+        if (remindersEnabled) await subscribePush.mutateAsync({ endpoint: 'ordinovix://browser-push' });
+        await saveProgress({ onboarding: markDone('phone') });
+      }
+      return true;
+    } catch (err) {
+      setError((err as Error).message || 'Could not save this step. Try again.');
+      return false;
     }
   };
 
+  const nextStep = async () => {
+    setSaving(true);
+    const ok = await saveStep();
+    setSaving(false);
+    if (!ok) return;
+    if (step < totalSteps) setStep(step + 1);
+    else finishSetup();
+  };
+
+  const skipStep = () => {
+    setError(null);
+    setStep(step + 1);
+  };
+
   const prevStep = () => {
+    setError(null);
     if (step > 1) {
       setStep(step - 1);
     }
   };
 
   const finishSetup = () => {
-    // Navigate to Today and show confirmation
-    navigate('/', { state: { toast: 'Setup saved. You can change any of this in Settings.' } });
+    toast.success('Setup saved. You can change any of this in Settings.');
+    navigate(clientChoice === 'import' ? '/clients/import' : clientChoice === 'manual' ? '/clients' : '/');
   };
 
-  const toggleTemplate = (id: string) => {
-    setDeselectedTemplates((prev) => ({ ...prev, [id]: !prev[id] }));
+  const toggleTemplate = (id: string, active: boolean) => {
+    setTemplateChoice((prev) => ({ ...prev, [id]: !isOn(id, active) }));
   };
 
   return (
@@ -110,10 +193,11 @@ export function WelcomePage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--ink-3)] uppercase tracking-wider mb-1">
+                  <label htmlFor="wiz-display-name" className="block text-xs font-semibold text-[var(--ink-3)] uppercase tracking-wider mb-1">
                     Display Name (in messages &#123;&#123;operator&#125;&#125;) *
                   </label>
                   <input
+                    id="wiz-display-name"
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
@@ -123,10 +207,11 @@ export function WelcomePage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--ink-3)] uppercase tracking-wider mb-1">
+                  <label htmlFor="wiz-practice-name" className="block text-xs font-semibold text-[var(--ink-3)] uppercase tracking-wider mb-1">
                     Practice Name *
                   </label>
                   <input
+                    id="wiz-practice-name"
                     type="text"
                     value={practiceName}
                     onChange={(e) => setPracticeName(e.target.value)}
@@ -136,10 +221,11 @@ export function WelcomePage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--ink-3)] uppercase tracking-wider mb-1">
+                  <label htmlFor="wiz-mobile" className="block text-xs font-semibold text-[var(--ink-3)] uppercase tracking-wider mb-1">
                     Mobile Number (Philippines) *
                   </label>
                   <input
+                    id="wiz-mobile"
                     type="tel"
                     value={mobile}
                     onChange={(e) => setMobile(e.target.value)}
@@ -150,10 +236,11 @@ export function WelcomePage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[var(--rule)]">
                   <div>
-                    <label className="block text-xs font-semibold text-[var(--ink-3)] uppercase tracking-wider mb-1">
+                    <label htmlFor="wiz-accreditation" className="block text-xs font-semibold text-[var(--ink-3)] uppercase tracking-wider mb-1">
                       BIR Accreditation No. (Optional)
                     </label>
                     <input
+                      id="wiz-accreditation"
                       type="text"
                       value={accreditationNo}
                       onChange={(e) => setAccreditationNo(e.target.value)}
@@ -307,7 +394,7 @@ export function WelcomePage() {
                   templates.map((tpl) => (
                   <div
                     key={tpl.id}
-                    onClick={() => toggleTemplate(tpl.id)}
+                    onClick={() => toggleTemplate(tpl.id, tpl.active)}
                     className="p-3 rounded-lg border border-[var(--rule)] bg-[var(--sheet)] flex items-center justify-between cursor-pointer hover:border-[var(--rule-strong)]"
                   >
                     <div>
@@ -324,7 +411,7 @@ export function WelcomePage() {
 
                     <input
                       type="checkbox"
-                      checked={!deselectedTemplates[tpl.id]}
+                      checked={isOn(tpl.id, tpl.active)}
                       onChange={() => {}}
                       aria-label={`Include ${tpl.code}`}
                       className="w-4 h-4 accent-[var(--stamp)] rounded cursor-pointer"
@@ -348,10 +435,11 @@ export function WelcomePage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--ink-3)] uppercase tracking-wider mb-1">
+                  <label htmlFor="wiz-helper-email" className="block text-xs font-semibold text-[var(--ink-3)] uppercase tracking-wider mb-1">
                     Helper Google Account Email
                   </label>
                   <input
+                    id="wiz-helper-email"
                     type="email"
                     value={helperEmail}
                     onChange={(e) => setHelperEmail(e.target.value)}
@@ -460,6 +548,13 @@ export function WelcomePage() {
           )}
         </div>
 
+        {error && (
+          <div role="alert" className="mx-6 mb-4 p-3 rounded-lg border border-[var(--critical-bd)] bg-[var(--critical-bg)] text-xs text-[var(--critical-fg)] flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
         {/* Footer Actions */}
         <div className="border-t border-[var(--rule)] bg-[var(--sheet-2)] p-4 px-6 flex items-center justify-between">
           <div>
@@ -467,6 +562,7 @@ export function WelcomePage() {
               <button
                 type="button"
                 onClick={prevStep}
+                disabled={saving}
                 className="px-3.5 py-2 rounded-lg border border-[var(--rule)] bg-[var(--sheet)] text-xs font-semibold text-[var(--ink)] hover:bg-[var(--sheet-2)] transition-colors flex items-center gap-1.5"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
@@ -475,7 +571,7 @@ export function WelcomePage() {
             ) : (
               <button
                 type="button"
-                onClick={finishSetup}
+                onClick={() => navigate('/')}
                 className="text-xs text-[var(--ink-3)] hover:text-[var(--ink)] font-medium transition-colors"
               >
                 Skip setup for now
@@ -487,7 +583,8 @@ export function WelcomePage() {
             {step < totalSteps && (
               <button
                 type="button"
-                onClick={nextStep}
+                onClick={skipStep}
+                disabled={saving}
                 className="text-xs text-[var(--ink-3)] hover:text-[var(--ink)] font-medium transition-colors"
               >
                 Skip this step
@@ -497,9 +594,10 @@ export function WelcomePage() {
             <button
               type="button"
               onClick={nextStep}
+              disabled={saving || notReady}
               className="px-5 py-2 rounded-lg bg-[var(--stamp)] text-[var(--on-stamp)] text-xs font-semibold hover:bg-[var(--stamp-strong)] transition-colors flex items-center gap-1.5 shadow-sm"
             >
-              <span>{step === totalSteps ? 'Complete Setup' : 'Continue'}</span>
+              <span>{saving ? 'Saving…' : step === totalSteps ? 'Complete Setup' : 'Continue'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>

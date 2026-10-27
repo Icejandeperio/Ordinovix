@@ -251,6 +251,19 @@ export const SettingsWriteSchema = z.object({
   operatorDisplayName: nameField('Display name').optional(),
   dueSoonDays: z.number().int().min(1).max(60).optional(),
   followUpWaitDays: z.number().int().min(1).max(30).optional(),
+  mobileE164: z.string().regex(/^\+639\d{9}$/, 'Enter a Philippine mobile number, like +63 917 555 0101').optional(),
+  accreditation: z
+    .object({
+      number: z.string().trim().min(1, 'Accreditation number is required').max(40),
+      validUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Validity date must be a valid date').optional(),
+    })
+    .optional(),
+  onboarding: z
+    .object({
+      done: z.array(z.enum(['details', 'clients', 'templates', 'helper', 'phone'])),
+      dismissed: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export const MessageWriteSchema = z.object({
