@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-27 U05 Enrich sample data to spec section 18 — done
+- Changed: new seed-demo.ts generator merged into the mock store; 8 clients, 9 unverified templates, 26 open tasks, V1/V2/V3, six months of history; seed-links test uses list calls
+- Evidence: verify.mjs exit 0; tests now passing: demo-seed unit tests (2 seed days); PR #7
+- Notes: Demo ready. T1 no verifier; first-pass % follows from fixed return counts (about 54% to 85%); client codes DCL/MLA/SCL not added, base ids kept
+
 ## 2026-10-27 U04 Valid notification links, dev tools only in mock mode, pinch zoom — done
 - Changed: mock seed ids for notifications/activity, lib/data-source isMockData gating shell banner/DevMenu/palette persona, index.html viewport, known-failures (B09 removed)
 - Evidence: verify.mjs exit 0; tests now passing: B09, U04(B18,B19); PR #6

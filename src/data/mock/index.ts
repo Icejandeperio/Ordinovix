@@ -55,6 +55,7 @@ import type {
   OpenPeriodPlan,
 } from '@/domain/types';
 import { generateSeedData } from './seed';
+import { buildDemoData } from './seed-demo';
 import {
   derivedStatus,
   dueState,
@@ -643,8 +644,34 @@ function loadStore(): StoreData {
       },
     ],
   };
-  saveStore(initialStore);
-  return initialStore;
+  // Spec section 18 demo data, added around the base seed (existing ids never change)
+  const demo = buildDemoData(seed.org.id, baseDate, initialStore.holidays);
+  const merged: StoreData = {
+    ...initialStore,
+    offices: [...initialStore.offices, ...demo.offices],
+    clients: [...initialStore.clients, ...demo.clients],
+    contacts: [...initialStore.contacts, ...demo.contacts],
+    authorizations: [...initialStore.authorizations, ...demo.authorizations],
+    templates: [...initialStore.templates, ...demo.templates],
+    reqTemplates: [...initialStore.reqTemplates, ...demo.reqTemplates],
+    tasks: [...initialStore.tasks, ...demo.tasks],
+    taskLines: [...initialStore.taskLines, ...demo.taskLines],
+    visits: [...initialStore.visits, ...demo.visits],
+    visitItems: [...initialStore.visitItems, ...demo.visitItems],
+    followUps: [...initialStore.followUps, ...demo.followUps],
+    followUpAttempts: [...initialStore.followUpAttempts, ...demo.followUpAttempts],
+    payments: [...initialStore.payments, ...demo.payments],
+    documents: [...initialStore.documents, ...demo.documents],
+    notifications: [...initialStore.notifications, ...demo.notifications],
+    notes: [...initialStore.notes, ...demo.notes],
+    activity: [...initialStore.activity, ...demo.activity],
+    holidays: [...initialStore.holidays, ...demo.holidays],
+    deadlineMoves: [...initialStore.deadlineMoves, ...demo.deadlineMoves],
+    baseline: demo.baseline,
+    pulses: demo.pulses,
+  };
+  saveStore(merged);
+  return merged;
 }
 
 function saveStore(data: StoreData = store) {
