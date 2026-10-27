@@ -148,6 +148,7 @@ export function NewTaskSheet({ open, onClose, defaultClientId }: NewTaskSheetPro
           onClose();
           navigate(`/tasks/${created.id}`);
         },
+        onError: (err) => setError((err as Error).message),
       }
     );
   };
