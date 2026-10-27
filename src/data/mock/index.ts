@@ -86,6 +86,7 @@ import {
   MessageWriteSchema,
   OfficeWriteSchema,
   VisitWriteSchema,
+  VisitUpdateSchema,
   VisitItemWriteSchema,
   VisitAddItemSchema,
   OutcomeWriteSchema,
@@ -2981,7 +2982,7 @@ export const mockRepositories: Repositories = {
       assertPatch('visits.update', v);
       assertVisit(id);
       rejectIdentityChange(v, store.visits.find((x) => x.id === id));
-      validate(VisitWriteSchema, v);
+      validate(VisitUpdateSchema, v);
       const visit = store.visits.find((item) => item.id === id);
       if (!visit) throw new Error('Visit not found');
       Object.assign(visit, v);

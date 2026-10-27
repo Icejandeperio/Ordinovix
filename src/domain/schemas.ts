@@ -118,6 +118,9 @@ export const VisitWriteSchema = z.object({
   purpose: z.string().max(300, 'Purpose cannot exceed 300 characters').optional(),
 });
 
+/** visits.update accepts only the fields of its contract (the office is set when the visit is planned). */
+export const VisitUpdateSchema = VisitWriteSchema.omit({ officeName: true });
+
 export const VisitItemWriteSchema = z.object({
   questions: z.string().max(1000, 'Questions cannot exceed 1000 characters').optional(),
 });
