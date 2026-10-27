@@ -126,6 +126,7 @@ import {
 } from '@/domain/metrics';
 import { todayInManila, setDevToday, getDevToday, addDaysToDate, nowInManila } from '@/lib/dates';
 import { generateId } from '@/lib/ids';
+import { describeDevice } from '@/lib/audit';
 import { FILE_KEY_PREFIX, documentDisplayName, getFileUrl, isStoredFileKey, putFile } from '@/lib/files';
 
 const STORAGE_KEY = 'ox-mock-data-v2';
@@ -1009,6 +1010,7 @@ function logActivity(
     action,
     summary,
     reason,
+    device: describeDevice(typeof navigator !== 'undefined' ? navigator.userAgent : undefined),
   };
   store.activity.unshift(event);
   saveStore();
@@ -3851,7 +3853,13 @@ export const mockRepositories: Repositories = {
       if (f?.entity) list = list.filter((a) => a.entity === f.entity);
       if (f?.clientId) list = list.filter((a) => a.clientId === f.clientId);
       if ((f as any)?.entityId) list = list.filter((a) => (a as any).entityId === (f as any).entityId);
-      return { items: list, total: list.length };
+      if (f?.actorId) list = list.filter((a) => a.actorId === f.actorId);
+      if (f?.actions?.length) list = list.filter((a) => f.actions!.includes(a.action));
+      if (f?.from) list = list.filter((a) => a.at.slice(0, 10) >= f.from!);
+      if (f?.to) list = list.filter((a) => a.at.slice(0, 10) <= f.to!);
+      // Newest first, whatever order the events were stored in
+      const sorted = [...list].sort((a, b) => b.at.localeCompare(a.at));
+      return { items: sorted, total: sorted.length };
     },
   },
 
