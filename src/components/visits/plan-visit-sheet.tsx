@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Office, TaskSummary, VisitAction } from '@/domain/types';
-import { useOffices, useMemberships, useTasks, useCreateVisit } from '@/hooks/useData';
+import { useOffices, useMemberships, useTasks, useCreateVisit, useSession } from '@/hooks/useData';
 import { DateField } from '@/components/inputs/date-field';
 import { nonWorkingDayNote } from '@/domain/rules';
 import { todayInManila } from '@/lib/dates';
@@ -30,6 +30,7 @@ export function PlanVisitSheet({ isOpen, onClose }: PlanVisitSheetProps) {
   const navigate = useNavigate();
   const { data: offices = [] } = useOffices();
   const { data: memberships = [] } = useMemberships();
+  const { data: session } = useSession();
   const { data: tasksRes } = useTasks();
   const allTasks = tasksRes?.items || [];
   const createVisitMutation = useCreateVisit();
@@ -38,7 +39,7 @@ export function PlanVisitSheet({ isOpen, onClose }: PlanVisitSheetProps) {
   const [plannedDate, setPlannedDate] = useState<string>(todayInManila());
   const [arriveBy, setArriveBy] = useState<string>('08:30');
   const [assigneeUserId, setAssigneeUserId] = useState<string>(
-    memberships[0]?.userId || 'user-ana'
+    memberships[0]?.userId || ''
   );
   const [purpose, setPurpose] = useState<string>('');
 
@@ -105,7 +106,8 @@ export function PlanVisitSheet({ isOpen, onClose }: PlanVisitSheetProps) {
           rdoCode: selectedOffice.rdoCode,
           plannedDate,
           arriveBy: arriveBy || undefined,
-          assigneeUserId,
+          // A helper cannot list memberships, so fall back to the signed-in user rather than someone else
+          assigneeUserId: assigneeUserId || session?.user.id || '',
           purpose: purpose.trim() || undefined,
         },
         items: selectedTasks,
