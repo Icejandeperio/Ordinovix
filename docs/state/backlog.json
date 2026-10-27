@@ -171,7 +171,7 @@
       "id": "U05",
       "phase": "P0",
       "tier": "T1",
-      "status": "in_progress",
+      "status": "done",
       "depends_on": [
         "U01",
         "U02",
@@ -194,7 +194,9 @@
         "All regression tests that passed before still pass; mock repository tests updated only where counts changed",
         "Write 'Demo ready' in the PROGRESS.md entry; continue to the next unit (no stop)"
       ],
-      "tests": []
+      "tests": [],
+      "pr": 7,
+      "evidence": "verify.mjs exit 0; tests now passing: demo-seed unit tests (2 seed days); verifier/PR #7; Demo ready. T1 no verifier; first-pass % follows from fixed return counts (about 54% to 85%); client codes DCL/MLA/SCL not added, base ids kept"
     },
     {
       "id": "U06",
