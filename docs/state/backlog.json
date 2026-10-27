@@ -424,7 +424,7 @@
       "id": "U14",
       "phase": "P2",
       "tier": "T1",
-      "status": "in_progress",
+      "status": "done",
       "depends_on": [
         "U05"
       ],
@@ -452,7 +452,9 @@
         "Task header shows 'Sep 2026' style period labels (B28)",
         "Rename the 'Bureau Vermilion — official BIR carmine' palette to a neutral name and description without BIR references (B29)"
       ],
-      "tests": []
+      "tests": [],
+      "pr": 11,
+      "evidence": "verify.mjs exit 0; tests now passing: U14(B15,B22,B23,B25,B28,B29); verifier/PR #11; verifier PASS; B25 test only red on non-Manila devices (CI is UTC); leftovers queued"
     },
     {
       "id": "U15",
