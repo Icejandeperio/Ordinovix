@@ -7,6 +7,7 @@ import type {
   Outcome,
   OutcomeCause,
   CopyForm,
+  Frequency,
   Supplier,
   Channel,
   FilingChannel,
@@ -160,4 +161,11 @@ export const VAT_STATUS_LABELS: Record<VatStatus, string> = {
   non_vat_percentage: 'Non-VAT (Percentage Tax)',
   non_vat_8pct: 'Non-VAT (8% Flat Rate)',
   unknown: 'To be verified',
+};
+
+export const FREQUENCY_LABELS: Record<Frequency, string> = {
+  monthly: 'Monthly',
+  quarterly: 'Quarterly',
+  annual: 'Annual',
+  one_off: 'One-off',
 };

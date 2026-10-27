@@ -972,3 +972,28 @@ export function useSaveBaseline() {
     },
   });
 }
+
+export function useTemplateLines(id: string) {
+  return useQuery({
+    queryKey: ['templates', 'detail', id],
+    queryFn: () => repositories.templates.get(id),
+    enabled: Boolean(id),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useMarkTemplateVerified() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      verification,
+    }: {
+      id: string;
+      verification: Parameters<typeof repositories.templates.markVerified>[1];
+    }) => repositories.templates.markVerified(id, verification),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['templates'] });
+    },
+  });
+}
