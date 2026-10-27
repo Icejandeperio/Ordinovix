@@ -1,5 +1,15 @@
 # Progress Log
 
+## 2026-10-27 U09 Uploaded files persist across reloads in IndexedDB — done
+- Changed: lib/files (IndexedDB store, spec 9.9 names, saveFile), mock upload/replace/getUrl, useFileSrc and stored-file components, fake-indexeddb 6.2.6, known-failures (B05 removed)
+- Evidence: verify.mjs exit 0; tests now passing: B05, U09(B24); PR #10
+- Notes: verifier PASS on round 2 (round 1 caught the grid download); one existing documents test retargeted to a waiting line; carries the U07 blocked record
+
+## 2026-10-27 U07 Permission policy enforced in the data layer — blocked
+- Changed: policy.ts and mock guards on branch u07-permission-policy (draft PR #9), not merged
+- Evidence: verify.mjs exit 0; tests now passing: B11 (on the branch); PR #9
+- Notes: BLOCKED after three failed verifier rounds; three narrow helper field-level holes remain; decision queued in QUEUE.md
+
 ## 2026-10-27 U06 QueryState on every data page, 403/404 views, real error page — done
 - Changed: ui/query-state, domain/errors, routes/error-page, router errorElement, 17 routes gated, typed throws in mock get, main.tsx retry, known-failures (B03, B10 removed)
 - Evidence: verify.mjs exit 0; tests now passing: B03, B10, U06(B13,B14); PR #8

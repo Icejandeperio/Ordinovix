@@ -51,11 +51,13 @@ describe('mockRepositories.documents and Pipeline (M5)', () => {
   });
 
   it('sets line status to "received" upon file upload (never "accepted")', async () => {
-    // 1. Get task with lines dynamically
+    // 1. Get a task with a line that is still waiting for its file (U09: an upload no longer forces
+    //    an accepted or under-review line back to Received, so the target must be a waiting line)
     const taskList = await mockRepositories.tasks.list();
-    const targetTaskId = taskList.items[0].task.id;
+    const targetTaskId = taskList.items.find((s) => s.task.id === 'task-vtl-2551q')!.task.id;
     const taskRes = await mockRepositories.tasks.get(targetTaskId);
-    const firstLine = taskRes.lines[0];
+    const firstLine = taskRes.lines.find((l) => l.status === 'requested' || l.status === 'not_requested')!;
+    expect(firstLine).toBeDefined();
 
     // 2. Upload document targeting this line
     const testBlob = new Blob(['fake image binary data'], { type: 'image/webp' });

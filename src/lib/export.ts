@@ -337,7 +337,9 @@ export function exportToPdf({ title, subtitle, headers, rows }: ExportData): voi
  */
 export function printDocumentFile(
   doc: DocumentFile,
-  clientMeta?: { displayName?: string; code?: string }
+  clientMeta?: { displayName?: string; code?: string },
+  /** Loadable URL for the file; stored files need one minted from IndexedDB (see useFileSrc). */
+  fileSrc: string = doc.storageKey
 ): void {
   const generatedTime = new Date().toLocaleString('en-PH', {
     timeZone: 'Asia/Manila',
@@ -508,9 +510,9 @@ export function printDocumentFile(
   <div class="doc-container">
     ${
       isImage
-        ? `<img src="${doc.storageKey}" alt="${doc.displayName}" class="doc-image" id="docImage" />`
+        ? `<img src="${fileSrc}" alt="${doc.displayName}" class="doc-image" id="docImage" />`
         : isPdf
-        ? `<iframe src="${doc.storageKey}#toolbar=0" title="${doc.displayName}" class="doc-iframe" id="docPdf"></iframe>`
+        ? `<iframe src="${fileSrc}#toolbar=0" title="${doc.displayName}" class="doc-iframe" id="docPdf"></iframe>`
         : `<div style="padding: 40px; text-align: center; color: #5F6879;">
             <p style="font-size: 14px;"><strong>${doc.displayName}</strong></p>
             <p style="font-size: 11px;">Document binary archive record.</p>

@@ -17,6 +17,7 @@ import {
 import { formatDate } from '@/lib/format';
 import { formatBytes } from '@/lib/compression';
 import type { DocumentFile, DocumentKind } from '@/domain/types';
+import { StoredImage } from '@/components/documents/stored-file';
 
 export interface FileTileProps {
   document: DocumentFile;
@@ -66,8 +67,8 @@ export function FileTile({
         className="w-16 h-16 sm:w-18 sm:h-18 rounded bg-sheet-3 border border-rule flex items-center justify-center shrink-0 overflow-hidden cursor-pointer hover:opacity-90 relative"
       >
         {isImage && doc.storageKey ? (
-          <img
-            src={doc.storageKey}
+          <StoredImage
+            storageKey={doc.storageKey}
             alt={doc.displayName}
             className="w-full h-full object-cover"
           />

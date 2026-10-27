@@ -17,10 +17,22 @@ and, for protected files, the exact change proposed.
   - Options: (A, recommended) delete the file by hand, which needs no protected-file change; (B) change the guard to allow edits to untracked files in tests/acceptance.
   - Update (U06): the same thing happened with a second untracked draft, tests/acceptance/u06-query-state.spec.ts (its last test is a placeholder that does not test a crash). The real spec is tests/acceptance/u06-error-states.spec.ts. Please delete both stray drafts; option B would stop this recurring.
 
+- [ ] 2026-10-27 U07 Permit a fourth attempt at U07 after three failed verifier rounds? (blocks U08, U11, U12 and everything after them)
+  - Context: draft PR for branch `u07-permission-policy` (tip bebd87e); verdicts in `docs/state/reviews/U07.md`. Gate passes and B11 turns green. Round 1 found client-less and stored-record write gaps, round 2 found foreign-reference and re-pointing gaps, both fixed with regression tests. Round 3 found three remaining holes, all on the helper persona and each fixable with one guard:
+    1. `documents.update` accepts foreign `lineId`, `paymentId`, `visitItemId`, `authorizationId` (run `assertSameClient` on those keys).
+    2. `tasks.update` lets a helper change `dueDate`, `dueSource`, `statusOverride`, `status` (require `assertOwner()` when the patch contains them).
+    3. `lines.update` lets a helper change `status`, `reviewedBy`, `reviewedAt`, `reviewNote`, `flagNote`, bypassing `helpersCanAccept=false` (call `assertCanReview()` when present).
+    Advisory: reference arrays in updates (`documentIds`, `evidenceDocumentIds`, `packedLineIds`), `today.queue` first-pass KPI unscoped, `baseline.get`/`pulses.list` readable by helpers.
+  - Options: (A, recommended) tell me "Decision for U07: option A" and I apply the three guards plus the advisory reference-array check, add regression tests, and re-verify; (B) accept the gaps and merge as is; (C) drop the helper field-level scope from U07 and queue it as a follow-up unit.
+  - Why blocked now: AGENTS.md says three failed attempts at the same unit mark it blocked.
+
 ## Proposals (ideas outside the backlog; not scheduled)
 
 - 2026-10-27 (from U04 review) Gate the sign-in persona chooser (`src/routes/sign-in/page.tsx`) and Settings "Reset Sample Data / Reset to Seed" with `isMockData` too; both are mock-only controls still shown when `VITE_DATA_SOURCE=api`. Best done with the auth/API unit.
 
 - 2026-10-27 (from U06 review) Error handling gaps outside the audit B13 list: Today, tasks/detail, audit, reports and clients/import have no error state; Settings gates only on `useSession` (its memberships, baseline and clients queries have none); Calendar shows the error panel above an empty grid rather than replacing it; `visits.get` has no helper scoping check (covered by U07).
+
+- 2026-10-27 (from U09 review) Flaky test, not retried to green: `src/data/mock/tasks.test.ts` "guarantees open period idempotence" takes 4.0–4.7 s against Vitest's 5 s timeout on `main` too (it failed once in a verifier gate run). Give it a longer timeout or fewer simulated-latency calls.
+- 2026-10-27 (from U09 review) `mockDevControls.reset()` leaves orphaned file blobs in IndexedDB (`ordinovix-files`); clear that store on reset.
 
 ## Decided
