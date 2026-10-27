@@ -26,6 +26,7 @@ import { formatBytes } from '@/lib/compression';
 import { printDocumentFile } from '@/lib/export';
 import { useSetLineStatus } from '@/hooks/useData';
 import type { DocumentFile, LineStatus } from '@/domain/types';
+import { useFileSrc } from '@/hooks/useFileSrc';
 
 export interface PreviewDrawerProps {
   open: boolean;
@@ -85,6 +86,7 @@ export function PreviewDrawer({
     lastDocRef.current = currentDoc;
   }
   const activeDoc = currentDoc || lastDocRef.current;
+  const activeSrc = useFileSrc(activeDoc?.storageKey);
 
   const isImage = activeDoc?.mimeType.startsWith('image/');
   const isPdf = activeDoc?.mimeType === 'application/pdf';
@@ -174,7 +176,7 @@ export function PreviewDrawer({
 
             {/* Download */}
             <a
-              href={activeDoc.storageKey}
+              href={activeSrc}
               download={activeDoc.displayName}
               className="p-1.5 text-ink-3 hover:text-ink rounded-control bg-sheet border border-rule hover:bg-sheet-3 transition-colors"
               title="Download original file"
@@ -184,7 +186,7 @@ export function PreviewDrawer({
 
             {/* Print */}
             <button
-              onClick={() => printDocumentFile(activeDoc, clientMeta)}
+              onClick={() => printDocumentFile(activeDoc, clientMeta, activeSrc)}
               className="p-1.5 text-ink-3 hover:text-ink rounded-control bg-sheet border border-rule hover:bg-sheet-3 transition-colors cursor-pointer"
               title="Print document"
             >
@@ -214,14 +216,14 @@ export function PreviewDrawer({
                 className="max-w-full max-h-full flex items-center justify-center"
               >
                 <img
-                  src={activeDoc.storageKey}
+                  src={activeSrc}
                   alt={activeDoc.displayName}
                   className="max-w-full max-h-[75vh] object-contain shadow-sm rounded-xs pointer-events-none"
                 />
               </div>
             ) : isPdf ? (
               <iframe
-                src={`${activeDoc.storageKey}#toolbar=0`}
+                src={activeSrc ? `${activeSrc}#toolbar=0` : undefined}
                 title={activeDoc.displayName}
                 className="w-full h-full border-0 rounded"
               />

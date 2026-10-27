@@ -34,6 +34,7 @@ import {
   MoreVertical,
 } from 'lucide-react';
 import { QueryState } from '@/components/ui/query-state';
+import { StoredImage, StoredFileLink } from '@/components/documents/stored-file';
 
 type TabView = 'all' | 'needs_review' | 'evidence' | 'recent';
 
@@ -342,8 +343,8 @@ export function DocumentsPage() {
                       <td className="py-2.5 px-3">
                         <div className="w-10 h-10 rounded bg-sheet-3 border border-rule overflow-hidden flex items-center justify-center shrink-0">
                           {isImage && doc.storageKey ? (
-                            <img
-                              src={doc.storageKey}
+                            <StoredImage
+                              storageKey={doc.storageKey}
                               alt={doc.displayName}
                               className="w-full h-full object-cover"
                             />
@@ -411,14 +412,14 @@ export function DocumentsPage() {
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
-                          <a
-                            href={doc.storageKey}
+                          <StoredFileLink
+                            storageKey={doc.storageKey}
                             download={doc.displayName}
                             className="p-1 rounded text-ink-3 hover:text-ink hover:bg-sheet-3 transition-colors"
                             title="Download file"
                           >
                             <Download className="w-3.5 h-3.5" />
-                          </a>
+                          </StoredFileLink>
                           <button
                             onClick={() => {
                               const reason = prompt('Specify reason for removing document:');

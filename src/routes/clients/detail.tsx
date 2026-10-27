@@ -56,6 +56,7 @@ import { formatPeso } from '@/lib/money';
 import type { Contact, Authorization, TaskKind, DueState } from '@/domain/types';
 import { authorizationState } from '@/domain/rules';
 import { QueryState } from '@/components/ui/query-state';
+import { StoredFileLink } from '@/components/documents/stored-file';
 
 type TabKey =
   | 'overview'
@@ -637,14 +638,9 @@ export function ClientDetailPage() {
                         <p className="text-[10px] text-ink-3 uppercase">{doc.kind} · {formatDate(doc.createdAt.slice(0, 10))}</p>
                       </div>
                     </div>
-                    <a
-                      href={doc.storageKey}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="p-1 text-ink-3 hover:text-stamp"
-                    >
+                    <StoredFileLink storageKey={doc.storageKey} className="p-1 text-ink-3 hover:text-stamp">
                       <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
+                    </StoredFileLink>
                   </div>
                 ))}
               </div>
