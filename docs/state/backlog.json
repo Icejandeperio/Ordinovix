@@ -261,7 +261,7 @@
         "B11"
       ],
       "pr": 9,
-      "evidence": "verify.mjs exit 0; tests now passing: B11 (on the branch); verifier/PR #9; BLOCKED after three failed verifier rounds; three narrow helper field-level holes remain; decision queued in QUEUE.md"
+      "evidence": "verify.mjs exit 0; tests now passing: B11 (on the branch); verifier/PR #9; BLOCKED: owner-authorised final attempt failed verification (4 blocking findings); no further attempt; decision queued in QUEUE.md (A, B or C)"
     },
     {
       "id": "U08",
