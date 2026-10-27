@@ -354,7 +354,7 @@
       "id": "U11",
       "phase": "P2",
       "tier": "T1",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U07"
       ],
@@ -373,7 +373,9 @@
       ],
       "tests": [
         "B08"
-      ]
+      ],
+      "pr": 16,
+      "evidence": "verify.mjs exit 0; tests now passing: B08; verifier/PR #16; verifier PASS under the run-wide rule; before/after content and other proposals queued"
     },
     {
       "id": "U12",

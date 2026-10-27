@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-27 U11 Audit log shows real activity — done
+- Changed: Audit page rendered from activity.list with spec 11.18 filters and views, lib/audit helpers, activity.list actor/action/date filters + newest first + device, useActivity hook, known-failures (B08 removed, list now empty)
+- Evidence: verify.mjs exit 0; tests now passing: B08; PR #16
+- Notes: verifier PASS under the run-wide rule; before/after content and other proposals queued
+
 ## 2026-10-27 U10 Settings saves for real — done
 - Changed: seven wired settings sections, shared SaveBar, settings/prefs/messages/holiday/deadline/visit kit hooks, mock upserts, helpers-can-accept toggle, known-failures (B06 removed)
 - Evidence: verify.mjs exit 0; tests now passing: B06; PR #15
