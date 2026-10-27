@@ -267,7 +267,7 @@
       "id": "U08",
       "phase": "P2",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U07"
       ],
@@ -286,7 +286,9 @@
         "Every write method parses input and throws VALIDATION with field errors; forms show those errors next to the fields",
         "No form rewrite to react-hook-form is required"
       ],
-      "tests": []
+      "tests": [],
+      "pr": 14,
+      "evidence": "verify.mjs exit 0; tests now passing: U08(B16); verifier/PR #14; verifier PASS under the run-wide rule; non-blocking proposals queued; mounted a missing Toaster (pre-existing bug)"
     },
     {
       "id": "U09",

@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-27 U08 Validate every write at the repository boundary — done
+- Changed: schemas.ts rewritten for spec 12, ValidationError, validate/validateReason on 52 write methods, form onError wiring, global validation toast, Toaster mounted, tests
+- Evidence: verify.mjs exit 0; tests now passing: U08(B16); PR #14
+- Notes: verifier PASS under the run-wide rule; non-blocking proposals queued; mounted a missing Toaster (pre-existing bug)
+
 ## 2026-10-27 U07 Permission policy enforced in the data layer — done
 - Changed: policy.ts, helper allowlists on every generic write, shared reference check, policy-based filters, table-driven permission tests; duplicateForNextPeriod passes tasks.create only accepted line fields; known-failures (B11 removed)
 - Evidence: verify.mjs exit 0; tests now passing: B11; PR #9

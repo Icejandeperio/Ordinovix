@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { SlideSheet } from '@/components/ui/slide-sheet';
 import type { Client, EntityType, VatStatus, SizeClass, FilingChannel, EfpsGroup, AccessHolder, Language } from '@/domain/types';
+import { fieldMessages } from '@/domain/errors';
 
 interface ClientFormSheetProps {
   open: boolean;
@@ -162,6 +163,8 @@ export function ClientFormSheet({ open, onClose, client }: ClientFormSheetProps)
         onSuccess: () => {
           onClose();
         },
+        // Show each repository validation message next to its field
+        onError: (err) => setErrors(fieldMessages(err) ?? { displayName: (err as Error).message }),
       }
     );
   };

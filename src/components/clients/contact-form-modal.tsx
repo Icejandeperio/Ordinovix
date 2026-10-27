@@ -85,6 +85,7 @@ export function ContactFormModal({ open, onClose, clientId, contact }: ContactFo
         onSuccess: () => {
           onClose();
         },
+        onError: (err) => setError((err as Error).message),
       }
     );
   };

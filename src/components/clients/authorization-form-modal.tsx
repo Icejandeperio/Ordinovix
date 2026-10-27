@@ -111,11 +111,13 @@ export function AuthorizationFormModal({
         },
         {
           onSuccess: () => onClose(),
+          onError: (err) => setError((err as Error).message),
         }
       );
     } else {
       upsertAuth.mutate(payload, {
         onSuccess: () => onClose(),
+        onError: (err) => setError((err as Error).message),
       });
     }
   };
