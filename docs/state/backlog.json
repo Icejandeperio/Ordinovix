@@ -460,7 +460,7 @@
       "id": "U15",
       "phase": "P2",
       "tier": "T1",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U00"
       ],
@@ -478,7 +478,9 @@
       ],
       "tests": [
         "B12"
-      ]
+      ],
+      "pr": 12,
+      "evidence": "verify.mjs exit 0; tests now passing: B12; verifier/PR #12; T1 no verifier; override only changes today, an existing persisted store keeps its dates"
     },
     {
       "id": "U16",
