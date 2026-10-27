@@ -730,14 +730,6 @@ function assertClient(clientId?: ID): void {
   }
   requireClientAccess(actor(), clientId);
 }
-/** A record a new row points at (task, line, payment, ...) must be reachable and belong to the same client. A reference that matches nothing is left alone: it cannot expose another client's data. */
-function assertSameClient(list: Array<{ id: ID; clientId: ID }>, id: ID | undefined, clientId: ID | undefined): void {
-  if (!id) return;
-  const row = list.find((x) => x.id === id);
-  if (!row) return;
-  assertClient(row.clientId);
-  if (clientId && row.clientId !== clientId) throw new RuleViolationError('Referenced record belongs to another client');
-}
 /** An update patch may not re-point a record: identity and parent ids stay as stored (moving to an unreachable client is FORBIDDEN first). */
 function rejectIdentityChange(patch: object, existing: object | undefined): void {
   if (!existing) return;
@@ -783,7 +775,8 @@ function assertPayment(id: ID): void {
 /** A helper reaches a visit when it is theirs or when it carries an item for one of their clients. */
 function canReachVisit(visitId: ID): boolean {
   const a = actor();
-  if (a.role === 'owner') return a.active;
+  if (!a.active) return false;
+  if (a.role === 'owner') return true;
   const { user } = getCurrentUser();
   const visit = store.visits.find((v) => v.id === visitId);
   if (!visit) return false;
@@ -845,10 +838,98 @@ function nameForDocument(
   });
 }
 
+// ---- Class-level write guards -------------------------------------------------------------------------------
+// Fields a HELPER may send to each generic create, update or upsert. The lists are the fields the screens
+// actually send; every other field is FORBIDDEN for a helper. Status, review, due-date and override fields
+// change only through setStatus, changeDue and override. The owner is not restricted by these lists.
+export const HELPER_FIELDS: Record<string, readonly string[]> = {
+  'tasks.create': ['clientId', 'templateId', 'title', 'kind', 'period', 'transactionDate', 'dueDate', 'dueSource', 'channel', 'ownerUserId', 'officeAction', 'paymentExpected', 'tags', 'notes'],
+  'tasks.update': ['ownerUserId'],
+  'lines.addAdHoc': ['label', 'required', 'copyForm', 'copies', 'suppliedBy', 'printAndBring', 'reviewNote', 'neededBy'],
+  'lines.update': [],
+  'documents.upload': ['clientId', 'taskId', 'lineId', 'visitItemId', 'paymentId', 'authorizationId', 'kind', 'source'],
+  'documents.update': [],
+  'visits.create': ['officeId', 'officeType', 'officeName', 'rdoCode', 'plannedDate', 'arriveBy', 'assigneeUserId', 'purpose'],
+  'visits.create.item': ['taskId', 'action', 'questions'],
+  'visits.update': ['plannedDate'],
+  'visits.updateItem': ['questions'],
+  'payments.save': ['id', 'clientId', 'taskId', 'amount', 'paidOn', 'channel', 'provider', 'referenceNo', 'paidBy', 'reimbursement', 'proofDocumentIds', 'note'],
+  'contacts.upsert': ['id', 'clientId', 'name', 'title', 'role', 'phoneE164', 'email', 'preferredChannel', 'language', 'isSignatory', 'notes'],
+  'authorizations.upsert': ['id', 'clientId', 'type', 'granteeUserId', 'scope', 'issuedOn', 'validUntil', 'notarized'],
+  'clients.upsert': ['id', 'displayName', 'code', 'entityType', 'rdoCode', 'registeredName', 'tinMasked', 'hasTin', 'vatStatus', 'sizeClass', 'filingChannel', 'efpsGroup', 'orusEnrolled', 'accessHolder', 'usesInvoicingSoftware', 'fiscalYearEndMonth', 'preferredLanguage'],
+  'followUps.create': ['clientId', 'taskId', 'contactId', 'channel', 'language', 'templateId', 'expectedBy', 'lineIds'],
+  'notes.save': ['id', 'entity', 'entityId', 'body', 'pinned'],
+};
+
+/** A helper may send only allowlisted fields (a key with an undefined value is not sent). */
+function assertPatch(method: string, patch: object | undefined): void {
+  if (!patch || actor().role === 'owner') return;
+  const allowed = HELPER_FIELDS[method];
+  if (!allowed) throw new ForbiddenError(`Helpers cannot use ${method}`);
+  for (const [key, value] of Object.entries(patch)) {
+    if (value !== undefined && !allowed.includes(key)) {
+      throw new ForbiddenError(`Helpers cannot set ${key} through ${method}`);
+    }
+  }
+}
+
+// Every key ending in Id or Ids names another record. Which collection it points into:
+const REFERENCE_COLLECTIONS: Record<string, () => Array<{ id: ID; clientId?: ID }>> = {
+  taskId: () => store.tasks,
+  lineId: () => store.taskLines,
+  lineIds: () => store.taskLines,
+  packedLineIds: () => store.taskLines,
+  documentId: () => store.documents,
+  documentIds: () => store.documents,
+  evidenceDocumentIds: () => store.documents,
+  proofDocumentIds: () => store.documents,
+  replacesId: () => store.documents,
+  paymentId: () => store.payments,
+  visitItemId: () => store.visitItems,
+  authorizationId: () => store.authorizations,
+  replacedById: () => store.authorizations,
+  contactId: () => store.contacts,
+  followUpId: () => store.followUps,
+  visitId: () => store.visits,
+};
+/** Keys that end in Id but do not point at client-scoped records: the record itself, people, offices, templates. */
+const NON_CLIENT_REFERENCES = new Set(['id', 'orgId', 'clientId', 'officeId', 'rdoOfficeId', 'templateId', 'taskTemplateId', 'requirementTemplateId', 'kitItemId', 'batchId']);
+const isUserReference = (key: string) => /(^|[a-z])UserIds?$/.test(key) || key === 'userId';
+
+/**
+ * Shared reference check for every create and update: each Id or Ids key must point at a record that belongs to
+ * the same client as the record being written, and one the current user can reach. A reference that matches
+ * no record is left alone. For a helper an unrecognised reference key is refused.
+ */
+function assertReferences(record: object | undefined, clientId: ID | undefined): void {
+  if (!record) return;
+  const isHelper = actor().role !== 'owner';
+  for (const [key, value] of Object.entries(record)) {
+    if (value === undefined || value === null || !/Ids?$/.test(key)) continue;
+    if (NON_CLIENT_REFERENCES.has(key) || isUserReference(key)) continue;
+    const source = REFERENCE_COLLECTIONS[key];
+    if (!source) {
+      if (isHelper) throw new ForbiddenError(`Helpers cannot set ${key}`);
+      continue;
+    }
+    const ids = Array.isArray(value) ? value : [value];
+    for (const refId of ids) {
+      const target = source().find((x) => x.id === refId);
+      if (!target) continue;
+      if (key === 'visitId') {
+        if (!canReachVisit(target.id)) throw new ForbiddenError("You don't have access to this visit");
+        continue;
+      }
+      if (target.clientId) assertClient(target.clientId);
+      if (clientId && target.clientId && target.clientId !== clientId) {
+        throw new RuleViolationError(`${key} points at a record of another client`);
+      }
+    }
+  }
+}
+
 function isClientAllowed(clientId: ID): boolean {
-  const { membership } = getCurrentUser();
-  if (membership.role === 'owner') return true;
-  return membership.clientIds.includes(clientId);
+  return canAccessClient(actor(), clientId);
 }
 
 function logActivity(
@@ -1361,6 +1442,7 @@ export const mockRepositories: Repositories = {
 
     async upsert(c) {
       await simulateLatency();
+      assertPatch('clients.upsert', c);
       if (c.id) assertClient(c.id); else assertOwner();
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
@@ -1540,6 +1622,8 @@ export const mockRepositories: Repositories = {
     },
     async upsert(c) {
       await simulateLatency();
+      assertPatch('contacts.upsert', c);
+      assertReferences(c, c.clientId ?? store.contacts.find((x) => x.id === c.id)?.clientId);
       assertRecordWrite(store.contacts, c.id, c.clientId);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
@@ -1589,6 +1673,8 @@ export const mockRepositories: Repositories = {
     },
     async upsert(a) {
       await simulateLatency();
+      assertPatch('authorizations.upsert', a);
+      assertReferences(a, a.clientId ?? store.authorizations.find((x) => x.id === a.id)?.clientId);
       assertRecordWrite(store.authorizations, a.id, a.clientId);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
@@ -1622,6 +1708,7 @@ export const mockRepositories: Repositories = {
     },
     async replace(oldId, next) {
       await simulateLatency();
+      assertPatch('authorizations.upsert', next);
       assertClient(store.authorizations.find((x) => x.id === oldId)?.clientId ?? next.clientId);
       const created = await mockRepositories.authorizations.upsert(next);
       const old = store.authorizations.find((a) => a.id === oldId);
@@ -1826,6 +1913,12 @@ export const mockRepositories: Repositories = {
 
     async create(t, lines) {
       await simulateLatency();
+      assertPatch('tasks.create', t);
+      assertReferences(t, t.clientId);
+      for (const l of lines ?? []) {
+        assertPatch('lines.addAdHoc', l);
+        assertReferences(l, t.clientId);
+      }
       assertClient(t.clientId);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
@@ -1885,6 +1978,8 @@ export const mockRepositories: Repositories = {
 
     async update(id, t) {
       await simulateLatency();
+      assertPatch('tasks.update', t);
+      assertReferences(t, store.tasks.find((x) => x.id === id)?.clientId);
       assertTask(id);
       rejectIdentityChange(t, store.tasks.find((x) => x.id === id));
       const idx = store.tasks.findIndex((item) => item.id === id);
@@ -2163,6 +2258,8 @@ export const mockRepositories: Repositories = {
 
     async addAdHoc(taskId, line) {
       await simulateLatency();
+      assertPatch('lines.addAdHoc', line);
+      assertReferences(line, store.tasks.find((x) => x.id === taskId)?.clientId);
       assertTask(taskId);
       const { user } = getCurrentUser();
       const task = store.tasks.find((t) => t.id === taskId);
@@ -2195,6 +2292,8 @@ export const mockRepositories: Repositories = {
 
     async update(id, line) {
       await simulateLatency();
+      assertPatch('lines.update', line);
+      assertReferences(line, store.taskLines.find((x) => x.id === id)?.clientId);
       assertLine(id);
       rejectIdentityChange(line, store.taskLines.find((x) => x.id === id));
       const idx = store.taskLines.findIndex((l) => l.id === id);
@@ -2248,12 +2347,9 @@ export const mockRepositories: Repositories = {
 
     async upload(meta, file, thumb, info) {
       await simulateLatency();
+      assertPatch('documents.upload', meta);
+      assertReferences(meta, meta.clientId);
       assertClient(meta.clientId);
-      assertSameClient(store.tasks, meta.taskId, meta.clientId);
-      assertSameClient(store.taskLines, meta.lineId, meta.clientId);
-      assertSameClient(store.visitItems, meta.visitItemId, meta.clientId);
-      assertSameClient(store.payments, meta.paymentId, meta.clientId);
-      assertSameClient(store.authorizations, meta.authorizationId, meta.clientId);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       const docId = generateId();
@@ -2357,6 +2453,8 @@ export const mockRepositories: Repositories = {
 
     async update(id, d) {
       await simulateLatency();
+      assertPatch('documents.update', d);
+      assertReferences(d, store.documents.find((x) => x.id === id)?.clientId);
       assertDocument(id);
       rejectIdentityChange(d, store.documents.find((x) => x.id === id));
       const doc = store.documents.find((item) => item.id === id);
@@ -2436,10 +2534,9 @@ export const mockRepositories: Repositories = {
 
     async create(f) {
       await simulateLatency();
+      assertPatch('followUps.create', f);
+      assertReferences(f, f.clientId);
       assertClient(f.clientId);
-      assertSameClient(store.tasks, f.taskId, f.clientId);
-      for (const lineId of f.lineIds ?? []) assertSameClient(store.taskLines, lineId, f.clientId);
-      assertSameClient(store.contacts, f.contactId, f.clientId);
       const { user } = getCurrentUser();
       const newFu: FollowUp = {
         id: generateId(),
@@ -2740,6 +2837,8 @@ export const mockRepositories: Repositories = {
 
     async create(v, items) {
       await simulateLatency();
+      assertPatch('visits.create', v);
+      for (const item of items ?? []) assertPatch('visits.create.item', item);
       for (const item of items ?? []) assertTask(item.taskId);
       const { user } = getCurrentUser();
       const newV: Visit = {
@@ -2794,6 +2893,7 @@ export const mockRepositories: Repositories = {
 
     async update(id, v) {
       await simulateLatency();
+      assertPatch('visits.update', v);
       assertVisit(id);
       rejectIdentityChange(v, store.visits.find((x) => x.id === id));
       const visit = store.visits.find((item) => item.id === id);
@@ -2845,6 +2945,7 @@ export const mockRepositories: Repositories = {
 
     async updateItem(itemId, i) {
       await simulateLatency();
+      assertPatch('visits.updateItem', i);
       assertVisitItem(itemId);
       rejectIdentityChange(i, store.visitItems.find((x) => x.id === itemId));
       const item = store.visitItems.find((vi) => vi.id === itemId);
@@ -3082,9 +3183,9 @@ export const mockRepositories: Repositories = {
 
     async save(p) {
       await simulateLatency();
+      assertPatch('payments.save', p);
+      assertReferences(p, p.clientId ?? store.payments.find((x) => x.id === p.id)?.clientId);
       assertRecordWrite(store.payments, p.id, p.clientId);
-      assertSameClient(store.tasks, p.taskId, p.clientId);
-      for (const docId of p.proofDocumentIds ?? []) assertSameClient(store.documents, docId, p.clientId);
       const { user } = getCurrentUser();
 
       const existing = p.id ? store.payments.find((item) => item.id === p.id) : undefined;
@@ -3175,6 +3276,7 @@ export const mockRepositories: Repositories = {
     },
     async save(n) {
       await simulateLatency();
+      assertPatch('notes.save', n);
       assertNoteTarget(n.entity || 'task', n.entityId!);
       const { user } = getCurrentUser();
       const note: Note = {

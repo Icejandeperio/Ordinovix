@@ -92,7 +92,7 @@ describe('B11 data-layer permissions', () => {
     await forbidden(R.documents.update('doc-rsp-1', { clientId: MARIA } as never));
     await forbidden(R.visits.updateItem('vitem-v1-3', { clientId: MARIA } as never));
     // Changing identity fields is refused outright
-    await expect(R.tasks.update('task-rsp-0619e', { id: MARIA_TASK } as never)).rejects.toMatchObject({ code: 'RULE_VIOLATION' });
+    await forbidden(R.tasks.update('task-rsp-0619e', { id: MARIA_TASK } as never));
     await expect(R.lines.reorder('task-rsp-0619e', [marialine])).rejects.toMatchObject({ code: 'RULE_VIOLATION' });
     // Maria's records are unchanged
     mockDevControls.setPersona('owner');
