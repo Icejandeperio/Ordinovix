@@ -236,7 +236,7 @@
       "id": "U07",
       "phase": "P2",
       "tier": "T2",
-      "status": "in_progress",
+      "status": "blocked",
       "depends_on": [
         "U02",
         "U06"
@@ -261,7 +261,7 @@
         "B11"
       ],
       "pr": 9,
-      "evidence": "verify.mjs exit 0; tests now passing: B11 (on the branch); verifier/PR #9; BLOCKED after three failed verifier rounds; three narrow helper field-level holes remain; decision queued in QUEUE.md"
+      "evidence": "verify.mjs exit 0; tests now passing: B11 (on the branch); verifier/PR #9; BLOCKED: the owner-authorised final attempt failed verification (4 blocking findings in docs/state/reviews/U07.md); per the owner's conditions no further attempt; decision queued (options A, B, C)"
     },
     {
       "id": "U08",
