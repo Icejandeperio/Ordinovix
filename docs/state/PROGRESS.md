@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-27 U07 Permission policy enforced in the data layer — done
+- Changed: policy.ts, helper allowlists on every generic write, shared reference check, policy-based filters, table-driven permission tests; duplicateForNextPeriod passes tasks.create only accepted line fields; known-failures (B11 removed)
+- Evidence: verify.mjs exit 0; tests now passing: B11; PR #9
+- Notes: owner decision C; verifier PASS under the run-wide blocking rule; accepted gaps (logResponse/recordOutcome references, stored-client checks, read paths ignoring active) owned by U20
+
 ## 2026-10-27 U07 Permission policy enforced in the data layer — blocked
 - Changed: policy.ts, helper allowlists, shared reference check, policy-based filters and table-driven tests on branch u07-permission-policy (draft PR #9), not merged
 - Evidence: verify.mjs exit 0; tests now passing: B11 (on the branch); PR #9

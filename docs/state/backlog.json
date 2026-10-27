@@ -236,7 +236,7 @@
       "id": "U07",
       "phase": "P2",
       "tier": "T2",
-      "status": "in_progress",
+      "status": "done",
       "depends_on": [
         "U02",
         "U06"
@@ -261,7 +261,7 @@
         "B11"
       ],
       "pr": 9,
-      "evidence": "verify.mjs exit 0; tests now passing: B11 (on the branch); verifier/PR #9; BLOCKED: the owner-authorised final attempt failed verification (4 blocking findings in docs/state/reviews/U07.md); per the owner's conditions no further attempt; decision queued (options A, B, C)"
+      "evidence": "verify.mjs exit 0; tests now passing: B11; verifier/PR #9; owner decision C; verifier PASS under the run-wide blocking rule; accepted gaps (logResponse/recordOutcome references, stored-client checks, read paths ignoring active) owned by U20"
     },
     {
       "id": "U08",
@@ -609,7 +609,8 @@
         "visits.recordOutcome rejects affectedLineIds and evidenceDocumentIds from another client, and any review-state change it makes on a line goes through canReviewLines",
         "payments.save checks proof documents against the stored payment's client; rejectIdentityChange covers contacts, authorizations and payments",
         "activity.list, calendar.range, search.query, today.queue and offices.get use canAccessClient or canReachVisit, so a revoked membership reaches nothing and an active helper sees only reachable visits; offices.save is owner-only",
-        "The revoked-membership test covers every read method in the repository table"
+        "The revoked-membership test covers every read method in the repository table",
+        "A helper's visit whose items all belong to unassigned clients is not shown on Today as an empty visit ('0 of 0 ready'); it is hidden or shown without readiness numbers (found in the U07 final review)"
       ],
       "tests": [
         "B11"

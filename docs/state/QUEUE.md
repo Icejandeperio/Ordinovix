@@ -14,6 +14,8 @@ and, for protected files, the exact change proposed.
 
 ## Proposals (ideas outside the backlog; not scheduled)
 
+- 2026-10-27 (from the U07 review; proposals, not blocking) (1) `memberships.list` is owner-only, so helper screens that call `useMemberships` (new-task Owner select, authorization grantee select, clients page, visits page, clients/detail) fall back to hard-coded Ana/Ben options or raw ids; a session-scoped read-only people list for helpers would be tidier. (2) Already on main, not added by U07: `tasks.archive`/`restore` and `visits.recordOutcome` set `task.status` directly, a status path outside `setStatus` (U20 criterion b covers the review-state part of recordOutcome). (3) A patch object with a getter can bypass `assertPatch`; not reachable from a screen or JSON; fix by snapshotting `{ ...patch }` once, or through the U08 zod parsing.
+
 - 2026-10-27 (from U07 review, deferred by the owner's decision) Not part of the final U07 attempt: `today.queue` `kpiStats.firstPassRate` is not scoped for a helper; `baseline.get` and `pulses.list` are readable by a helper; `notes.save` with an existing note id creates a duplicate-id note; a helper who is the assignee of a mixed visit can cancel it; a reference that matches no record is allowed (dangling references).
 
 - 2026-10-27 (from U04 review) Gate the sign-in persona chooser (`src/routes/sign-in/page.tsx`) and Settings "Reset Sample Data / Reset to Seed" with `isMockData` too; both are mock-only controls still shown when `VITE_DATA_SOURCE=api`. Best done with the auth/API unit.
