@@ -5,7 +5,7 @@
 - Evidence: verify.mjs exit 0; tests now passing: B01; verifier PASS; PR #2
 - Notes: typescript-eslint pinned 8.72.0 (8.72.1 under 7 days old); 376 lint warnings left out of scope; no UI change.
 
-$## Session 2026-10-27 (Layout Density Engine & Live Preview)
+## Session 2026-10-27 (Layout Density Engine & Live Preview)
 - Root Cause Analysis:
   - Discovered that while `ox-density` was stored in `localStorage` and `data-density` was stamped onto `document.documentElement`, there were zero CSS rules or component styles targeting `[data-density="compact"]`. Consequently, toggling between Comfortable and Compact had no effect on any row heights or spacing.
 - Implemented Section 9.10 Layout Density engine (`src/styles/base.css`):
