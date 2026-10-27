@@ -56,6 +56,7 @@ import type {
 } from '@/domain/types';
 import { generateSeedData } from './seed';
 import { buildDemoData } from './seed-demo';
+import { NotFoundError, ForbiddenError } from '@/domain/errors';
 import {
   derivedStatus,
   dueState,
@@ -1218,7 +1219,8 @@ export const mockRepositories: Repositories = {
     async get(id) {
       await simulateLatency();
       const client = store.clients.find((c) => c.id === id);
-      if (!client || !isClientAllowed(id)) throw new Error('Client not found or unauthorized');
+      if (!client || client.deletedAt) throw new NotFoundError('Client not found');
+      if (!isClientAllowed(id)) throw new ForbiddenError("You don't have access to this client");
       return { client, summary: buildClientSummary(client) };
     },
 
@@ -1643,7 +1645,8 @@ export const mockRepositories: Repositories = {
     async get(id) {
       await simulateLatency();
       const task = store.tasks.find((t) => t.id === id);
-      if (!task || !isClientAllowed(task.clientId)) throw new Error('Task not found');
+      if (!task || task.deletedAt) throw new NotFoundError('Task not found');
+      if (!isClientAllowed(task.clientId)) throw new ForbiddenError("You don't have access to this client");
       const summary = buildTaskSummary(task);
       const lines = store.taskLines.filter((l) => l.taskId === id);
       const docs = store.documents.filter((d) => d.taskId === id);
@@ -2433,7 +2436,7 @@ export const mockRepositories: Repositories = {
     async get(id) {
       await simulateLatency();
       const visit = store.visits.find((v) => v.id === id);
-      if (!visit) throw new Error('Visit not found');
+      if (!visit || visit.deletedAt) throw new NotFoundError('Visit not found');
       const office = store.offices.find((o) => o.id === visit.officeId);
       const items = store.visitItems.filter((vi) => vi.visitId === id);
 
