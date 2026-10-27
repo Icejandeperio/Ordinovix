@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-27 U10 Settings saves for real — done
+- Changed: seven wired settings sections, shared SaveBar, settings/prefs/messages/holiday/deadline/visit kit hooks, mock upserts, helpers-can-accept toggle, known-failures (B06 removed)
+- Evidence: verify.mjs exit 0; tests now passing: B06; PR #15
+- Notes: verifier PASS on round 2 (round 1: helper profile regression, fixed); Practice TIN removed; stray drafts queued
+
 ## 2026-10-27 U08 Validate every write at the repository boundary — done
 - Changed: schemas.ts rewritten for spec 12, ValidationError, validate/validateReason on 52 write methods, form onError wiring, global validation toast, Toaster mounted, tests
 - Evidence: verify.mjs exit 0; tests now passing: U08(B16); PR #14
