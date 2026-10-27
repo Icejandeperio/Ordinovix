@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   useVisit,
@@ -18,6 +18,7 @@ import {
 } from '@/domain/labels';
 import { DateField } from '@/components/inputs/date-field';
 import { ModalDialog } from '@/components/ui/modal-dialog';
+import { canFinishVisit } from '@/domain/rules';
 import { todayInManila, addDaysToDate } from '@/lib/dates';
 import { formatPeso } from '@/lib/format';
 import {
@@ -79,13 +80,9 @@ export function VisitRecordPage() {
   const [otherPeso, setOtherPeso] = useState('0');
   const [costNote, setCostNote] = useState('');
 
-  // Check if every item in visit has an outcome (hook: must run before the loading return)
-  const allRecorded = useMemo(() => {
-    return (data?.items ?? []).every((i) => {
-      const form = itemForms[i.item.id];
-      return (form && form.outcome) || i.item.outcome;
-    });
-  }, [data, itemForms]);
+  // Only SAVED outcomes count (product rule 3); a selected-but-unsaved form does not.
+  // Not memoized: the mock mutates records in place, so the query data keeps its identity after a save.
+  const allRecorded = canFinishVisit((data?.items ?? []).map((i) => i.item));
 
   if (isLoading || !data) {
     return (
@@ -371,7 +368,7 @@ export function VisitRecordPage() {
           }`}
         >
           <CheckCheck className="w-4 h-4" />
-          <span>Finish Visit ({items.filter((i) => i.item.outcome || itemForms[i.item.id]?.outcome).length}/{items.length})</span>
+          <span>Finish Visit ({items.filter((i) => i.item.outcome).length}/{items.length})</span>
         </button>
       </div>
 
@@ -379,7 +376,7 @@ export function VisitRecordPage() {
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
         {items.map(({ item, client, task }, idx) => {
           const isCurrent = idx === activeItemIndex;
-          const isDone = item.outcome || itemForms[item.id]?.outcome;
+          const isDone = Boolean(item.outcome);
 
           return (
             <button
