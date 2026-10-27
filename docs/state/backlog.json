@@ -110,7 +110,7 @@
       "id": "U03",
       "phase": "P0",
       "tier": "T1",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U00"
       ],
@@ -131,7 +131,9 @@
       ],
       "tests": [
         "B07"
-      ]
+      ],
+      "pr": 5,
+      "evidence": "verify.mjs exit 0; tests now passing: B07, U03; verifier/PR #5; T1 no verifier; mock markVerified still lacks sourceRef enforcement (U07/U08); gate run on clean worktree"
     },
     {
       "id": "U04",
