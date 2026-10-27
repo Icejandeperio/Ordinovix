@@ -430,7 +430,8 @@ export function packList(
         clientGroups[item.clientId].items.push({
           label: line.label,
           form: line.copyForm,
-          copies: line.copies || 2,
+          // Template value when the line has one, otherwise a single copy (Originals included)
+          copies: line.copies && line.copies > 0 ? line.copies : 1,
           packed: packedLineSet.has(line.id),
           refId: line.id,
         });

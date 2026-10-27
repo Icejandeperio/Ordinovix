@@ -35,4 +35,6 @@ and, for protected files, the exact change proposed.
 - 2026-10-27 (from U09 review) Flaky test, not retried to green: `src/data/mock/tasks.test.ts` "guarantees open period idempotence" takes 4.0–4.7 s against Vitest's 5 s timeout on `main` too (it failed once in a verifier gate run). Give it a longer timeout or fewer simulated-latency calls.
 - 2026-10-27 (from U09 review) `mockDevControls.reset()` leaves orphaned file blobs in IndexedDB (`ordinovix-files`); clear that store on reset.
 
+- 2026-10-27 (from U14 review) More device-time-zone leftovers beyond what audit B25 names: event times labelled `+08:00` but built from the device clock (mock `visits.start` startedAt and recordOutcome outcomeAt, `components/follow-ups/composer.tsx`, the finish-time default in `visits/record.tsx`), "generated/printed" times in `lib/export.ts` and `visits/print.tsx`, and midnight event stamps in `tasks.override`, follow-up respondedAt/resolvedAt and `line.receivedAt`. Use `nowInManila()` and `formatTime`. A B15 test that finishes a visit with empty costs is also missing.
+
 ## Decided

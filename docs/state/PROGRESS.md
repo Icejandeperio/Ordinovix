@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-27 U14 Small correctness fixes batch — done
+- Changed: dates.ts Manila formatting + nowInManila + formatDuration, packList copies, record cost fields, task header period label, palette rename, mock timestamps
+- Evidence: verify.mjs exit 0; tests now passing: U14(B15,B22,B23,B25,B28,B29); PR #11
+- Notes: verifier PASS; B25 test only red on non-Manila devices (CI is UTC); leftovers queued
+
 ## 2026-10-27 U09 Uploaded files persist across reloads in IndexedDB — done
 - Changed: lib/files (IndexedDB store, spec 9.9 names, saveFile), mock upload/replace/getUrl, useFileSrc and stored-file components, fake-indexeddb 6.2.6, known-failures (B05 removed)
 - Evidence: verify.mjs exit 0; tests now passing: B05, U09(B24); PR #10

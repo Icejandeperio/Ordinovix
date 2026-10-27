@@ -20,9 +20,10 @@ import {
   defaultDue,
   templateApplies,
   canFinishVisit,
+  packList,
   canCompleteWithEvidence,
 } from './rules';
-import type { Task, TaskLine, Authorization, FollowUp, Holiday, TaskTemplate, Client, VisitItem } from './types';
+import type { Task, TaskLine, Authorization, FollowUp, Holiday, TaskTemplate, Client, VisitItem, Visit, CopyForm } from './types';
 
 describe('domain/rules', () => {
   describe('canTransitionLine', () => {
@@ -389,5 +390,22 @@ describe('domain/rules', () => {
       expect(canCompleteWithEvidence(false, '   ok       ')).toBe(false);
       expect(canCompleteWithEvidence(false, 'Client collected the stamped copy himself')).toBe(true);
     });
+  });
+});
+
+describe('packList copies (B22)', () => {
+  const line = (id: string, copyForm: CopyForm, copies?: number): TaskLine => ({
+    id, orgId: 'o', taskId: 't', clientId: 'c', label: id, required: true, copyForm, copies, suppliedBy: 'client',
+    printAndBring: true, status: 'accepted', sortOrder: 1, lateDiscovered: false, documentIds: [],
+    createdAt: '', createdBy: '', updatedAt: '', updatedBy: '', version: 1,
+  });
+
+  it('defaults to 1 copy when the line has none, including for Originals, and keeps the template value otherwise', () => {
+    const visit = { packedLineIds: [], packedKitItemIds: [] } as unknown as Visit;
+    const items = [{ taskId: 't', clientId: 'c' }] as unknown as VisitItem[];
+    const lines = [line('orig', 'original'), line('photo-unset', 'photocopy'), line('photo-3', 'photocopy', 3), line('cert-2', 'certified_true_copy', 2)];
+    const pack = packList(visit, items, { t: lines }, [], { c: { id: 'c', displayName: 'Client' } as never });
+    const copies = Object.fromEntries(pack.clientPacks[0].items.map((i) => [i.label, i.copies]));
+    expect(copies).toEqual({ orig: 1, 'photo-unset': 1, 'photo-3': 3, 'cert-2': 2 });
   });
 });
