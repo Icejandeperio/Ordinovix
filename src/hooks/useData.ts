@@ -997,3 +997,104 @@ export function useMarkTemplateVerified() {
     },
   });
 }
+
+// ---- Settings ----
+
+export function useSaveSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (s: Parameters<typeof repositories.settings.save>[0]) => repositories.settings.save(s),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['session'] });
+    },
+  });
+}
+
+export function useSavePrefs() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (p: Parameters<typeof repositories.prefs.save>[0]) => repositories.prefs.save(p),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['session'] });
+    },
+  });
+}
+
+export function useSaveMessageTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (m: Parameters<typeof repositories.messages.save>[0]) => repositories.messages.save(m),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['messageTemplates'] });
+    },
+  });
+}
+
+export function useHolidays(year: number) {
+  return useQuery({
+    queryKey: ['holidays', year],
+    queryFn: () => repositories.holidays.list(year),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useSaveHoliday() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (h: Parameters<typeof repositories.holidays.save>[0]) => repositories.holidays.save(h),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['holidays'] });
+      qc.invalidateQueries({ queryKey: ['calendar'] });
+    },
+  });
+}
+
+export function useRemoveHoliday() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => repositories.holidays.remove(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['holidays'] });
+      qc.invalidateQueries({ queryKey: ['calendar'] });
+    },
+  });
+}
+
+export function useDeadlineMoves() {
+  return useQuery({
+    queryKey: ['deadlineMoves'],
+    queryFn: () => repositories.deadlineMoves.list(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useRemoveDeadlineMove() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => repositories.deadlineMoves.remove(id, reason),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['deadlineMoves'] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+}
+
+export function useVisitKit() {
+  return useQuery({
+    queryKey: ['visitKit'],
+    queryFn: () => repositories.visitKit.list(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useSaveVisitKitItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (i: Parameters<typeof repositories.visitKit.save>[0]) => repositories.visitKit.save(i),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['visitKit'] });
+      qc.invalidateQueries({ queryKey: ['visits'] });
+      qc.invalidateQueries({ queryKey: ['visit'] });
+    },
+  });
+}

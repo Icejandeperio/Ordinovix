@@ -967,6 +967,24 @@ function assertReferences(record: object | undefined, clientId: ID | undefined):
   }
 }
 
+/** Save-or-update by id: an existing row keeps its other fields and changes only what was sent; a new row is appended. */
+function upsertRow<T extends { id: ID; version: number; updatedAt: string; updatedBy: string }>(
+  list: T[],
+  created: T,
+  patch: Partial<T>,
+  userId: ID,
+): T {
+  const idx = patch.id ? list.findIndex((x) => x.id === patch.id) : -1;
+  if (idx < 0) {
+    list.push(created);
+    return created;
+  }
+  const old = list[idx];
+  const sent = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)) as Partial<T>;
+  list[idx] = { ...old, ...sent, id: old.id, version: old.version + 1, updatedAt: nowInManila(), updatedBy: userId };
+  return list[idx];
+}
+
 function isClientAllowed(clientId: ID): boolean {
   return canAccessClient(actor(), clientId);
 }
@@ -1899,9 +1917,9 @@ export const mockRepositories: Repositories = {
         updatedBy: 'user',
         version: 1,
       };
-      store.holidays.push(newH);
+      const saved = upsertRow(store.holidays, newH, h, getCurrentUser().user.id);
       saveStore();
-      return newH;
+      return saved;
     },
     async remove(id) {
       await simulateLatency();
@@ -2775,9 +2793,9 @@ export const mockRepositories: Repositories = {
         updatedBy: user.id,
         version: 1,
       };
-      store.messageTemplates.push(tmpl);
+      const saved = upsertRow(store.messageTemplates, tmpl, m, user.id);
       saveStore();
-      return tmpl;
+      return saved;
     },
   },
 
@@ -3247,9 +3265,9 @@ export const mockRepositories: Repositories = {
         updatedBy: 'user',
         version: 1,
       };
-      store.visitKit.push(item);
+      const saved = upsertRow(store.visitKit, item, i, getCurrentUser().user.id);
       saveStore();
-      return item;
+      return saved;
     },
   },
 
