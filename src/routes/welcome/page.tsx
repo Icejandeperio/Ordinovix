@@ -17,6 +17,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { DateField } from '@/components/inputs/date-field';
+import { useTemplates } from '@/hooks/useData';
+import { FREQUENCY_LABELS } from '@/domain/labels';
 
 export function WelcomePage() {
   const navigate = useNavigate();
@@ -34,13 +36,10 @@ export function WelcomePage() {
   const [clientChoice, setClientChoice] = useState<'import' | 'manual' | 'later'>('later');
 
   // Step 3: Task types
-  const [selectedTemplates, setSelectedTemplates] = useState<Record<string, boolean>>({
-    '1601-EQ': true,
-    '0619-E': true,
-    '1702-Q': true,
-    '2551-Q': true,
-    'BOOK-STAMP': true,
-  });
+  const { data: templates, isLoading: templatesLoading, isError: templatesError, refetch: refetchTemplates } =
+    useTemplates({ active: true });
+  // Unchecked templates are the exception; everything the repository lists starts selected
+  const [deselectedTemplates, setDeselectedTemplates] = useState<Record<string, boolean>>({});
 
   // Step 4: Invite helper
   const [helperEmail, setHelperEmail] = useState('');
@@ -70,8 +69,8 @@ export function WelcomePage() {
     navigate('/', { state: { toast: 'Setup saved. You can change any of this in Settings.' } });
   };
 
-  const toggleTemplate = (code: string) => {
-    setSelectedTemplates((prev) => ({ ...prev, [code]: !prev[code] }));
+  const toggleTemplate = (id: string) => {
+    setDeselectedTemplates((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   return (
@@ -284,16 +283,31 @@ export function WelcomePage() {
               </div>
 
               <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                {[
-                  { code: '1601-EQ', name: 'Quarterly Withholding Tax (Creditable)', freq: 'Quarterly' },
-                  { code: '0619-E', name: 'Monthly Remittance Form (Creditable Withholding)', freq: 'Monthly' },
-                  { code: '1702-Q', name: 'Quarterly Corporate Income Tax Return', freq: 'Quarterly' },
-                  { code: '2551-Q', name: 'Quarterly Percentage Tax Return', freq: 'Quarterly' },
-                  { code: 'BOOK-STAMP', name: 'Annual Books of Accounts Inscription & Stamping', freq: 'Annual' },
-                ].map((tpl) => (
+                {templatesLoading ? (
+                  <div className="space-y-2 animate-pulse" aria-busy="true">
+                    <div className="h-14 bg-sheet-3 rounded-lg" />
+                    <div className="h-14 bg-sheet-3 rounded-lg" />
+                  </div>
+                ) : templatesError ? (
+                  <div className="p-3 rounded-lg border border-[var(--critical-bd)] bg-[var(--critical-bg)] text-xs text-[var(--critical-fg)] flex items-center justify-between gap-3">
+                    <span>Could not load templates.</span>
+                    <button
+                      type="button"
+                      onClick={() => refetchTemplates()}
+                      className="px-2.5 py-1 rounded border border-[var(--critical-bd)] font-semibold hover:bg-[var(--sheet)]"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : !templates || templates.length === 0 ? (
+                  <div className="p-3 rounded-lg border border-dashed border-[var(--rule)] text-xs text-[var(--ink-3)]">
+                    No obligation templates yet.
+                  </div>
+                ) : (
+                  templates.map((tpl) => (
                   <div
-                    key={tpl.code}
-                    onClick={() => toggleTemplate(tpl.code)}
+                    key={tpl.id}
+                    onClick={() => toggleTemplate(tpl.id)}
                     className="p-3 rounded-lg border border-[var(--rule)] bg-[var(--sheet)] flex items-center justify-between cursor-pointer hover:border-[var(--rule-strong)]"
                   >
                     <div>
@@ -303,17 +317,21 @@ export function WelcomePage() {
                         </span>
                         <span className="text-xs font-semibold text-[var(--ink)]">{tpl.name}</span>
                       </div>
-                      <span className="text-[11px] text-[var(--ink-3)] block mt-0.5">{tpl.freq} cycle</span>
+                      <span className="text-[11px] text-[var(--ink-3)] block mt-0.5">
+                        {FREQUENCY_LABELS[tpl.frequency]} cycle · {tpl.verified ? 'Verified' : 'Unverified'}
+                      </span>
                     </div>
 
                     <input
                       type="checkbox"
-                      checked={Boolean(selectedTemplates[tpl.code])}
+                      checked={!deselectedTemplates[tpl.id]}
                       onChange={() => {}}
+                      aria-label={`Include ${tpl.code}`}
                       className="w-4 h-4 accent-[var(--stamp)] rounded cursor-pointer"
                     />
                   </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           )}
