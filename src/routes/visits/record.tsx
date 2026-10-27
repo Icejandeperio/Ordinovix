@@ -76,9 +76,10 @@ export function VisitRecordPage() {
   const [finishedTime, setFinishedTime] = useState(
     new Date().toTimeString().slice(0, 5)
   );
-  const [transportPeso, setTransportPeso] = useState('150');
-  const [parkingPeso, setParkingPeso] = useState('60');
-  const [otherPeso, setOtherPeso] = useState('0');
+  // Costs start empty: a pre-filled amount would be saved as a real cost if she never clears it (B15)
+  const [transportPeso, setTransportPeso] = useState('');
+  const [parkingPeso, setParkingPeso] = useState('');
+  const [otherPeso, setOtherPeso] = useState('');
   const [costNote, setCostNote] = useState('');
 
   // Only SAVED outcomes count (product rule 3); a selected-but-unsaved form does not.
@@ -737,6 +738,7 @@ export function VisitRecordPage() {
                     <input
                       type="number"
                       value={transportPeso}
+                      placeholder="0"
                       onChange={(e) => setTransportPeso(e.target.value)}
                       className="w-full bg-sheet border border-rule rounded-control px-2 py-1.5 text-xs text-ink"
                     />
@@ -746,6 +748,7 @@ export function VisitRecordPage() {
                     <input
                       type="number"
                       value={parkingPeso}
+                      placeholder="0"
                       onChange={(e) => setParkingPeso(e.target.value)}
                       className="w-full bg-sheet border border-rule rounded-control px-2 py-1.5 text-xs text-ink"
                     />
@@ -755,6 +758,7 @@ export function VisitRecordPage() {
                     <input
                       type="number"
                       value={otherPeso}
+                      placeholder="0"
                       onChange={(e) => setOtherPeso(e.target.value)}
                       className="w-full bg-sheet border border-rule rounded-control px-2 py-1.5 text-xs text-ink"
                     />
