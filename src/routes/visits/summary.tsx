@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useVisit } from '@/hooks/useData';
 import { formatDate, formatPeso } from '@/lib/format';
+import { formatDuration } from '@/lib/dates';
 import { ReviewStamp } from '@/components/ui/stamp';
 import { OUTCOME_META, OUTCOME_CAUSE_META } from '@/domain/labels';
 import {
@@ -27,17 +28,8 @@ export function VisitSummaryPage() {
   const finishedAt = data?.visit.finishedAt;
   const allItems = data?.items;
 
-  // Compute duration (hooks run before the loading return)
-  const durationText = useMemo(() => {
-    if (!startedAt || !finishedAt) return '1 h 30 min';
-    const start = new Date(startedAt).getTime();
-    const end = new Date(finishedAt).getTime();
-    const diffMinutes = Math.max(1, Math.round((end - start) / (1000 * 60)));
-    const hours = Math.floor(diffMinutes / 60);
-    const mins = diffMinutes % 60;
-    if (hours === 0) return `${mins} min`;
-    return `${hours} h ${mins} min`;
-  }, [startedAt, finishedAt]);
+  // 'Not recorded' when the trip has no start or finish time (hooks run before the loading return)
+  const durationText = useMemo(() => formatDuration(startedAt, finishedAt), [startedAt, finishedAt]);
 
   // Compute repeat trips analysis
   const repeatAnalysis = useMemo(() => {

@@ -1,4 +1,5 @@
 import { format, parseISO, differenceInCalendarDays, addDays, isSameYear } from 'date-fns';
+import { tz } from '@date-fns/tz';
 
 let devTodayOverride: string | null = null;
 
@@ -85,6 +86,29 @@ export function formatRelative(dateStr: string, today: string = todayInManila())
   return formatDate(dateStr, today);
 }
 
+/** Times are always shown in Asia/Manila, whatever the device time zone is. */
+const MANILA = tz('Asia/Manila');
+
+/**
+ * The current moment as an ISO timestamp with the Manila offset: today's date (or the dev-menu date) plus the
+ * real Manila clock time. Use it for event times; never write a calendar date with a midnight time.
+ */
+export function nowInManila(): string {
+  return `${todayInManila()}T${format(new Date(), 'HH:mm:ss', { in: MANILA })}+08:00`;
+}
+
+/** Length of a visit as '1 h 30 min', or 'Not recorded' when the start or finish time is missing. */
+export function formatDuration(startedAt?: string | null, finishedAt?: string | null): string {
+  if (!startedAt || !finishedAt) return 'Not recorded';
+  const start = new Date(startedAt).getTime();
+  const end = new Date(finishedAt).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end)) return 'Not recorded';
+  const diffMinutes = Math.max(1, Math.round((end - start) / (1000 * 60)));
+  const hours = Math.floor(diffMinutes / 60);
+  const mins = diffMinutes % 60;
+  return hours === 0 ? `${mins} min` : `${hours} h ${mins} min`;
+}
+
 /**
  * Formats an ISO datetime string with offset to '3:12 PM'.
  */
@@ -92,7 +116,7 @@ export function formatTime(isoDateTime?: string | null): string {
   if (!isoDateTime) return '—';
   try {
     const date = parseISO(isoDateTime);
-    return format(date, 'h:mm a');
+    return format(date, 'h:mm a', { in: MANILA });
   } catch {
     return isoDateTime;
   }
@@ -105,7 +129,7 @@ export function formatDateTime(isoDateTime?: string | null): string {
   if (!isoDateTime) return '—';
   try {
     const date = parseISO(isoDateTime);
-    return format(date, 'MMM d, h:mm a');
+    return format(date, 'MMM d, h:mm a', { in: MANILA });
   } catch {
     return isoDateTime;
   }

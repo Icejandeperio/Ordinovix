@@ -84,7 +84,7 @@ import {
   countLateDiscoveredBlockers,
   calculateClientResponseDays,
 } from '@/domain/metrics';
-import { todayInManila, setDevToday, getDevToday, addDaysToDate } from '@/lib/dates';
+import { todayInManila, setDevToday, getDevToday, addDaysToDate, nowInManila } from '@/lib/dates';
 import { generateId } from '@/lib/ids';
 import { FILE_KEY_PREFIX, documentDisplayName, getFileUrl, isStoredFileKey, putFile } from '@/lib/files';
 
@@ -753,7 +753,7 @@ function logActivity(
   const event: ActivityEvent = {
     id: generateId(),
     orgId: store.org.id,
-    at: `${todayInManila()}T${new Date().toTimeString().slice(0, 8)}+08:00`,
+    at: nowInManila(),
     actorId: user.id,
     entity,
     entityId,
@@ -1990,7 +1990,7 @@ export const mockRepositories: Repositories = {
       }
 
       line.status = to;
-      const now = todayInManila() + 'T00:00:00+08:00';
+      const now = nowInManila();
 
       if (to === 'accepted') {
         line.reviewedBy = user.id;
