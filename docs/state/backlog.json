@@ -381,7 +381,7 @@
       "id": "U12",
       "phase": "P2",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U05",
         "U07"
@@ -403,7 +403,9 @@
         "Helper sees only assigned clients' numbers",
         "Charts keep their current look; one y-axis per chart; table view and CSV per chart"
       ],
-      "tests": []
+      "tests": [],
+      "pr": 17,
+      "evidence": "verify.mjs exit 0; tests now passing: B20, U12 acceptance (8), metrics hand-count tests, mock filter tests; verifier/PR #17; Verifier PASS under the run-wide rule; flake and other advisories queued in QUEUE.md Proposals; no hard-coded series remain."
     },
     {
       "id": "U13",

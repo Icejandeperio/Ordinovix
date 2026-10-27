@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-27 U12 Insights computed from data with filters and helper scoping — done
+- Changed: metrics.ts (+tests), types.ts, mock insights.get, Insights page and heat calendar, useMemberships(enabled)
+- Evidence: verify.mjs exit 0; tests now passing: B20, U12 acceptance (8), metrics hand-count tests, mock filter tests; PR #17
+- Notes: Verifier PASS under the run-wide rule; flake and other advisories queued in QUEUE.md Proposals; no hard-coded series remain.
+
 ## 2026-10-27 U11 Audit log shows real activity — done
 - Changed: Audit page rendered from activity.list with spec 11.18 filters and views, lib/audit helpers, activity.list actor/action/date filters + newest first + device, useActivity hook, known-failures (B08 removed, list now empty)
 - Evidence: verify.mjs exit 0; tests now passing: B08; PR #16
