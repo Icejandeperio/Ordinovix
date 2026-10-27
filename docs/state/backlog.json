@@ -13,7 +13,7 @@
       "id": "U00",
       "phase": "P0",
       "tier": "T2",
-      "status": "pending",
+      "status": "in_progress",
       "depends_on": [],
       "title": "Quality gate tooling + fix the Rules-of-Hooks crash",
       "bugs": [
