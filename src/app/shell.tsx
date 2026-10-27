@@ -36,6 +36,8 @@ import { DevMenu } from './dev-menu';
 import { isMockData } from '@/lib/data-source';
 import { CommandPalette } from '@/components/command-palette';
 import { NotificationsPopover } from '@/components/notifications-popover';
+import { SyncIndicator } from '@/components/sync-indicator';
+import { UpdateBanner } from './update-banner';
 import { useIsCenterModalOpen } from '@/lib/modal-store';
 import { calculateAutoscrollVelocity, isElementScrollable } from '@/lib/sidebar-autoscroll';
 
@@ -324,6 +326,8 @@ export function AppShell() {
         </div>
       )}
 
+      <UpdateBanner />
+
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Desktop Sidebar (>=1024px) / Tablet Rail (640px-1023px) */}
         <aside
@@ -531,6 +535,8 @@ export function AppShell() {
               >
                 <Search className="w-4 h-4" />
               </button>
+
+              <SyncIndicator />
 
               {/* Privacy Mode Toggle (Section 19.5) */}
               <button
