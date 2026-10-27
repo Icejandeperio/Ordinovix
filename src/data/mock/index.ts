@@ -68,6 +68,8 @@ import {
   authorizationState,
   canTransitionLine,
   canSetStatus,
+  canFinishVisit,
+  RuleViolationError,
 } from '@/domain/rules';
 import {
   calculateFirstPassRate,
@@ -2689,6 +2691,9 @@ export const mockRepositories: Repositories = {
       await simulateLatency();
       const v = store.visits.find((item) => item.id === id);
       if (!v) throw new Error('Visit not found');
+      if (!canFinishVisit(store.visitItems.filter((i) => i.visitId === id))) {
+        throw new RuleViolationError('Every item needs a saved outcome before the visit can be finished');
+      }
       v.status = 'done';
       v.finishedAt = f.finishedAt;
       v.costs = f.costs;

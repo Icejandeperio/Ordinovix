@@ -19,6 +19,7 @@ import {
   periodRange,
   defaultDue,
   templateApplies,
+  canFinishVisit,
 } from './rules';
 import type { Task, TaskLine, Authorization, FollowUp, Holiday, TaskTemplate, Client, VisitItem } from './types';
 
@@ -307,6 +308,19 @@ describe('domain/rules', () => {
       const range = periodRange('2026-09');
       expect(range.start).toBe('2026-09-01');
       expect(range.end).toBe('2026-09-30');
+    });
+  });
+
+  describe('canFinishVisit (product rule 3)', () => {
+    const item = (id: string, outcome?: VisitItem['outcome']) => ({ id, outcome }) as Pick<VisitItem, 'id' | 'outcome'>;
+
+    it('is true only when every item has a saved outcome', () => {
+      expect(canFinishVisit([item('a', 'completed'), item('b', 'not_accepted')])).toBe(true);
+    });
+
+    it('is false when any item has no saved outcome', () => {
+      expect(canFinishVisit([item('a', 'completed'), item('b')])).toBe(false);
+      expect(canFinishVisit([item('a')])).toBe(false);
     });
   });
 });

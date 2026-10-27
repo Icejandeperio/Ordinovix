@@ -30,6 +30,24 @@ import type {
 import { todayInManila, daysFromToday, addDaysToDate } from '@/lib/dates';
 
 /**
+ * Typed error for a broken product rule. Repositories throw it; the API maps it to the same code.
+ */
+export class RuleViolationError extends Error {
+  readonly code = 'RULE_VIOLATION' as const;
+  constructor(message: string) {
+    super(message);
+    this.name = 'RuleViolationError';
+  }
+}
+
+/**
+ * A visit can be finished only when every item has a saved outcome (product rule 3).
+ */
+export function canFinishVisit(items: ReadonlyArray<Pick<VisitItem, 'outcome'>>): boolean {
+  return items.every((i) => Boolean(i.outcome));
+}
+
+/**
  * 16.2 Line transitions
  */
 export function canTransitionLine(from: LineStatus, to: LineStatus): boolean {

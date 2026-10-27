@@ -47,7 +47,7 @@
       "id": "U01",
       "phase": "P0",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U00"
       ],
@@ -69,7 +69,9 @@
       ],
       "tests": [
         "B02"
-      ]
+      ],
+      "pr": 3,
+      "evidence": "verify.mjs exit 0; tests now passing: B02, U01; verifier/PR #3; verifier PASS; hooks file outside listed scope (cache key fix) noted in PR; canFinishVisit([]) is true by assumption"
     },
     {
       "id": "U02",

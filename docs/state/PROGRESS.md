@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-27 U01 Finish visit requires saved outcomes — done
+- Changed: rules.ts canFinishVisit + RuleViolationError, mock visits.finish guard, record.tsx saved-only counter, useRecordVisitOutcome invalidates visit, known-failures (B02 removed)
+- Evidence: verify.mjs exit 0; tests now passing: B02, U01; PR #3
+- Notes: verifier PASS; hooks file outside listed scope (cache key fix) noted in PR; canFinishVisit([]) is true by assumption
+
 ## 2026-10-27 U00 Quality gate tooling + Rules-of-Hooks fix — done
 - Changed: gate devDependencies (exact-pinned), package.json scripts, vite.config.ts vitest include, record.tsx and summary.tsx hook order, known-failures.json (B01 removed)
 - Evidence: verify.mjs exit 0; tests now passing: B01; verifier PASS; PR #2

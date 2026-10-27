@@ -860,6 +860,7 @@ export function useRecordVisitOutcome() {
     }) => repositories.visits.recordOutcome(itemId, outcome),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['visits'] });
+      qc.invalidateQueries({ queryKey: ['visit'] });
       qc.invalidateQueries({ queryKey: ['tasks'] });
       qc.invalidateQueries({ queryKey: ['today'] });
     },
