@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from 'motion/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useNotifications, useMarkNotificationsRead } from '@/hooks/useData';
 import { formatTime, formatRelative } from '@/lib/format';
@@ -63,7 +63,7 @@ export function NotificationsPopover({ open, onClose }: NotificationsPopoverProp
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
+        <m.div
           ref={popoverRef}
           initial={{ opacity: 0, scale: 0.95, y: -6 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -154,7 +154,7 @@ export function NotificationsPopover({ open, onClose }: NotificationsPopoverProp
           See all notifications &rarr;
         </Link>
       </div>
-        </motion.div>
+        </m.div>
       )}
     </AnimatePresence>
   );

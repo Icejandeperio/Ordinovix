@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
+import { m, AnimatePresence, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/cn';
 import { centerModalStore } from '@/lib/modal-store';
 
@@ -79,7 +79,7 @@ export function ModalDialog({
           aria-label={ariaLabel}
         >
           {/* Backdrop with gradual fade and gradual backdrop blur */}
-          <motion.div
+          <m.div
             key="modal-backdrop"
             initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
             animate={{ opacity: 1, backdropFilter: 'blur(6px)' }}
@@ -94,7 +94,7 @@ export function ModalDialog({
           />
 
           {/* Smooth scaling and fading modal dialog panel */}
-          <motion.div
+          <m.div
             key="modal-panel"
             initial={{
               opacity: shouldReduceMotion ? 1 : 0,
@@ -125,7 +125,7 @@ export function ModalDialog({
             }}
           >
             {children}
-          </motion.div>
+          </m.div>
         </div>
       )}
     </AnimatePresence>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { cn } from '@/lib/cn';
 
 export interface ReviewStampProps {
@@ -84,7 +84,7 @@ export function ReviewStamp({
         </filter>
       </svg>
 
-      <motion.div
+      <m.div
         initial={
           animate
             ? { opacity: 0, scale: 1.35, rotate: -9, filter: 'blur(2px)' }
@@ -112,7 +112,7 @@ export function ReviewStamp({
         )}
       >
         {content}
-      </motion.div>
+      </m.div>
     </div>
   );
 }

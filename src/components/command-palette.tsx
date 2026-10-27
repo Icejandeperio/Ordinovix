@@ -2,7 +2,7 @@ import { isMockData } from '@/lib/data-source';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Command } from 'cmdk';
-import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
+import { m, AnimatePresence, useReducedMotion } from 'motion/react';
 import { useClients, useTasks } from '@/hooks/useData';
 import { useTheme, PALETTES } from '@/app/theme';
 import { devControls } from '@/data';
@@ -122,7 +122,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 p-4 overflow-hidden">
-          <motion.div
+          <m.div
             key="cmd-backdrop"
             initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
             animate={{ opacity: 1, backdropFilter: 'blur(6px)' }}
@@ -136,7 +136,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             aria-hidden="true"
           />
 
-          <motion.div
+          <m.div
             key="cmd-panel"
             initial={{
               opacity: shouldReduceMotion ? 1 : 0,
@@ -584,7 +584,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             </span>
           </div>
         </Command>
-      </motion.div>
+      </m.div>
     </div>
       )}
     </AnimatePresence>

@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { toast, Toaster } from 'sonner';
+import { LazyMotion } from 'motion/react';
 import { ThemeProvider } from '@/app/theme';
 import { router } from '@/app/router';
 
@@ -38,11 +39,13 @@ if (!rootElement) {
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <RouterProvider router={router} />
-        {/* Host for every toast.* call in the app: without it saves, errors and undo prompts are invisible */}
-        <Toaster position="top-center" closeButton />
-      </ThemeProvider>
+      <LazyMotion features={() => import('@/lib/motion-features').then((mod) => mod.default)}>
+        <ThemeProvider>
+          <RouterProvider router={router} />
+          {/* Host for every toast.* call in the app: without it saves, errors and undo prompts are invisible */}
+          <Toaster position="top-center" closeButton />
+        </ThemeProvider>
+      </LazyMotion>
     </QueryClientProvider>
   </React.StrictMode>
 );

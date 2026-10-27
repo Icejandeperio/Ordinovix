@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from 'motion/react';
 import { Download, ChevronDown, FileSpreadsheet, FileText, Printer, Check } from 'lucide-react';
 import { exportData, type ExportData } from '@/lib/export';
 
@@ -73,7 +73,7 @@ export function ExportMenu({
 
       <AnimatePresence>
         {open && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0, scale: 0.95, y: -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -4 }}
@@ -137,7 +137,7 @@ export function ExportMenu({
             </div>
             {lastExported === 'csv' && <Check className="w-3.5 h-3.5 text-[var(--good-solid)]" />}
           </button>
-        </motion.div>
+        </m.div>
       )}
     </AnimatePresence>
     </div>
