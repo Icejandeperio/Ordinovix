@@ -728,6 +728,25 @@ function assertClient(clientId?: ID): void {
   }
   requireClientAccess(actor(), clientId);
 }
+/** A record a new row points at (task, line, payment, ...) must be reachable and belong to the same client. A reference that matches nothing is left alone: it cannot expose another client's data. */
+function assertSameClient(list: Array<{ id: ID; clientId: ID }>, id: ID | undefined, clientId: ID | undefined): void {
+  if (!id) return;
+  const row = list.find((x) => x.id === id);
+  if (!row) return;
+  assertClient(row.clientId);
+  if (clientId && row.clientId !== clientId) throw new RuleViolationError('Referenced record belongs to another client');
+}
+/** An update patch may not re-point a record: identity and parent ids stay as stored (moving to an unreachable client is FORBIDDEN first). */
+function rejectIdentityChange(patch: object, existing: object | undefined): void {
+  if (!existing) return;
+  for (const key of ['id', 'orgId', 'clientId', 'taskId', 'visitId'] as const) {
+    if (!(key in patch)) continue;
+    const next = (patch as Record<string, unknown>)[key];
+    if (next === (existing as Record<string, unknown>)[key]) continue;
+    if (key === 'clientId' && typeof next === 'string') assertClient(next);
+    throw new RuleViolationError(`${key} cannot be changed`);
+  }
+}
 /** Writes to a stored record check the record's own client as well as the client the caller supplied. */
 function assertRecordWrite(list: Array<{ id: ID; clientId: ID }>, id: ID | undefined, suppliedClientId?: ID): void {
   const stored = id ? list.find((x) => x.id === id) : undefined;
@@ -1844,8 +1863,7 @@ export const mockRepositories: Repositories = {
     async update(id, t) {
       await simulateLatency();
       assertTask(id);
-      const movedTo = (t as { clientId?: ID }).clientId;
-      if (movedTo) assertClient(movedTo);
+      rejectIdentityChange(t, store.tasks.find((x) => x.id === id));
       const idx = store.tasks.findIndex((item) => item.id === id);
       if (idx === -1) throw new Error('Task not found');
       store.tasks[idx] = { ...store.tasks[idx], ...t, version: store.tasks[idx].version + 1 };
@@ -2155,6 +2173,7 @@ export const mockRepositories: Repositories = {
     async update(id, line) {
       await simulateLatency();
       assertLine(id);
+      rejectIdentityChange(line, store.taskLines.find((x) => x.id === id));
       const idx = store.taskLines.findIndex((l) => l.id === id);
       if (idx === -1) throw new Error('Line not found');
       store.taskLines[idx] = { ...store.taskLines[idx], ...line, version: store.taskLines[idx].version + 1 };
@@ -2165,6 +2184,10 @@ export const mockRepositories: Repositories = {
     async reorder(taskId, orderedIds) {
       await simulateLatency();
       assertTask(taskId);
+      for (const lid of orderedIds) {
+        const l = store.taskLines.find((x) => x.id === lid);
+        if (!l || l.taskId !== taskId) throw new RuleViolationError('Line does not belong to this task');
+      }
       orderedIds.forEach((id, index) => {
         const line = store.taskLines.find((l) => l.id === id && l.taskId === taskId);
         if (line) line.sortOrder = index + 1;
@@ -2203,6 +2226,11 @@ export const mockRepositories: Repositories = {
     async upload(meta, file, thumb, info) {
       await simulateLatency();
       assertClient(meta.clientId);
+      assertSameClient(store.tasks, meta.taskId, meta.clientId);
+      assertSameClient(store.taskLines, meta.lineId, meta.clientId);
+      assertSameClient(store.visitItems, meta.visitItemId, meta.clientId);
+      assertSameClient(store.payments, meta.paymentId, meta.clientId);
+      assertSameClient(store.authorizations, meta.authorizationId, meta.clientId);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       const doc: DocumentFile = {
@@ -2262,6 +2290,7 @@ export const mockRepositories: Repositories = {
     async update(id, d) {
       await simulateLatency();
       assertDocument(id);
+      rejectIdentityChange(d, store.documents.find((x) => x.id === id));
       const doc = store.documents.find((item) => item.id === id);
       if (!doc) throw new Error('Document not found');
       Object.assign(doc, d);
@@ -2339,6 +2368,9 @@ export const mockRepositories: Repositories = {
     async create(f) {
       await simulateLatency();
       assertClient(f.clientId);
+      assertSameClient(store.tasks, f.taskId, f.clientId);
+      for (const lineId of f.lineIds ?? []) assertSameClient(store.taskLines, lineId, f.clientId);
+      assertSameClient(store.contacts, f.contactId, f.clientId);
       const { user } = getCurrentUser();
       const newFu: FollowUp = {
         id: generateId(),
@@ -2694,6 +2726,7 @@ export const mockRepositories: Repositories = {
     async update(id, v) {
       await simulateLatency();
       assertVisit(id);
+      rejectIdentityChange(v, store.visits.find((x) => x.id === id));
       const visit = store.visits.find((item) => item.id === id);
       if (!visit) throw new Error('Visit not found');
       Object.assign(visit, v);
@@ -2744,6 +2777,7 @@ export const mockRepositories: Repositories = {
     async updateItem(itemId, i) {
       await simulateLatency();
       assertVisitItem(itemId);
+      rejectIdentityChange(i, store.visitItems.find((x) => x.id === itemId));
       const item = store.visitItems.find((vi) => vi.id === itemId);
       if (!item) throw new Error('Visit item not found');
       Object.assign(item, i);
@@ -2761,6 +2795,8 @@ export const mockRepositories: Repositories = {
     async setPacked(visitId, ref, packed) {
       await simulateLatency();
       assertVisit(visitId);
+      const packedLine = ref.lineId ? store.taskLines.find((x) => x.id === ref.lineId) : undefined;
+      if (packedLine) assertClient(packedLine.clientId);
       const v = store.visits.find((item) => item.id === visitId);
       if (!v) throw new Error('Visit not found');
       if (ref.lineId) {
@@ -2978,6 +3014,8 @@ export const mockRepositories: Repositories = {
     async save(p) {
       await simulateLatency();
       assertRecordWrite(store.payments, p.id, p.clientId);
+      assertSameClient(store.tasks, p.taskId, p.clientId);
+      for (const docId of p.proofDocumentIds ?? []) assertSameClient(store.documents, docId, p.clientId);
       const { user } = getCurrentUser();
 
       const existing = p.id ? store.payments.find((item) => item.id === p.id) : undefined;

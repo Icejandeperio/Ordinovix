@@ -81,6 +81,25 @@ describe('B11 data-layer permissions', () => {
     await forbidden(R.activity.list({ clientId: MARIA }));
   });
 
+  it('refuses records that point at another client\'s parent, and updates that re-point a record', { timeout: 30_000 }, async () => {
+    // A valid own client id with a foreign reference
+    await forbidden(R.documents.upload({ kind: 'other', displayName: 'x.pdf', clientId: 'client-rsp', taskId: MARIA_TASK, lineId: marialine } as never, new Blob(['x']), undefined, {} as never));
+    await forbidden(R.followUps.create({ clientId: 'client-rsp', taskId: MARIA_TASK, lineIds: [marialine], channel: 'viber', language: 'en' } as never));
+    await forbidden(R.payments.save({ clientId: 'client-rsp', taskId: MARIA_TASK, amount: 100, paidOn: '2026-10-20', channel: 'online', paidBy: 'client' } as never));
+    await forbidden(R.visits.setPacked('visit-v1', { lineId: marialine }, true));
+    // Re-pointing an owned record at an unassigned client
+    await forbidden(R.lines.update('line-rsp-1', { clientId: MARIA } as never));
+    await forbidden(R.documents.update('doc-rsp-1', { clientId: MARIA } as never));
+    await forbidden(R.visits.updateItem('vitem-v1-3', { clientId: MARIA } as never));
+    // Changing identity fields is refused outright
+    await expect(R.tasks.update('task-rsp-0619e', { id: MARIA_TASK } as never)).rejects.toMatchObject({ code: 'RULE_VIOLATION' });
+    await expect(R.lines.reorder('task-rsp-0619e', [marialine])).rejects.toMatchObject({ code: 'RULE_VIOLATION' });
+    // Maria's records are unchanged
+    mockDevControls.setPersona('owner');
+    expect((await R.tasks.get(MARIA_TASK)).lines.find((l) => l.id === marialine)?.documentIds).toEqual([]);
+    expect((await R.payments.list({ clientId: MARIA })).items.some((p) => p.amount === 100)).toBe(false);
+  });
+
   it('refuses a visit whose items all belong to unassigned clients, and hides those items in shared visits', async () => {
     await forbidden(R.visits.get('visit-v3'));
     await forbidden(R.visits.recordOutcome('vitem-v3-1', { outcome: 'completed' } as never));
