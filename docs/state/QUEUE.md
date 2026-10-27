@@ -18,4 +18,6 @@ and, for protected files, the exact change proposed.
 
 ## Proposals (ideas outside the backlog; not scheduled)
 
+- 2026-10-27 (from U04 review) Gate the sign-in persona chooser (`src/routes/sign-in/page.tsx`) and Settings "Reset Sample Data / Reset to Seed" with `isMockData` too; both are mock-only controls still shown when `VITE_DATA_SOURCE=api`. Best done with the auth/API unit.
+
 ## Decided

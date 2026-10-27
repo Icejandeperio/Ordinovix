@@ -139,7 +139,7 @@
       "id": "U04",
       "phase": "P0",
       "tier": "T1",
-      "status": "pending",
+      "status": "in_progress",
       "depends_on": [
         "U00"
       ],
