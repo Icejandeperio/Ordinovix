@@ -139,7 +139,7 @@
       "id": "U04",
       "phase": "P0",
       "tier": "T1",
-      "status": "in_progress",
+      "status": "done",
       "depends_on": [
         "U00"
       ],
@@ -163,7 +163,9 @@
       ],
       "tests": [
         "B09"
-      ]
+      ],
+      "pr": 6,
+      "evidence": "verify.mjs exit 0; tests now passing: B09, U04(B18,B19); verifier/PR #6; verifier PASS; sign-in persona chooser and Reset Sample Data left ungated (QUEUE proposal)"
     },
     {
       "id": "U05",
