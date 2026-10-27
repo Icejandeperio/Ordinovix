@@ -160,9 +160,31 @@ describe('mockRepositories.visits and Visits Pipeline (M7)', () => {
     expect(lineAfter?.flagNote).toBe('TIN digit inverted in box 14');
   });
 
+  it('B02 rejects finishing a visit while any item has no saved outcome (RULE_VIOLATION)', async () => {
+    const listRes = await repositories.visits.list();
+    const visitId = listRes.items[0].visit.id;
+    const detail = await repositories.visits.get(visitId);
+    expect(detail.items.some((i) => !i.item.outcome)).toBe(true);
+
+    await expect(
+      repositories.visits.finish(visitId, { finishedAt: '2026-10-25T11:45:00+08:00' }),
+    ).rejects.toMatchObject({ code: 'RULE_VIOLATION' });
+
+    const after = await repositories.visits.get(visitId);
+    expect(after.visit.status).not.toBe('done');
+    expect(after.visit.finishedAt).toBeUndefined();
+  });
+
   it('finishes a visit with end time and expenses in centavos', async () => {
     const listRes = await repositories.visits.list();
     const visitId = listRes.items[0].visit.id;
+    const detail = await repositories.visits.get(visitId);
+    for (const { item } of detail.items) {
+      await repositories.visits.recordOutcome(item.id, {
+        outcome: 'completed',
+        evidenceDocumentIds: ['doc-receipt-001'],
+      });
+    }
 
     const finished = await repositories.visits.finish(visitId, {
       finishedAt: '2026-10-25T11:45:00+08:00',
