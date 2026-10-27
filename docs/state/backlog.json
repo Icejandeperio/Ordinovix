@@ -13,7 +13,7 @@
       "id": "U00",
       "phase": "P0",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
       "depends_on": [],
       "title": "Quality gate tooling + fix the Rules-of-Hooks crash",
       "bugs": [
@@ -39,7 +39,9 @@
       "tests": [
         "B01"
       ],
-      "notes": "Bootstrap unit: main is red until U00 merges (the gate tooling is not installed yet and CI on main fails). Skip the broken-base check for this unit only. Open the PR and let CI prove the gate."
+      "notes": "Bootstrap unit: main is red until U00 merges (the gate tooling is not installed yet and CI on main fails). Skip the broken-base check for this unit only. Open the PR and let CI prove the gate.",
+      "pr": 2,
+      "evidence": "verify.mjs exit 0; B01 tests (record reload, summary direct load) now passing; verifier PASS (docs/state/reviews/U00.md); eslint 0 errors"
     },
     {
       "id": "U01",

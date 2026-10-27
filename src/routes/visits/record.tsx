@@ -79,6 +79,14 @@ export function VisitRecordPage() {
   const [otherPeso, setOtherPeso] = useState('0');
   const [costNote, setCostNote] = useState('');
 
+  // Check if every item in visit has an outcome (hook: must run before the loading return)
+  const allRecorded = useMemo(() => {
+    return (data?.items ?? []).every((i) => {
+      const form = itemForms[i.item.id];
+      return (form && form.outcome) || i.item.outcome;
+    });
+  }, [data, itemForms]);
+
   if (isLoading || !data) {
     return (
       <div className="space-y-6 animate-pulse">
@@ -266,14 +274,6 @@ export function VisitRecordPage() {
       toast.error(err.message || 'Failed to save outcome');
     }
   };
-
-  // Check if every item in visit has an outcome
-  const allRecorded = useMemo(() => {
-    return items.every((i) => {
-      const form = itemForms[i.item.id];
-      return (form && form.outcome) || i.item.outcome;
-    });
-  }, [items, itemForms]);
 
   const handleFinishVisit = async () => {
     try {
