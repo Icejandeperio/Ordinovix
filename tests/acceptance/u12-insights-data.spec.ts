@@ -57,7 +57,12 @@ test.describe('U12 insights', () => {
     await page.getByRole('button', { name: /Client: All Clients/ }).click();
     await page.getByRole('option', { name: /RSP/ }).click();
     await expect(page).toHaveURL(/client=client-rsp/);
-    await expect.poll(async () => sumColumn((await tableOf(page, 'Total Office Visits per Month')).rows, 1)).toBeLessThan(allTotal);
+    // The filtered numbers arrive after a data round trip; under full-gate load that can exceed the default poll
+    // window, so poll longer and less often instead of re-reading the table every few milliseconds.
+    await expect.poll(
+      async () => sumColumn((await tableOf(page, 'Total Office Visits per Month')).rows, 1),
+      { timeout: 20_000, intervals: [500, 1_000, 2_000] },
+    ).toBeLessThan(allTotal);
     expect(sumColumn((await tableOf(page, 'Total Office Visits per Month')).rows, 1)).toBeGreaterThan(0);
 
     await page.reload();

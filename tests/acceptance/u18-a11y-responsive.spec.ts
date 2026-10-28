@@ -27,6 +27,14 @@ async function open(page: Page, route: string, theme: 'light' | 'dark') {
   await page.goto(route);
   await expect(page.locator('h1, h2').first()).toBeVisible();
   await page.waitForLoadState('networkidle');
+  // Review stamps fade in (opacity 0 -> 0.95 over 0.36 s). Axe must not sample a half-transparent stamp, or it
+  // reports a colour-contrast violation that exists only mid-animation (seen in CI in both themes).
+  await page.waitForFunction(
+    () => [...document.querySelectorAll<HTMLElement>('.border-stamp-ink')]
+      .every((el) => Number(getComputedStyle(el).opacity) >= 0.94),
+    undefined,
+    { timeout: 5_000 },
+  );
 }
 
 for (const theme of ['light', 'dark'] as const) {
