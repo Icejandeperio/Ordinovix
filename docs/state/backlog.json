@@ -871,7 +871,7 @@
       "id": "U28",
       "phase": "P3",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U27"
       ],
@@ -894,7 +894,9 @@
       "tests": [
         "U28"
       ],
-      "notes": "Owner has not chosen a retention period: no automatic deletion of files or records."
+      "notes": "Owner has not chosen a retention period: no automatic deletion of files or records.",
+      "pr": 32,
+      "evidence": "verify.mjs exit 0; tests now passing: U28 documents (23) and store (4): upload checks by content and size, R2 key layout never reused, signed 5-minute URLs (tamper, expiry), view and download logged, retention deletes nothing by default; verifier/PR #32; verifier PASS; two weak tests found by the verifier fixed"
     },
     {
       "id": "U29",
