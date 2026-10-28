@@ -17,7 +17,8 @@
     "dev:vars": "node scripts/dev-vars.mjs",
     "types": "wrangler types",
     "db:seed-sql": "node scripts/seed-sql.mjs",
-    "db:first-owner-sql": "node scripts/first-owner-sql.mjs"
+    "db:first-owner-sql": "node scripts/first-owner-sql.mjs",
+    "setup:cloudflare": "node scripts/setup-cloudflare.mjs"
   },
   "dependencies": {
     "@date-fns/tz": "^1.2.0",
