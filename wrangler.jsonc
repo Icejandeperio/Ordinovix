@@ -15,8 +15,9 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
   },
-  // Daily clean-up (worker/cron/retention.ts): 03:00 Asia/Manila. U29 adds the reminder crons.
-  "triggers": { "crons": ["0 19 * * *"] },
+  // Cron triggers, UTC: 0 19 = 03:00 Manila clean-up (worker/cron/retention.ts); 0 23 = 07:00 digest and reminders and 0 9 = 17:00
+  // visit check (worker/cron/notify.ts).
+  "triggers": { "crons": ["0 19 * * *", "0 23 * * *", "0 9 * * *"] },
   "vars": { "APP_ENV": "local" },
   "d1_databases": [
     { "binding": "DB", "database_name": "ordinovix-local", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
@@ -29,7 +30,7 @@
         "not_found_handling": "single-page-application",
         "run_worker_first": ["/api/*"]
       },
-      "triggers": { "crons": ["0 19 * * *"] },
+      "triggers": { "crons": ["0 19 * * *", "0 23 * * *", "0 9 * * *"] },
       "vars": { "APP_ENV": "preview" },
       "d1_databases": [
         { "binding": "DB", "database_name": "ordinovix-preview", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
@@ -42,7 +43,7 @@
         "not_found_handling": "single-page-application",
         "run_worker_first": ["/api/*"]
       },
-      "triggers": { "crons": ["0 19 * * *"] },
+      "triggers": { "crons": ["0 19 * * *", "0 23 * * *", "0 9 * * *"] },
       "vars": { "APP_ENV": "production" },
       "d1_databases": [
         { "binding": "DB", "database_name": "ordinovix", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }

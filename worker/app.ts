@@ -5,6 +5,8 @@ import type { AppEnv } from './env';
 import { handleError, handleNotFound } from './errors';
 import { requireActive, requireMembership, requireSession } from './middleware/auth';
 import { documentRoutes, fileContent } from './routes/documents';
+import { pushRoutes } from './routes/push';
+import type { PushDeps } from './push/send';
 import { readRoutes } from './routes/reads';
 import { sessionRoutes } from './routes/session';
 import { writeRoutes } from './routes/writes';
@@ -14,6 +16,8 @@ import { SECURITY_HEADERS } from './security-headers';
 export interface CreateAppOptions {
   /** Test seam: routes registered here are reached before the signed-in group, so a test can add a route that throws. */
   before?: (app: Hono<AppEnv>) => void;
+  /** Test seam: how pushes are built and sent (the default posts to the real push services). */
+  push?: PushDeps;
 }
 
 /**
@@ -57,6 +61,7 @@ export function createApp(options: CreateAppOptions = {}) {
   signedIn.route('/', writeRoutes);
   signedIn.route('/', writeRoutes2);
   signedIn.route('/', documentRoutes);
+  signedIn.route('/', pushRoutes(options.push));
   app.route('/api/v1', signedIn);
 
   return app;
