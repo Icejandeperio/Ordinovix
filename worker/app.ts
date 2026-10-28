@@ -7,6 +7,7 @@ import { requireActive, requireMembership, requireSession } from './middleware/a
 import { readRoutes } from './routes/reads';
 import { sessionRoutes } from './routes/session';
 import { writeRoutes } from './routes/writes';
+import { writeRoutes2 } from './routes/writes2';
 import { SECURITY_HEADERS } from './security-headers';
 
 export interface CreateAppOptions {
@@ -51,6 +52,7 @@ export function createApp(options: CreateAppOptions = {}) {
   signedIn.route('/session', sessionRoutes);
   signedIn.route('/', readRoutes);
   signedIn.route('/', writeRoutes);
+  signedIn.route('/', writeRoutes2);
   app.route('/api/v1', signedIn);
 
   return app;

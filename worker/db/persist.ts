@@ -148,6 +148,8 @@ export interface WriteOptions<T> {
   persisted?: (result: T) => unknown;
   /** false for a POST that writes nothing (a preview, a duplicate check): no key is needed and none is recorded. */
   idempotent?: boolean;
+  /** false only for the CSV import preview, which hands the caller's own upload back to them (nothing is stored). */
+  scrub?: boolean;
 }
 
 const idempotencyKeyOf = (c: Context<AppEnv>): string => {
@@ -192,7 +194,8 @@ export async function runWrite<T>(c: Context<AppEnv>, o: WriteOptions<T>): Promi
 
   const p = plan(d1, before, after);
   const extra = o.extra ? await o.extra(result, d1) : [];
-  const body = scrubTin(o.respond ? o.respond(result) : result === undefined ? { ok: true } : result);
+  const raw = o.respond ? o.respond(result) : result === undefined ? { ok: true } : result;
+  const body = o.scrub === false ? raw : scrubTin(raw);
   const status = o.status ?? 200;
   const responseJson = JSON.stringify(body);
   const kept = o.persisted ? JSON.stringify(scrubTin(o.persisted(result))) : responseJson;

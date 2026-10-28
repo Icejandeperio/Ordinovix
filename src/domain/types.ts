@@ -167,6 +167,19 @@ export interface Client extends BaseRecord {
   notes?: string;
   status: 'active' | 'archived';
   archivedReason?: string;
+  importBatchId?: ID;                   // set on clients created by a CSV import, so the import can be undone
+}
+
+/** One CSV import: what was read, created and skipped, and whether it was undone. */
+export interface ImportBatch {
+  id: ID;
+  orgId: ID;
+  totalRows: number;
+  createdCount: number;
+  skippedCount: number;
+  undoneAt?: ISODateTime;
+  createdAt: ISODateTime;
+  createdBy: ID;
 }
 
 export interface Contact extends BaseRecord {

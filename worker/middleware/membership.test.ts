@@ -105,6 +105,8 @@ describe('first sign-in links the allowlisted email to the person', () => {
 
   it('never takes over an entry that is already linked to somebody else', async () => {
     await addMembership(world, { id: 'mem-taken', email: 'taken@example.org', role: 'owner', userId: 'user-first' });
+    // the first person already signed in: their profile is claimed by their Better Auth id
+    await world.env.DB.prepare("UPDATE users SET auth_user_id = 'ba-first' WHERE id = 'user-first'").run();
     const res = await world.request('/api/v1/session/me', { cookie: await world.cookieFor({ id: 'ba-second', name: 'Second Person', email: 'taken@example.org' }) });
     expect((await body(res)).error.code).toBe('ACCESS_PENDING');
     expect((await world.env.DB.prepare("SELECT user_id FROM memberships WHERE id = 'mem-taken'").first<any>()).user_id).toBe('user-first');

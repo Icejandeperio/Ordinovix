@@ -449,6 +449,7 @@ export function createCommands(ctx: CommandContext) {
           code: c.code || 'NEW',
           displayName: c.displayName || 'New Client',
           registeredName: c.registeredName,
+          importBatchId: c.importBatchId,
           entityType: c.entityType || 'solo',
           hasTin: c.hasTin ?? true,
           tinMasked: c.tinMasked || (c.tinFull ? `•••-•••-${c.tinFull.slice(-3)}-00000` : '•••-•••-000-00000'),
@@ -553,31 +554,39 @@ export function createCommands(ctx: CommandContext) {
     async importCommit(preview) {
       assertOwner();
       const createdIds: ID[] = [];
+      const { user } = getCurrentUser();
+      const now = nowInManila();
+      const batches = (store.importBatches ??= []);
+      if (batches.some((b) => b.id === preview.batchId)) throw new RuleViolationError('This import was already committed');
       for (const row of preview.validRows) {
-        const client = await clients.upsert(row);
+        const client = await clients.upsert({ ...row, importBatchId: preview.batchId } as never);
         createdIds.push(client.id);
       }
-      // Save batch mapping for undo
-      const batches = (store as any)._importBatches || {};
-      batches[preview.batchId] = createdIds;
-      (store as any)._importBatches = batches;
-
+      batches.push({
+        id: preview.batchId,
+        orgId: store.org.id,
+        totalRows: preview.validRows.length + preview.errors.length,
+        createdCount: createdIds.length,
+        skippedCount: preview.errors.length,
+        createdAt: now,
+        createdBy: user.id,
+      });
       return { created: createdIds, skipped: preview.errors.length, batchId: preview.batchId };
     },
     async importUndo(batchId) {
       assertOwner();
-      const batches = (store as any)._importBatches || {};
-      const ids: ID[] = batches[batchId] || [];
-      const now = todayInManila() + 'T00:00:00+08:00';
-      for (const id of ids) {
-        const cl = store.clients.find((c) => c.id === id);
-        if (cl) {
-          cl.deletedAt = now;
-          cl.deletedReason = 'Import batch undo rollback';
-        }
+      const batch = (store.importBatches ??= []).find((b) => b.id === batchId);
+      if (!batch) throw new NotFoundError('Import not found');
+      if (batch.undoneAt) throw new RuleViolationError('This import was already undone');
+      const now = nowInManila();
+      const members = store.clients.filter((c) => c.importBatchId === batchId && !c.deletedAt);
+      for (const cl of members) {
+        cl.deletedAt = now;
+        cl.deletedReason = 'Import batch undo rollback';
+        cl.version += 1;
       }
-      delete batches[batchId];
-      logActivity('deleted', 'client', batchId, `Undid client import batch (${ids.length} removed)`);
+      batch.undoneAt = now;
+      logActivity('deleted', 'client', batchId, `Undid client import batch (${members.length} removed)`);
     },
   };
 

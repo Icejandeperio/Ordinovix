@@ -30,7 +30,7 @@ import * as s from './schema';
 
 export type QueryTable = Exclude<keyof QueryData, 'org' | 'settings'> | 'org' | 'settings';
 export const ALL_TABLES: QueryTable[] = [
-  'org', 'settings', 'users', 'memberships', 'prefs', 'offices', 'clients', 'contacts', 'authorizations', 'templates', 'reqTemplates',
+  'org', 'settings', 'users', 'memberships', 'prefs', 'offices', 'importBatches', 'clients', 'contacts', 'authorizations', 'templates', 'reqTemplates',
   'tasks', 'taskLines', 'visits', 'visitItems', 'visitKit', 'followUps', 'followUpAttempts', 'payments', 'messageTemplates',
   'holidays', 'deadlineMoves', 'documents', 'notes', 'notifications', 'savedViews', 'baseline', 'pulses', 'activity',
 ];
@@ -67,6 +67,7 @@ export async function loadQueryData(d1: D1Database, orgId: string, tables: reado
     add('membershipClients', db.select().from(s.membershipClients).where(inArray(s.membershipClients.membershipId, db.select({ id: s.memberships.id }).from(s.memberships).where(org(s.memberships)))).orderBy(sql`rowid`));
   }
   if (want.has('offices')) add('offices', db.select().from(s.offices).where(org(s.offices)).orderBy(sql`rowid`));
+  if (want.has('importBatches')) add('importBatches', db.select().from(s.importBatches).where(org(s.importBatches)).orderBy(sql`rowid`));
   if (want.has('clients')) {
     add('clients', db.select().from(s.clients).where(org(s.clients)).orderBy(sql`rowid`));
     add('clientAssigned', db.select().from(s.clientAssignedUsers).where(inArray(s.clientAssignedUsers.clientId, db.select({ id: s.clients.id }).from(s.clients).where(org(s.clients)))).orderBy(sql`rowid`));
@@ -136,8 +137,9 @@ export async function loadQueryData(d1: D1Database, orgId: string, tables: reado
     prefs: Object.fromEntries(r('prefs').map((p) => [p.userId, rowToPrefs(p)])) as Record<string, UserPrefs>,
     offices: r('offices').map((x) => clean(x)),
     clients: r('clients').map(
-      (c) => ({ ...clean(c, ['tinEncrypted', 'tinHash', 'importBatchId']), assignedUserIds: (assignedOf.get(c.id) ?? []).map((x) => x.userId) }) as Client,
+      (c) => ({ ...clean(c, ['tinEncrypted', 'tinHash']), assignedUserIds: (assignedOf.get(c.id) ?? []).map((x) => x.userId) }) as Client,
     ),
+    importBatches: r('importBatches').map((x) => clean(x)),
     contacts: r('contacts').map((x) => clean(x)),
     authorizations: r('authorizations').map((x) => clean(x)),
     templates: r('templates').map(

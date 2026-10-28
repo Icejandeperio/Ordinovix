@@ -192,7 +192,7 @@ writeRoutes.post('/tasks/open-period/preview', async (c) => {
 });
 writeRoutes.post('/tasks/open-period', async (c) => {
   const body = await readBody(c, ['period', 'selections']);
-  return runWrite(c, { run: (cmd) => cmd.tasks.openPeriod(body as never) });
+  return runWrite(c, { status: 201, run: (cmd) => cmd.tasks.openPeriod(body as never) });
 });
 writeRoutes.post('/tasks', async (c) => {
   const { lines, ...task } = await readBody(c, TASK_CREATE);
