@@ -1,10 +1,11 @@
 // Prints the JavaScript a first visit to "/" downloads (the entry and every chunk it imports statically), gzipped.
 // Usage: npm run build && node scripts/bundle-size.mjs [--max <KB>]   (exits 1 when over the budget)
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 
-const dist = 'dist';
+// With the Cloudflare plugin the app builds into dist/client (the Worker is in dist/<name>); older output was dist/
+const dist = existsSync(join('dist', 'client', 'index.html')) ? join('dist', 'client') : 'dist';
 const maxArg = process.argv.indexOf('--max');
 const max = maxArg > -1 ? Number(process.argv[maxArg + 1]) : undefined;
 

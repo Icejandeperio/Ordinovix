@@ -2,7 +2,7 @@
  * Typed errors the data layer throws and the screens map to a 403 or 404 view (spec 11.20).
  * `code` matches what the API will return, so the same screens work unchanged against it.
  */
-export type ErrorCode = 'FORBIDDEN' | 'NOT_FOUND' | 'RULE_VIOLATION' | 'VALIDATION' | 'VERSION_CONFLICT';
+export type ErrorCode = 'FORBIDDEN' | 'NOT_FOUND' | 'RULE_VIOLATION' | 'VALIDATION' | 'VERSION_CONFLICT' | 'ACCESS_PENDING' | 'RATE_LIMITED';
 
 export class NotFoundError extends Error {
   readonly code = 'NOT_FOUND' as const;
@@ -17,6 +17,24 @@ export class ForbiddenError extends Error {
   constructor(message = 'No access') {
     super(message);
     this.name = 'ForbiddenError';
+  }
+}
+
+/** Signed in, but no allowlisted membership yet: the API answers 403 ACCESS_PENDING and the app shows /access-pending. */
+export class AccessPendingError extends Error {
+  readonly code = 'ACCESS_PENDING' as const;
+  constructor(message = 'Your account is waiting for the practice owner to give you access') {
+    super(message);
+    this.name = 'AccessPendingError';
+  }
+}
+
+/** Too many requests from one person in the window (API only, 429). */
+export class RateLimitedError extends Error {
+  readonly code = 'RATE_LIMITED' as const;
+  constructor(message = 'Too many requests. Wait a moment and try again') {
+    super(message);
+    this.name = 'RateLimitedError';
   }
 }
 
