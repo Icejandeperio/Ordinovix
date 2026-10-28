@@ -73,6 +73,11 @@ and, for protected files, the exact change proposed.
   - Expect about 7 minutes (a 164-test run takes 6.6 minutes locally). Parallel workers are not possible: every test starts from a reset of the one
     Demo organization.
 
+- [ ] 2026-10-28 U32 Release production after the client accepts the MVP (owner decision; nothing waits on it now)
+  - Context: `docs/backend/GO_LIVE.md` lists the eight go-live items and which are owner-pending; `docs/backend/DEPLOY.md`, "Releasing production", has the steps. Production is empty and undeployed on purpose.
+  - Needs first: the preview live (the U31 item below), the access test as a helper, the client's acceptance, a unit for the "Turn on reminders" button and the service-worker push handler (go-live item 6), and your decision on keeping a recovery copy of `TIN_ENCRYPTION_KEY` (proposal below).
+  - Then: Actions, deploy-production, type DEPLOY, approve; `npm run setup:cloudflare -- --secrets --env production`; `npm run setup:cloudflare -- --first-owner you@example.org --env production --org org-main --org-name "Your practice"`.
+
 - [ ] 2026-10-28 U31 Run the Cloudflare setup script (owner action; blocks U32 and the preview going live)
   - Context: `scripts/setup-cloudflare.mjs` and `docs/backend/DEPLOY.md` (U31 PR). Only you run it; it was tested with every outside call stubbed and has never touched Cloudflare, GitHub or Google.
   - Before you start (details in DEPLOY.md steps 1 and 2): a Cloudflare account with R2 switched on in the dashboard (it may ask for a card), `gh auth login`, Node 22 or newer, a Cloudflare API token with Account permissions Workers Scripts Edit, D1 Edit, Workers R2 Storage Edit, Account Settings Read.
