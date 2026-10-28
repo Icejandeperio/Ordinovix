@@ -149,7 +149,7 @@ export function Select({
         } ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${buttonClassName}`}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label={ariaLabel || displayLabel}
+        aria-label={ariaLabel || displayLabel || 'Select an option'}
       >
         <span className="truncate text-left font-medium">
           {prefix && <span className="text-[var(--ink-3)] mr-1">{prefix}</span>}

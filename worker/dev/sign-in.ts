@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { ValidationError } from '@/domain/errors';
+import { setDevToday, todayInManila } from '@/lib/dates';
 import { createAuth, originOf } from '../auth/auth';
 import { setSessionCookieHeader } from '../auth/session-cookie';
 import { errorResponse } from '../errors';
@@ -47,3 +48,24 @@ devRoutes.post('/sign-in', async (c) => {
   c.header('Set-Cookie', await setSessionCookieHeader(c.env.BETTER_AUTH_SECRET, session.token));
   return c.json({ ok: true, persona: body.persona, userId: row.id });
 });
+
+/**
+ * Dev reset: replaces the Demo organization with fresh sample data dated from today (or the X-Dev-Today day), so each new browser
+ * session of the acceptance suite starts from the seed, as it does in mock mode. It is compiled only into development builds
+ * (`import.meta.env.DEV`): a production or preview build has no code for it at all, besides being 404 outside APP_ENV=local.
+ */
+devRoutes.post('/reset', async (c) => {
+  if (!import.meta.env.DEV) return errorResponse(c, 404, { error: { code: 'NOT_FOUND', message: 'Not found' } });
+  const { resetDemoData } = await import('./reset');
+  await resetDemoData(c.env.DB, todayInManila(), c.env.TIN_ENCRYPTION_KEY);
+  return c.json({ ok: true });
+});
+
+/** With the dev gate open, a request may carry X-Dev-Today (the dev menu's "set today"); every other request has the real day. */
+export const devToday: import('hono').MiddlewareHandler<AppEnv> = async (c, next) => {
+  if (devAuthEnabled(c.env)) {
+    const day = c.req.header('x-dev-today');
+    setDevToday(day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null);
+  }
+  await next();
+};

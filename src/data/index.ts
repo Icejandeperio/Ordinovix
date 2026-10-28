@@ -27,6 +27,20 @@ async function callMock(ns: string, method: string, args: unknown[]): Promise<un
   return (await mockRepos())[ns][method](...args);
 }
 
+/** VITE_DATA_SOURCE=api: the same repositories over fetch to the Worker. A build for the API has no use for the mock and drops it. */
+const useApi = import.meta.env.VITE_DATA_SOURCE === 'api';
+let apiRepos: Promise<Record<string, Namespace>> | undefined;
+const loadApi = (): Promise<Record<string, Namespace>> =>
+  (apiRepos ??= import('./api/repositories').then(async (m) => {
+    // Development only: sign in as the chosen persona and start a fresh browser context from the seed
+    if (import.meta.env.DEV) (await import('./api/dev')).installDevBootstrap();
+    return m.createApiRepositories() as unknown as Record<string, Namespace>;
+  }));
+async function callApi(ns: string, method: string, args: unknown[]): Promise<unknown> {
+  return (await loadApi())[ns][method](...args);
+}
+const callImpl = useApi ? callApi : callMock;
+
 const read = (key: string): string | null => {
   try {
     return typeof window !== 'undefined' ? window.localStorage.getItem(key) : null;
@@ -49,7 +63,7 @@ const isOffline = (): boolean => (typeof navigator !== 'undefined' && navigator.
  * IndexedDB and replay in order, with idempotency keys, when the connection is back.
  */
 export const offlineQueue = createOfflineQueue({
-  call: callMock,
+  call: callImpl,
   newKey: generateId,
   now: () => new Date().toISOString(),
 });
@@ -80,7 +94,7 @@ function lazyRepositories(): Repositories {
             if (!isOffline()) void offlineQueue.replay();
             return undefined;
           }
-          return callMock(ns, method, args);
+          return callImpl(ns, method, args);
         };
       },
     });
@@ -97,10 +111,24 @@ export const repositories: Repositories = lazyRepositories();
  */
 export const devControls = {
   reset() {
+    if (useApi) {
+      void import('./api/dev').then(async (d) => {
+        await d.devReset();
+        if (typeof window !== 'undefined') window.location.reload();
+      });
+      return;
+    }
     void loadMock().then((m) => m.mockDevControls.reset());
   },
   setPersona(role: 'owner' | 'helper') {
     write(PERSONA_KEY, role);
+    if (useApi) {
+      void import('./api/dev').then(async (d) => {
+        await d.devSignIn(role);
+        if (typeof window !== 'undefined') window.location.reload();
+      });
+      return;
+    }
     void loadMock().then((m) => m.mockDevControls.setPersona(role));
   },
   getPersona(): 'owner' | 'helper' {
@@ -109,6 +137,11 @@ export const devControls = {
   setOffline(offline: boolean) {
     write(OFFLINE_KEY, String(offline));
     offlineQueue.refresh();
+    if (useApi) {
+      // the API client reads the saved setting on every call
+      if (!offline) void offlineQueue.replay();
+      return;
+    }
     void loadMock().then((m) => {
       m.mockDevControls.setOffline(offline);
       // Back online: send what was queued
@@ -120,7 +153,7 @@ export const devControls = {
   },
   setFailureRate(rate: number) {
     write(FAILURE_RATE_KEY, String(rate));
-    void loadMock().then((m) => m.mockDevControls.setFailureRate(rate));
+    if (!useApi) void loadMock().then((m) => m.mockDevControls.setFailureRate(rate));
   },
   getFailureRate(): number {
     return parseFloat(read(FAILURE_RATE_KEY) || '0');

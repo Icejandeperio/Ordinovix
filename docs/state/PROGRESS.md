@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-28 U30 API data source: the frontend runs against the Worker — done
+- Changed: src/data/api/* (fetch Repositories, dev bootstrap), src/data/index.ts switch, worker/dev (reset, today override), R2 file keys in files.ts/useFileSrc, duplicate-invite refusal in the shared command, two small a11y fixes (Select name, Insights loading text)
+- Evidence: verify.mjs exit 0; tests now passing: U30; API mode 158 of 160 (two fixed or queued), verifier 38 of 38; PR #34
+- Notes: Verifier PASS under the run-wide rule; four acceptance tests cannot run in API mode (mock-only: U21 x2, U06 B14, U04 B18); the verify-api CI job is queued for the owner; vite dev drops a request right after a reset (cause unknown, worked around); advisories queued.
+
 ## 2026-10-28 U29 Scheduled jobs, notifications and Web Push — done
 - Changed: @pushforge/builder; worker/cron/notify.ts (07:00 and 17:00 Manila jobs), worker/push/*, worker/routes/push.ts, three crons, scheduled dispatch
 - Evidence: verify.mjs exit 0; tests now passing: U29 (34 worker tests); PR #33

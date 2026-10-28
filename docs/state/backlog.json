@@ -936,7 +936,9 @@
       "id": "U30",
       "phase": "P3",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
+      "pr": 34,
+      "evidence": "verify.mjs exit 0 (977 unit tests, 164 acceptance tests in mock mode); tests now passing: U30 (api-client 17, dev controls 6, invite duplicate 2, file keys 2, acceptance u30 x3 in both modes); API mode (VITE_DATA_SOURCE=api, one worker): 158 of 160 then the two failures fixed or queued, verifier ran 38 of 38; four tests cannot run in API mode (U21 x2, U06 B14, U04 B18), reasons in the PR and QUEUE; verifier/PR #34; verifier PASS",
       "depends_on": [
         "U28",
         "U29"

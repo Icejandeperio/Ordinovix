@@ -26,22 +26,36 @@ export async function getFileBlob(key: string): Promise<Blob | undefined> {
   return get<Blob>(key, fileStore());
 }
 
-/** A fresh object URL for a stored file. The caller may revoke it; the bytes stay in IndexedDB. */
-export async function getFileUrl(key: string): Promise<string> {
+/**
+ * With the API data source a file lives in R2 under org/{org}/client/{client}/{year}/{task|misc}/{documentId}-v{n}.{ext}. Its
+ * document id is in the key, so a screen that holds only the key can still ask the API for a short-lived signed URL.
+ */
+const REMOTE_KEY = /^org\/.+\/([^/]+)-v\d+\.[A-Za-z0-9_]+$/;
+export const isRemoteFileKey = (key: string): boolean => REMOTE_KEY.test(key);
+/** Whether the key needs a lookup (a file kept on this device, or one in R2) before a browser can load it. */
+export const needsFileLookup = (key: string): boolean => isStoredFileKey(key) || isRemoteFileKey(key);
+
+/** A fresh URL for a stored file: an object URL (the caller may revoke it; the bytes stay in IndexedDB), or a signed API URL. */
+export async function getFileUrl(key: string, purpose: 'view' | 'download' = 'view'): Promise<string> {
+  const remote = REMOTE_KEY.exec(key);
+  if (remote) {
+    const { repositories } = await import('@/data'); // loaded on demand: the data layer itself imports this module
+    return repositories.documents.getUrl(remote[1], purpose);
+  }
   const blob = await getFileBlob(key);
   if (!blob) throw new Error('This file is not stored on this device');
   return URL.createObjectURL(blob);
 }
 
-/** Save a stored or seeded file under `filename`: mints a fresh object URL for stored files, clicks a hidden link, then revokes it. */
+/** Save a stored or seeded file under `filename`: mints a fresh URL for stored files, clicks a hidden link, then revokes it. */
 export async function saveFile(storageKey: string, filename: string): Promise<void> {
-  const stored = isStoredFileKey(storageKey);
-  const href = stored ? await getFileUrl(storageKey) : storageKey;
+  const stored = needsFileLookup(storageKey);
+  const href = stored ? await getFileUrl(storageKey, 'download') : storageKey;
   const a = document.createElement('a');
   a.href = href;
   a.download = filename;
   a.click();
-  if (stored) setTimeout(() => URL.revokeObjectURL(href), 10_000);
+  if (href.startsWith('blob:')) setTimeout(() => URL.revokeObjectURL(href), 10_000);
 }
 
 // Spec 9.9 display names live in a module with no browser dependencies, so the Worker can use them too
