@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-28 U26 Write routes part 1: clients, contacts, authorizations, templates, deadlines, messages, tasks, lines — done
+- Changed: src/data/commands.ts (shared write side; all write methods except documents), worker/db/persist.ts (diff and one batch), worker/routes/writes.ts (45 routes), TIN encryption, strict bodies, tests
+- Evidence: verify.mjs exit 0; tests now passing: U26 (148 worker route tests); PR #30
+- Notes: Verifier PASS under the run-wide rule; U27 only needs routes and tests for the remaining namespaces; idempotency purge belongs to U28; advisories queued.
+
 ## 2026-10-28 U25 Read routes behind the permission middleware — done
 - Changed: src/data/queries.ts (shared read side), worker/db/load.ts (D1 loader), worker/routes/reads.ts (45 routes), contract and permission tests; mock delegates its reads
 - Evidence: verify.mjs exit 0; tests now passing: U25 (102 worker route tests); PR #29
