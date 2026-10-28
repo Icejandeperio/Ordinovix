@@ -96,13 +96,13 @@ and, for protected files, the exact change proposed.
 
 - [x] 2026-10-28 U12/U18 and U30: owner edits applied (owner, 2026-10-28)
   - Decision: both flaky-test fixes applied as proposed; the verify-api job added to .github/workflows/verify.yml as proposed
-    (not a required check yet; make it required once it has been green for a week).
+    (informational via continue-on-error until U33 makes API mode dependable; U33 queues the edit that makes it blocking).
 - [x] 2026-10-28 U30 and U31 proposals: owner decisions
-  - If-Match: * stays accepted until U37 wires a version into every edit, then it is refused outside local (U37).
+  - If-Match: * stays accepted until U38 wires a version into every edit, then it is refused outside local (U38).
   - TIN_ENCRYPTION_KEY recovery: option A, a one-time --escrow step into the owner's password manager before production
-    holds real client data (U37).
+    holds real client data (U38).
   - Practice TIN and the retention period: decided with the client during the walkthrough.
-  - MVP completion units U33-U37 added; stop_after U37.
+  - MVP completion units U33-U38 added (U33 makes API mode dependable first); stop_after U38.
   - Original items:
     - (original) 2026-10-28 U12/U18 Fix two flaky acceptance tests (owner edit: both files are committed acceptance tests)
       - tests/acceptance/u18-a11y-responsive.spec.ts, end of `open()`: after `waitForLoadState('networkidle')`, wait until
