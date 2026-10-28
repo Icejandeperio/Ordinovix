@@ -16,12 +16,14 @@
     "bundle-size": "node scripts/bundle-size.mjs --max 220",
     "dev:vars": "node scripts/dev-vars.mjs",
     "types": "wrangler types",
-    "db:seed-sql": "node scripts/seed-sql.mjs"
+    "db:seed-sql": "node scripts/seed-sql.mjs",
+    "db:first-owner-sql": "node scripts/first-owner-sql.mjs"
   },
   "dependencies": {
     "@date-fns/tz": "^1.2.0",
     "@fontsource-variable/archivo": "^5.2.5",
     "@tanstack/react-query": "^5.66.0",
+    "better-auth": "1.7.12",
     "browser-image-compression": "^2.0.2",
     "chrono-node": "^2.7.7",
     "clsx": "^2.1.1",
