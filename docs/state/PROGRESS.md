@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-28 U29 Scheduled jobs, notifications and Web Push — done
+- Changed: @pushforge/builder; worker/cron/notify.ts (07:00 and 17:00 Manila jobs), worker/push/*, worker/routes/push.ts, three crons, scheduled dispatch
+- Evidence: verify.mjs exit 0; tests now passing: U29 (34 worker tests); PR #33
+- Notes: Verifier PASS under the run-wide rule; event-driven notifications and the client-side subscribe flow plus service-worker push handler are not part of U29 (queued); advisories queued.
+
 ## 2026-10-28 U28 Files in R2: upload, signed download URLs, retention job off by default — done
 - Changed: document commands behind a FileStore (shared with the mock), worker/files/store.ts, worker/routes/documents.ts, worker/cron/retention.ts and a daily cron, runWrite persists non-idempotent changes
 - Evidence: verify.mjs exit 0; tests now passing: U28 (27 worker tests); PR #32
