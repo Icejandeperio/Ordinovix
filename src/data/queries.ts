@@ -1260,7 +1260,22 @@ export function createQueries(ctx: QueryContext) {
     },
   };
 
-  return { actor, assertOwner, assertClient, assertTask, assertLine, assertDocument, assertFollowUp, assertPayment, canReachVisit, isVisitListable, assertVisit, assertVisitItem, assertNoteTarget, scopedInsightData, isClientAllowed, buildTaskSummary, buildClientSummary, buildVisitSummary, today, clients, contacts, authorizations, templates, deadlineMoves, holidays, tasks, lines, documents, followUps, messages, offices, visits, visitKit, payments, notes, savedViews, notifications, calendar, insights, baseline, pulses, reports, activity, search };
+  const memberships: Pick<Repositories['memberships'], 'list'> = {
+    async list() {
+      assertOwner();
+      return store.memberships.filter((m) => !m.deletedAt).map((m) => {
+        const u = store.users.find((user) => user.id === m.userId || user.email === m.email);
+        return {
+          ...m,
+          name: u?.name || (m.role === 'owner' ? 'Ana Santos' : 'Ben Morales'),
+          initials: u?.initials || (m.role === 'owner' ? 'AS' : 'BM'),
+          lastSignInAt: u?.lastSignInAt || (m.role === 'owner' ? '2026-10-26T08:30:00+08:00' : '2026-10-25T17:15:00+08:00'),
+        };
+      });
+    },
+  };
+
+  return { actor, assertOwner, assertClient, assertTask, assertLine, assertDocument, assertFollowUp, assertPayment, canReachVisit, isVisitListable, assertVisit, assertVisitItem, assertNoteTarget, scopedInsightData, isClientAllowed, buildTaskSummary, buildClientSummary, buildVisitSummary, today, clients, contacts, authorizations, templates, deadlineMoves, holidays, tasks, lines, documents, followUps, messages, offices, visits, visitKit, payments, notes, savedViews, notifications, calendar, insights, baseline, pulses, reports, activity, search , memberships };
 }
 
 export type Queries = ReturnType<typeof createQueries>;

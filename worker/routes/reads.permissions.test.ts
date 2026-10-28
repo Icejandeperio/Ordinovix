@@ -81,7 +81,7 @@ const BY_CLIENT: Array<{ route: string; mine: string; theirs: string }> = [
 ];
 
 // the practice-wide audit log (no client filter) is the owner's; a helper reads the events of an assigned client
-const OWNER_ONLY = ['/api/v1/reports/monthly-summary?month=2026-10', '/api/v1/reports/export/clients.csv', '/api/v1/reports/backup', '/api/v1/activity'];
+const OWNER_ONLY = ['/api/v1/reports/monthly-summary?month=2026-10', '/api/v1/reports/export/clients.csv', '/api/v1/reports/backup', '/api/v1/activity', '/api/v1/memberships'];
 
 describe('every read route: no membership and a revoked membership', () => {
   for (const path of [...OPEN, ...BY_CLIENT.map((r) => r.mine), ...OWNER_ONLY]) {

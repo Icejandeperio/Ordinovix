@@ -90,6 +90,7 @@ type Case = { name: string; path: string; call: () => Promise<unknown>; paged?: 
 async function cases(): Promise<Case[]> {
   const x = await sample();
   return [
+    { name: 'memberships.list', path: '/api/v1/memberships', call: () => R.memberships.list() },
     { name: 'today.queue', path: '/api/v1/today', call: () => R.today.queue('everyone') },
     { name: 'today.queue mine', path: '/api/v1/today?scope=mine', call: () => R.today.queue('mine') },
     { name: 'clients.list', path: '/api/v1/clients', call: () => R.clients.list(), paged: true },

@@ -1049,16 +1049,7 @@ export const mockRepositories: Repositories = {
   memberships: {
     async list() {
       await simulateLatency();
-      assertOwner();
-      return store.memberships.filter((m) => !m.deletedAt).map((m) => {
-        const u = store.users.find((user) => user.id === m.userId || user.email === m.email);
-        return {
-          ...m,
-          name: u?.name || (m.role === 'owner' ? 'Ana Santos' : 'Ben Morales'),
-          initials: u?.initials || (m.role === 'owner' ? 'AS' : 'BM'),
-          lastSignInAt: u?.lastSignInAt || (m.role === 'owner' ? '2026-10-26T08:30:00+08:00' : '2026-10-25T17:15:00+08:00'),
-        };
-      });
+      return query().memberships.list();
     },
     async invite(m) {
       await simulateLatency();

@@ -10,6 +10,7 @@ import { requireOwner } from '@/domain/policy';
 import type { InsightsFilter, InsightsTab } from '@/domain/types';
 import { ALL_TABLES, loadQueryData, type QueryTable } from '../db/load';
 import type { AppEnv } from '../env';
+import { ownerOnly } from '../middleware/auth';
 
 export const readRoutes = new Hono<AppEnv>();
 
@@ -50,6 +51,9 @@ function paginate<T>(page: { items: T[]; total?: number }, query: Record<string,
   const next = offset + limit < page.items.length ? btoa(String(offset + limit)) : undefined;
   return { items, total: page.total ?? page.items.length, ...(next ? { nextCursor: next } : {}) };
 }
+
+// ---- people (owner only, checked in middleware) -----------------------------------------------------------------
+readRoutes.get('/memberships', ownerOnly, async (c) => c.json(await (await queriesFor(c, ['users', 'memberships'])).memberships.list()));
 
 // ---- today, calendar, search, insights ------------------------------------------------------------------------
 readRoutes.get('/today', async (c) => c.json(await (await queriesFor(c)).today.queue(c.req.query('scope') === 'mine' ? 'mine' : 'everyone')));
