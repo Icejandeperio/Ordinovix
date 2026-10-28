@@ -1050,14 +1050,14 @@
       "acceptance": [
         "On a fresh local database the dev bootstrap works: the Demo organization is seeded (or reset) before the dev sign-in, so `npm run dev` with VITE_DATA_SOURCE=api signs in without a manual seed; a test starts from an empty local D1",
         "A failed dev sign-in is reported (console error and a visible dev-only notice) instead of being swallowed by an empty catch",
-        "/audit has no axe violations in API mode in either theme, including while it loads (aria-prohibited-attr on the .space-y-4 container)",
+        "Every U18 axe check passes in API mode in both themes, including while pages load (seen in CI: /audit aria-prohibited-attr on .space-y-4 in both themes; /clients dark color-contrast on the label of a transparent filter button)",
         "The request dropped right after POST /api/v1/dev/reset (U30 note) is root-caused and fixed, or the reset answers only when the Worker is ready; the 500 ms client wait is removed if no longer needed",
         "The verify-api acceptance step reports zero failures (check its annotations and log, since continue-on-error keeps the job green) on this PR and on the next merge to main; then write to QUEUE.md the owner edit that removes `continue-on-error: true` from that step in .github/workflows/verify.yml"
       ],
       "tests": [
         "U33"
       ],
-      "notes": "Found by the owner-side check of PR #37 (2026-10-28): CI's fresh local D1 left every data-dependent API-mode test signed out; with a seeded database 158 of 160 passed locally, the two failures being /audit axe in both themes. The CI job now seeds before the run; the bootstrap must not depend on that."
+      "notes": "Found by the owner-side check of PR #37 (2026-10-28): CI's fresh local D1 left every data-dependent API-mode test signed out; with a seeded database 158 of 160 passed locally, the two failures being /audit axe in both themes; CI with the seed step failed 3 of 160: those two plus /clients dark color-contrast. The CI job now seeds before the run; the bootstrap must not depend on that."
     },
     {
       "id": "U34",
