@@ -181,8 +181,9 @@ export function InsightsPage() {
         onRetry={() => query.refetch()}
         subject="insights"
         loading={
-          <div className="h-72 bg-[var(--sheet-2)] rounded-panel animate-pulse flex items-center justify-center text-xs text-[var(--ink-3)]">
-            Loading metrics and computing aggregations...
+          <div className="relative h-72 rounded-panel flex items-center justify-center text-xs text-[var(--ink-2)]">
+            <span aria-hidden className="absolute inset-0 rounded-panel bg-[var(--sheet-2)] animate-pulse" />
+            <span className="relative">Loading metrics and computing aggregations...</span>
           </div>
         }
         isEmpty={Boolean((data as { isEmpty?: boolean } | undefined)?.isEmpty)}
