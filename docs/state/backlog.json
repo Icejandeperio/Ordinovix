@@ -971,7 +971,9 @@
       "id": "U31",
       "phase": "P3",
       "tier": "T1",
-      "status": "pending",
+      "status": "done",
+      "pr": 35,
+      "evidence": "verify.mjs exit 0; tests now passing: U31 (32 stubbed-runner tests: dry run calls nothing, phase 1 creates and is idempotent, phase 2 sets only missing secrets and prints none, phase 3, wrangler logout last in every phase and on failure); PR #35; T1, no verifier; the owner runs the script (QUEUE Open item)",
       "depends_on": [
         "U30"
       ],
