@@ -581,7 +581,7 @@
       "id": "U19",
       "phase": "P3-prep",
       "tier": "T1",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U08",
         "U11",
@@ -600,7 +600,9 @@
         "List of owner decisions and accounts needed (Cloudflare, Google OAuth client, secrets) appended to QUEUE.md",
         "No wrangler, Cloudflare or OAuth commands run"
       ],
-      "tests": []
+      "tests": [],
+      "pr": 23,
+      "evidence": "verify.mjs exit 0; tests now passing: backend-plan.test.ts (5); verifier/PR #23; T1; plan only, nothing applied, no cloud command run; owner decisions and accounts queued."
     },
     {
       "id": "U20",
