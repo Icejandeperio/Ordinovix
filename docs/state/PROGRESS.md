@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-28 U31 Owner setup script and deploy runbook — done
+- Changed: scripts/setup-cloudflare.mjs (three phases: infrastructure, secrets, first owner) with stubbed-runner tests, docs/backend/DEPLOY.md, `npm run setup:cloudflare`
+- Evidence: verify.mjs exit 0; tests now passing: U31 (32); PR #35
+- Notes: T1, no verifier. Only the owner runs the script; the exact commands are the Open item in QUEUE.md. Phase order: secrets need a deployed Worker, so they follow the first deploy-preview. A recovery copy of TIN_ENCRYPTION_KEY is queued as a proposal. The guard flagged the words "wrangler secret" inside a PR body heredoc (see QUEUE proposals).
+
 ## 2026-10-28 U30 API data source: the frontend runs against the Worker — done
 - Changed: src/data/api/* (fetch Repositories, dev bootstrap), src/data/index.ts switch, worker/dev (reset, today override), R2 file keys in files.ts/useFileSrc, duplicate-invite refusal in the shared command, two small a11y fixes (Select name, Insights loading text)
 - Evidence: verify.mjs exit 0; tests now passing: U30; API mode 158 of 160 (two fixed or queued), verifier 38 of 38; PR #34
