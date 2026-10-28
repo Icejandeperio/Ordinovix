@@ -237,8 +237,9 @@ export function useSaveNote() {
   return useMutation({
     mutationFn: (note: Parameters<typeof repositories.notes.save>[0]) =>
       repositories.notes.save(note),
-    onSuccess: (saved) => {
-      qc.invalidateQueries({ queryKey: ['notes', saved.entity, saved.entityId] });
+    // A note saved offline is queued and returns nothing, so the entity comes from what was sent
+    onSuccess: (saved, note) => {
+      qc.invalidateQueries({ queryKey: ['notes', saved?.entity ?? note.entity, saved?.entityId ?? note.entityId] });
     },
   });
 }

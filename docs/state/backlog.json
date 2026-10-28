@@ -526,7 +526,7 @@
       "id": "U17",
       "phase": "P2",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U09",
         "U16"
@@ -550,7 +550,9 @@
         "Offline mutations queue in IndexedDB with idempotency keys, replay in order on reconnect, show in the sync indicator; no duplicates after replay (test with the dev offline toggle)",
         "PNG icons 192/512/maskable and apple-touch-icon 180 added alongside the SVGs"
       ],
-      "tests": []
+      "tests": [],
+      "pr": 20,
+      "evidence": "verify.mjs exit 0; tests now passing: B17, U17 acceptance (5), queue and PWA unit tests; verifier/PR #20; Verifier PASS; initial JS 211.9 KB gzip; write-during-replay gap fixed; other findings queued."
     },
     {
       "id": "U18",

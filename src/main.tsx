@@ -6,6 +6,7 @@ import { toast, Toaster } from 'sonner';
 import { LazyMotion } from 'motion/react';
 import { ThemeProvider } from '@/app/theme';
 import { router } from '@/app/router';
+import { offlineQueue } from '@/data';
 
 // Styles
 import '@/styles/tokens.css';
@@ -29,6 +30,14 @@ const queryClient = new QueryClient({
       staleTime: 30 * 1000,
     },
   },
+});
+
+// When queued writes have been sent, every screen shows the saved result
+let queued = 0;
+offlineQueue.subscribe(() => {
+  const now = offlineQueue.getSnapshot().items.length;
+  if (now < queued) void queryClient.invalidateQueries();
+  queued = now;
 });
 
 const rootElement = document.getElementById('root');
