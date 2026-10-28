@@ -44,6 +44,7 @@ import {
   NotFoundError,
   ForbiddenError,
   VersionConflictError,
+  ValidationError,
 } from '@/domain/errors';
 import {
   validate,
@@ -336,6 +337,10 @@ export function createCommands(ctx: CommandContext) {
       const { user, membership } = getCurrentUser();
       if (membership.role !== 'owner') {
         throw new ForbiddenError('Access denied: Only practice owners can manage operator memberships');
+      }
+      // one person per address: the API's unique index would otherwise answer an unhandled error
+      if (store.memberships.some((x) => x.email.toLowerCase() === m.email.toLowerCase())) {
+        throw new ValidationError({ email: ['This address is already invited or a member'] });
       }
       const name = m.name || m.email.split('@')[0];
       const initials = name.split(' ').map((p: string) => p[0]).join('').slice(0, 2).toUpperCase() || 'OP';
