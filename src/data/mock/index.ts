@@ -1,6 +1,6 @@
 import type { Repositories } from '../repositories';
 import { createQueries } from '../queries';
-import { createCommands, HELPER_FIELDS, takeVersion, assertVersion } from '../commands';
+import { createCommands, HELPER_FIELDS, takeVersion, assertVersion, type FileStore } from '../commands';
 import type {
   User,
   Membership,
@@ -778,26 +778,6 @@ function scopedInsightData() {
   query().scopedInsightData();
 }
 
-/** Spec 9.9 display name for a file attached to a client and, usually, a task. */
-function nameForDocument(
-  meta: { clientId: ID; taskId?: ID; kind: DocumentKind },
-  versionNo: number,
-  originalName: string,
-  mimeType?: string,
-): string {
-  const client = store.clients.find((c) => c.id === meta.clientId);
-  const task = meta.taskId ? store.tasks.find((t) => t.id === meta.taskId) : undefined;
-  const template = task?.templateId ? store.templates.find((t) => t.id === task.templateId) : undefined;
-  return documentDisplayName({
-    clientCode: client?.code ?? 'CLIENT',
-    templateCode: template?.code,
-    period: task?.period ?? task?.transactionDate ?? todayInManila(),
-    kind: meta.kind,
-    versionNo,
-    originalName,
-    mimeType,
-  });
-}
 
 
 
@@ -823,9 +803,15 @@ function buildVisitSummary(visit: Visit): VisitSummary {
 
 
 /** The write side lives in src/data/commands.ts, shared with the Worker; this binds it to the mock's store and persona. */
+const mockFiles: FileStore = {
+  keyFor: ({ documentId, thumb }) => FILE_KEY_PREFIX + (thumb ? 'thumb-' : '') + documentId,
+  put: putFile,
+  // Stored files mint a fresh object URL from IndexedDB; seeded documents keep their data: URL
+  urlFor: async (doc) => (isStoredFileKey(doc.storageKey) ? getFileUrl(doc.storageKey) : doc.storageKey),
+};
 const command = () => {
   const { user, membership } = getCurrentUser();
-  return createCommands({ store, user, membership });
+  return createCommands({ store, user, membership, files: mockFiles });
 };
 function assertCanSetStatus(task: Task, lines: TaskLine[], to: TaskStatus, role: Role): void {
   command().assertCanSetStatus(task, lines, to, role);
@@ -1253,147 +1239,36 @@ export const mockRepositories: Repositories = {
 
     async upload(meta, file, thumb, info) {
       await simulateLatency();
-      assertPatch('documents.upload', meta);
-      assertReferences(meta, meta.clientId);
-      assertClient(meta.clientId);
-      validate(DocumentMetaSchema, meta);
-      const { user } = getCurrentUser();
-      const now = todayInManila() + 'T00:00:00+08:00';
-      const docId = generateId();
-      const fileKey = FILE_KEY_PREFIX + docId;
-      const thumbKey = thumb ? FILE_KEY_PREFIX + 'thumb-' + docId : undefined;
-      await putFile(fileKey, file);
-      if (thumb && thumbKey) await putFile(thumbKey, thumb);
-      const originalName = info?.originalName || 'file.pdf';
-      const doc: DocumentFile = {
-        id: docId,
-        orgId: store.org.id,
-        clientId: meta.clientId,
-        taskId: meta.taskId,
-        lineId: meta.lineId,
-        visitItemId: meta.visitItemId,
-        paymentId: meta.paymentId,
-        authorizationId: meta.authorizationId,
-        kind: meta.kind,
-        displayName: nameForDocument(meta, 1, originalName, file.type),
-        originalName,
-        mimeType: file.type || 'application/pdf',
-        sizeBytes: file.size,
-        originalSizeBytes: info?.originalSizeBytes || file.size,
-        compressed: file.size < (info?.originalSizeBytes || file.size),
-        pageCount: info?.pageCount,
-        sha256: info?.sha256 || 'fake-hash-' + Date.now(),
-        storageKey: fileKey,
-        thumbnailKey: thumbKey,
-        versionNo: 1,
-        source: meta.source,
-        createdAt: now,
-        createdBy: user.id,
-        updatedAt: now,
-        updatedBy: user.id,
-        version: 1,
-      };
-      store.documents.push(doc);
-
-      if (meta.lineId) {
-        const line = store.taskLines.find((l) => l.id === meta.lineId);
-        if (line) {
-          line.documentIds.push(doc.id);
-          // Only move the line when the transition is allowed: an accepted line stays accepted, a received one stays received
-          if (line.status !== 'received' && canTransitionLine(line.status, 'received')) {
-            line.status = 'received';
-            line.receivedAt = now;
-          }
-        }
-      }
-
+      const result = await command().documents.upload(meta, file, thumb, info);
       saveStore();
-      logActivity('file_uploaded', 'document', doc.id, `Uploaded ${doc.displayName}`, doc.clientId);
-      return doc;
+      return result;
     },
 
     async replace(id, file, thumb, info) {
       await simulateLatency();
-      assertDocument(id);
-      const old = store.documents.find((d) => d.id === id);
-      if (!old) throw new Error('Document not found');
-      const { user } = getCurrentUser();
-      const now = todayInManila() + 'T00:00:00+08:00';
-      const newId = generateId();
-      const fileKey = FILE_KEY_PREFIX + newId;
-      const thumbKey = thumb ? FILE_KEY_PREFIX + 'thumb-' + newId : undefined;
-      await putFile(fileKey, file);
-      if (thumb && thumbKey) await putFile(thumbKey, thumb);
-      const originalName = info?.originalName || old.originalName;
-      const next: DocumentFile = {
-        ...old,
-        id: newId,
-        displayName: nameForDocument(old, old.versionNo + 1, originalName, file.type),
-        originalName,
-        mimeType: file.type || old.mimeType,
-        sizeBytes: file.size,
-        originalSizeBytes: info?.originalSizeBytes || file.size,
-        compressed: file.size < (info?.originalSizeBytes || file.size),
-        pageCount: undefined,
-        sha256: info?.sha256 || 'fake-hash-' + Date.now(),
-        storageKey: fileKey,
-        thumbnailKey: thumbKey,
-        versionNo: old.versionNo + 1,
-        replacesId: old.id,
-        deletedAt: undefined,
-        deletedReason: undefined,
-        createdAt: now,
-        createdBy: user.id,
-        updatedAt: now,
-        updatedBy: user.id,
-        version: 1,
-      };
-      store.documents.push(next);
-      if (next.lineId) {
-        const line = store.taskLines.find((l) => l.id === next.lineId);
-        if (line) line.documentIds.push(next.id);
-      }
+      const result = await command().documents.replace(id, file, thumb, info);
       saveStore();
-      logActivity('file_replaced', 'document', next.id, `Replaced ${old.displayName} with ${next.displayName}`, next.clientId);
-      return next;
+      return result;
     },
 
     async update(id, input) {
       await simulateLatency();
-      const { rest: d, expected } = takeVersion(input);
-      assertPatch('documents.update', d);
-      assertReferences(d, store.documents.find((x) => x.id === id)?.clientId);
-      assertDocument(id);
-      rejectIdentityChange(d, store.documents.find((x) => x.id === id));
-      validate(DocumentUpdateSchema, d);
-      const doc = store.documents.find((item) => item.id === id);
-      if (!doc) throw new Error('Document not found');
-      assertVersion(doc, expected);
-      Object.assign(doc, d, { version: doc.version + 1, updatedAt: nowInManila(), updatedBy: getCurrentUser().user.id });
+      const result = await command().documents.update(id, input);
       saveStore();
-      return doc;
+      return result;
     },
 
     async remove(id, reason) {
       await simulateLatency();
-      assertDocument(id);
-      validateReason(reason);
-      const doc = store.documents.find((d) => d.id === id);
-      if (doc) {
-        doc.deletedAt = todayInManila() + 'T00:00:00+08:00';
-        doc.deletedReason = reason;
-        saveStore();
-      }
+      await command().documents.remove(id, reason);
+      saveStore();
     },
 
     async getUrl(id, purpose) {
       await simulateLatency();
-      assertDocument(id);
-      const doc = store.documents.find((d) => d.id === id);
-      if (!doc) throw new Error('Document not found');
-      logActivity(purpose === 'download' ? 'file_downloaded' : 'file_viewed', 'document', id, `${purpose} document ${doc.displayName}`, doc.clientId);
-      // Stored files mint a fresh object URL from IndexedDB; seeded documents keep their data: URL
-      return isStoredFileKey(doc.storageKey) ? getFileUrl(doc.storageKey) : doc.storageKey;
+      const url = await command().documents.getUrl(id, purpose);
+      saveStore();
+      return url;
     },
 
     async findBySha(sha256, clientId) {
