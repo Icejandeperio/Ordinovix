@@ -168,3 +168,14 @@ describe('pagination (cursor, at most 100 per page)', () => {
     expect((await call('/api/v1/tasks?cursor=%25%25', 'owner')).status).toBeGreaterThanOrEqual(400);
   });
 });
+
+describe('no full TIN, ciphertext or hash leaves the API', () => {
+  it('is absent from the backup, the client routes and the memberships', async () => {
+    for (const path of ['/api/v1/reports/backup', '/api/v1/clients', '/api/v1/clients/client-rsp', '/api/v1/reports/client-checklist/client-rsp', '/api/v1/memberships', '/api/v1/session/me']) {
+      const { status, text } = await call(path, 'owner');
+      expect(status, path).toBe(200);
+      expect(text, path).not.toMatch(/tinFull|tin_full|tinEncrypted|tin_encrypted|tinHash|tin_hash/);
+      expect(text, path).not.toMatch(/\d{3}-\d{3}-\d{3}-\d{3,5}/);
+    }
+  });
+});
