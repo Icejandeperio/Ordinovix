@@ -583,7 +583,7 @@ export function createQueries(ctx: QueryContext) {
     },
     async get(id) {
       const template = store.templates.find((t) => t.id === id);
-      if (!template) throw new Error('Template not found');
+      if (!template) throw new NotFoundError('Template not found');
       const lines = store.reqTemplates.filter((l) => l.taskTemplateId === id);
       return { template, lines };
     },
@@ -731,7 +731,7 @@ export function createQueries(ctx: QueryContext) {
     async get(id) {
       assertFollowUp(id);
       const fu = store.followUps.find((item) => item.id === id);
-      if (!fu) throw new Error('Follow up not found');
+      if (!fu) throw new NotFoundError('Follow-up not found');
       const client = store.clients.find((c) => c.id === fu.clientId) || store.clients[0];
       const task = store.tasks.find((t) => t.id === fu.taskId);
       const lines = store.taskLines.filter((l) => fu.lineIds.includes(l.id));
@@ -761,7 +761,7 @@ export function createQueries(ctx: QueryContext) {
     async get(id) {
       if (!actor().active) throw new ForbiddenError('Your access has been revoked');
       const office = store.offices.find((o) => o.id === id);
-      if (!office) throw new Error('Office not found');
+      if (!office) throw new NotFoundError('Office not found');
       // The office is practice-wide; its numbers cover only the visits and clients the person can reach
       const reachable = store.visits.filter((v) => v.officeId === id && canReachVisit(v.id));
       const vItems = store.visitItems.filter((vi) => reachable.some((v) => v.id === vi.visitId) && isClientAllowed(vi.clientId));
