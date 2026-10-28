@@ -15,7 +15,8 @@
     "verify:fast": "node scripts/verify.mjs --fast",
     "bundle-size": "node scripts/bundle-size.mjs --max 220",
     "dev:vars": "node scripts/dev-vars.mjs",
-    "types": "wrangler types"
+    "types": "wrangler types",
+    "db:seed-sql": "node scripts/seed-sql.mjs"
   },
   "dependencies": {
     "@date-fns/tz": "^1.2.0",
@@ -26,6 +27,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.4",
     "date-fns": "^4.1.0",
+    "drizzle-orm": "0.45.4",
     "hono": "4.13.13",
     "idb-keyval": "^6.2.1",
     "lucide-react": "^0.475.0",
@@ -51,6 +53,7 @@
     "@types/react-dom": "^19.0.3",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "drizzle-kit": "0.31.11",
     "eslint": "10.13.0",
     "eslint-plugin-react-hooks": "7.1.1",
     "fake-indexeddb": "6.2.6",
