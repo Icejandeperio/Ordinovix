@@ -1,3 +1,6 @@
+import type { Auth } from './auth/auth';
+import type { Actor } from './auth/membership';
+
 /**
  * Everything the Worker reads from its environment (ADR-0002 section 3). Bindings come from wrangler.jsonc; the secrets
  * are set by the owner's setup script (live) or `npm run dev:vars` (local) and are never listed in a config file.
@@ -19,4 +22,13 @@ export interface AppBindings {
   TIN_ENCRYPTION_KEY: string;
 }
 
-export type AppEnv = { Bindings: AppBindings };
+/** What the session and membership middleware leave on the request context. */
+export interface AppVariables {
+  auth: Auth;
+  /** The signed-in person, as Better Auth knows them. */
+  authUser: { id: string; name: string; email: string; emailVerified: boolean };
+  /** Their membership: organization, role, assigned clients and whether it is still active. */
+  actor: Actor;
+}
+
+export type AppEnv = { Bindings: AppBindings; Variables: AppVariables };

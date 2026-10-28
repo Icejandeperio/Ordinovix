@@ -11,19 +11,21 @@ import {
 } from '@/domain/errors';
 import { RuleViolationError } from '@/domain/rules';
 import { SECURITY_HEADERS } from './security-headers';
-import type { AppBindings } from './env';
+import type { AppBindings, AppEnv } from './env';
 
 const env = { APP_ENV: 'local' } as unknown as AppBindings;
 
 /** An app with one extra route per error, so the mapper can be driven without any real route. */
 function appThatThrows(error: unknown) {
-  const app = createApp();
-  const extra = new Hono<{ Bindings: AppBindings }>();
-  extra.get('/boom', () => {
-    throw error;
+  return createApp({
+    before: (app) => {
+      const extra = new Hono<AppEnv>();
+      extra.get('/boom', () => {
+        throw error;
+      });
+      app.route('/api/v1/_test', extra);
+    },
   });
-  app.route('/api/v1/_test', extra);
-  return app;
 }
 
 async function call(error: unknown) {
@@ -95,7 +97,7 @@ describe('error mapper (BACKEND_PLAN section 2)', () => {
   });
 
   it('answers an unknown /api path with a JSON 404, not HTML', async () => {
-    const res = await createApp().request('/api/v1/nope', {}, env);
+    const res = await createApp().request('/api/nope', {}, env);
     expect(res.status).toBe(404);
     expect(res.headers.get('content-type')).toContain('application/json');
     expect(((await res.json()) as { error: { code: string } }).error.code).toBe('NOT_FOUND');
@@ -105,7 +107,7 @@ describe('error mapper (BACKEND_PLAN section 2)', () => {
 describe('security headers (BACKEND_PLAN section 8)', () => {
   it('are on a success, an error and a not-found response', async () => {
     const app = appThatThrows(new ForbiddenError());
-    for (const path of ['/api/v1/health', '/api/v1/_test/boom', '/api/v1/missing']) {
+    for (const path of ['/api/v1/health', '/api/v1/_test/boom', '/api/missing']) {
       const res = await app.request(path, {}, env);
       for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
         expect(res.headers.get(name), `${name} on ${path}`).toBe(value);
