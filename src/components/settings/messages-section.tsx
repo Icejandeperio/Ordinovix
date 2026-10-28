@@ -13,7 +13,7 @@ function TemplateCard({ template, onSaved }: { template: MessageTemplate; onSave
 
   const handleSave = () => {
     setError(null);
-    save.mutate({ id: template.id, body }, { onSuccess: onSaved, onError: (err) => setError((err as Error).message) });
+    save.mutate({ id: template.id, version: template.version, body }, { onSuccess: onSaved, onError: (err) => setError((err as Error).message) });
   };
 
   return (

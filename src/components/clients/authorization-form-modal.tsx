@@ -115,7 +115,7 @@ export function AuthorizationFormModal({
         }
       );
     } else {
-      upsertAuth.mutate(payload, {
+      upsertAuth.mutate({ ...payload, version: authorization?.version }, {
         onSuccess: () => onClose(),
         onError: (err) => setError((err as Error).message),
       });

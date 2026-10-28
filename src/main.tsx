@@ -18,6 +18,12 @@ const queryClient = new QueryClient({
   // A write that fails validation and has no inline error handling of its own still tells the operator why
   mutationCache: new MutationCache({
     onError: (error, _variables, _context, mutation) => {
+      // Someone else saved first (VERSION_CONFLICT): say so, then reload so every screen shows the latest record
+      if (classifyError(error) === 'conflict') {
+        toast.error((error as Error).message);
+        void queryClient.invalidateQueries();
+        return;
+      }
       if (mutation.options.onError) return;
       if (classifyError(error) === 'validation') toast.error((error as Error).message);
     },

@@ -22,6 +22,7 @@ export function PracticeSection({ settings, onSaved }: PracticeSectionProps) {
     const number = accreditationNo.trim();
     save.mutate(
       {
+        version: settings.version,
         practiceName: practiceName.trim(),
         accreditation: number ? { number, validUntil: accreditationExpiry || undefined } : undefined,
       },

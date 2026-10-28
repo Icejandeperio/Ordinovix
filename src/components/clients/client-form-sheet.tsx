@@ -142,6 +142,7 @@ export function ClientFormSheet({ open, onClose, client }: ClientFormSheetProps)
     upsertClient.mutate(
       {
         id: client?.id,
+        version: client?.version,
         displayName: displayName.trim(),
         code: code.trim().toUpperCase(),
         entityType,

@@ -24,7 +24,7 @@ export function ProfileSection({ user, membership, settings, isOwner, onSaved, o
   const handleSave = () => {
     setError(null);
     save.mutate(
-      { operatorDisplayName: displayName.trim(), mobileE164: phone.trim() || undefined },
+      { version: settings.version, operatorDisplayName: displayName.trim(), mobileE164: phone.trim() || undefined },
       { onSuccess: onSaved, onError: (err) => setError((err as Error).message) }
     );
   };

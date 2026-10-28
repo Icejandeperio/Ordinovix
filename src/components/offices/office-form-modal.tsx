@@ -3,6 +3,7 @@ import type { Office, OfficeType } from '@/domain/types';
 import { useSaveOffice } from '@/hooks/useData';
 import { X, Building2, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { classifyError } from '@/domain/errors';
 import { ModalDialog } from '@/components/ui/modal-dialog';
 
 interface OfficeFormModalProps {
@@ -40,6 +41,7 @@ export function OfficeFormModal({
     try {
       const saved = await saveMutation.mutateAsync({
         id: office?.id,
+        version: office?.version,
         type,
         name: name.trim(),
         rdoCode: type === 'rdo' ? rdoCode.trim() : undefined,
@@ -54,7 +56,8 @@ export function OfficeFormModal({
       if (onSuccess) onSuccess(saved);
       onClose();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to save office');
+      // A version conflict has already been announced and the record reloaded
+      if (classifyError(err) !== 'conflict') toast.error(err.message || 'Failed to save office');
     }
   };
 
