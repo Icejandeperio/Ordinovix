@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-28 U19 Backend plan document (no cloud actions) — done
+- Changed: docs/backend/BACKEND_PLAN.md, schema-draft.sql, QUEUE owner decisions, coverage test
+- Evidence: verify.mjs exit 0; tests now passing: backend-plan.test.ts (5); PR #23
+- Notes: T1; plan only, nothing applied, no cloud command run; owner decisions and accounts queued.
+
 ## 2026-10-28 U20 Close the remaining helper permission gaps from the U07 review — done
 - Changed: mock data layer: logResponse, recordOutcome, payments/contacts/authorizations, activity/calendar/search/today/offices policy, isVisitListable; Offices page owner-only buttons
 - Evidence: verify.mjs exit 0; tests now passing: B11, permissions-gaps (15), U20 acceptance (1); PR #22
