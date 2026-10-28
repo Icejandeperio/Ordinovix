@@ -4,6 +4,7 @@ import { devRoutes } from './dev/sign-in';
 import type { AppEnv } from './env';
 import { handleError, handleNotFound } from './errors';
 import { requireActive, requireMembership, requireSession } from './middleware/auth';
+import { readRoutes } from './routes/reads';
 import { sessionRoutes } from './routes/session';
 import { SECURITY_HEADERS } from './security-headers';
 
@@ -47,6 +48,7 @@ export function createApp(options: CreateAppOptions = {}) {
   const signedIn = new Hono<AppEnv>();
   signedIn.use('*', requireSession, requireMembership, requireActive);
   signedIn.route('/session', sessionRoutes);
+  signedIn.route('/', readRoutes);
   app.route('/api/v1', signedIn);
 
   return app;

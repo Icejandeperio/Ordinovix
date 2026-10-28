@@ -781,7 +781,7 @@
       "id": "U25",
       "phase": "P3",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U24"
       ],
@@ -803,7 +803,9 @@
       "tests": [
         "U25"
       ],
-      "notes": "Reuse src/domain/policy.ts; do not fork rules."
+      "notes": "Reuse src/domain/policy.ts; do not fork rules.",
+      "pr": 29,
+      "evidence": "verify.mjs exit 0; tests now passing: U25 contract (45 routes equal to the mock, owner and helper) and permission table (100 cases); verifier/PR #29; verifier PASS on round 2 (round 1: memberships.list had no route); mock read side moved verbatim into src/data/queries.ts and shared with the Worker"
     },
     {
       "id": "U26",

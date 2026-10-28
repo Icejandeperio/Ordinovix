@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-28 U25 Read routes behind the permission middleware — done
+- Changed: src/data/queries.ts (shared read side), worker/db/load.ts (D1 loader), worker/routes/reads.ts (45 routes), contract and permission tests; mock delegates its reads
+- Evidence: verify.mjs exit 0; tests now passing: U25 (102 worker route tests); PR #29
+- Notes: Verifier PASS under the run-wide rule; whole org loaded per request (helper filter applied by shared code); monthlySummary and exportCsv are still mock stubs; advisories queued.
+
 ## 2026-10-28 U24 Auth and membership: Better Auth with Google, membership middleware, dev sign-in — done
 - Changed: better-auth; worker/auth, middleware, routes/session, dev/sign-in; db mappers; first-owner-sql script; UnauthenticatedError; worker test fixture
 - Evidence: verify.mjs exit 0; tests now passing: U24 (31 worker tests); PR #28
