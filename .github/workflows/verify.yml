@@ -78,9 +78,15 @@ jobs:
       - name: Local D1 schema
         run: npx wrangler d1 migrations apply DB --local
 
+      # The dev sign-in refuses to run until the Demo organization exists, so a fresh database must be seeded first.
+      - name: Seed the local Demo organization
+        run: |
+          npm run --silent db:seed-sql > "$RUNNER_TEMP/seed.sql"
+          npx wrangler d1 execute DB --local --file "$RUNNER_TEMP/seed.sql" > /dev/null
+
       - name: Acceptance tests against the Worker (one worker; the tests share one database)
         run: >
-          npx playwright test --workers=1
+          npx playwright test --workers=1 --reporter=list,github
           --grep-invert "U21 practice settings|U21 message templates|U06 B14|U04 B18"
         env:
           CI: 'true'
