@@ -184,6 +184,44 @@ describe('the change and its activity row are written together', () => {
   });
 });
 
+describe('inserts stay under the bound-value limit of a D1 statement', () => {
+  it('a task with 30 lines is written as multi-row inserts of at most 100 bound values each', async () => {
+    const bound: number[] = [];
+    const real = world.env.DB;
+    const spy = new Proxy(real, {
+      get(target, prop) {
+        if (prop === 'prepare') {
+          return (sql: string) => {
+            const statement = target.prepare(sql);
+            return new Proxy(statement, {
+              get(st, p2) {
+                if (p2 === 'bind') return (...values: unknown[]) => (bound.push(values.length), st.bind(...values));
+                const v = (st as any)[p2];
+                return typeof v === 'function' ? v.bind(st) : v;
+              },
+            });
+          };
+        }
+        const v = (target as any)[prop];
+        return typeof v === 'function' ? v.bind(target) : v;
+      },
+    });
+    const lines = Array.from({ length: 30 }, (_, i) => ({ label: `Requirement ${i + 1}`, required: true, copyForm: 'original', suppliedBy: 'client' }));
+    const before = await count('SELECT COUNT(*) AS n FROM task_lines');
+    const res = await world.request('/api/v1/tasks', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'Idempotency-Key': 'chunk-key-00001' },
+      body: JSON.stringify({ clientId: 'client-maria', title: 'Thirty lines', kind: 'other', dueDate: '2026-12-01', lines }),
+      cookie: cookie.owner,
+      env: { DB: spy as D1Database },
+    });
+    expect(res.status).toBe(201);
+    expect(await count('SELECT COUNT(*) AS n FROM task_lines')).toBe(before + 30);
+    expect(Math.max(...bound)).toBeLessThanOrEqual(100);
+    expect(bound.filter((n) => n > 50).length).toBeGreaterThan(0); // the 30 line rows really were grouped into multi-row statements
+  });
+});
+
 describe('bodies are strict', () => {
   it('rejects a field the route does not accept, naming it', async () => {
     const res = await send('owner', 'POST', '/api/v1/clients', { ...newClient(), orgId: 'org-other', version: 9, createdBy: 'x' });
