@@ -27,7 +27,55 @@ and, for protected files, the exact change proposed.
   - Neither blocks a unit; both have failed once under full-gate load and passed on re-run.
   - Update 2026-10-28 (U24): the U18 axe stamp-contrast check on `/tasks/task-rsp-0619e` has now failed in CI in the dark theme (U20, U22 verifier) and the light theme (U24 PR #28, passed on one rerun of the failed job); it is the same stamp fade-in. It costs a rerun per PR, so the owner edit above is worth doing soon.
 
+- [ ] 2026-10-28 U30 Add an API-mode acceptance job to `.github/workflows/verify.yml` (owner edit: protected file; blocks nothing)
+  - Context: U30 PR. `VITE_DATA_SOURCE=api` runs the whole app against the local Worker (D1 and R2 on disk, no network). Locally, 160 of
+    the 164 acceptance tests pass in that mode with one worker; the four that cannot run there are excluded in the job below.
+  - Add this job under `jobs:` (it is a second job, so the required check `verify` is unchanged; make it required later if you want):
+    ```yaml
+      verify-api:
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        steps:
+          - uses: actions/checkout@v5
+          - uses: actions/setup-node@v6
+            with:
+              node-version: 22
+              cache: npm
+          - run: npm ci
+          - run: npx playwright install --with-deps chromium
+          - name: Local backend secrets (random values, written to .dev.vars, never printed)
+            run: npm run dev:vars
+          - name: Local D1 schema
+            run: npx wrangler d1 migrations apply DB --local
+          - name: Acceptance tests against the Worker (one worker: the tests share one database)
+            run: >
+              npx playwright test --workers=1
+              --grep-invert "U21 practice settings|U21 message templates|U06 B14|U04 B18"
+            env:
+              CI: 'true'
+              TZ: Asia/Manila
+              VITE_DATA_SOURCE: api
+          - name: Upload test evidence on failure
+            if: failure()
+            uses: actions/upload-artifact@v6
+            with:
+              name: test-results-api
+              path: |
+                test-results/
+                playwright-report/
+              retention-days: 7
+              if-no-files-found: ignore
+    ```
+  - Why those four are excluded (each reaches into the mock's in-page store, which does not exist in API mode): the two U21 tests import
+    `/src/data/mock/index.ts` to play "another device"; `U06 B14` corrupts a field the mock accepts and the API rejects (strict bodies);
+    `U04 B18` asserts the "Sample Data Mode" banner, which only mock mode shows. `tests/acceptance/u30-data-source.spec.ts` covers the same
+    behaviour through the data source and runs in both modes.
+  - Expect about 7 minutes (a 164-test run takes 6.6 minutes locally). Parallel workers are not possible: every test starts from a reset of the one
+    Demo organization.
+
 ## Proposals (ideas outside the backlog; not scheduled)
+
+- 2026-10-28 (from the U30 review; proposals, not blocking) (1) `vite dev` drops a request that arrives within a few milliseconds of `POST /api/v1/dev/reset` ("fetch failed" about one time in five; a delay inside the Worker does not help, a delay in the client does), and Vite then paints its error overlay over the page. The dev bootstrap waits 500 ms after a reset and the client resends an answer that is not from the Worker (502/503/504, or a 500 that is not JSON) up to twice with the same Idempotency-Key; the cause (probably a reused connection between the Vite process and workerd) is not found. (2) In API mode `useFileSrc` and `saveFile` take the document id from the R2 key (`.../{documentId}-v{n}.{ext}`) and ask `documents.getUrl` for a signed URL; the printable document view (`printDocumentFile`) opens a new window, where the relative signed URL may not resolve: check it when real files are printed. (3) Dev reset gives every sample client an encrypted sample TIN (the mock's, or `000-000-000-00000` like the mock's reveal), so reveal works in both modes; the preview seed (`npm run db:seed-sql`) still stores masked TINs only. (4) The `ids`, `statuses`, `onVisit` and other task-list filters named in `Repositories.tasks.list` are ignored by the shared read side (the mock ignores them too); the client sends them and the API accepts them. (5) `settings.save` in API mode sends `If-Match: *` when a caller names no version, like the mock's unversioned save. (6) The API client lists follow every page (100 per request), so a large list is several requests per screen; fine for one practice.
 
 - 2026-10-28 (from the U29 review; proposals, not blocking) (1) Event-driven notifications of spec 14 (received needs review, visit ready, left without everything ready, outcome recorded, assigned to you) are not generated: the plan says write handlers create them, the mock only seeds them, and U29's criteria cover the cron jobs. (2) There is no client-side flow yet to turn on reminders: the app needs a "Turn on reminders" button that asks for permission, subscribes with the key from `GET /api/v1/push/vapid-key`, posts to `/push/subscriptions`, and a service-worker `push` handler that shows the notification and opens its link (vite-plugin-pwa's `generateSW` needs `injectManifest` for a custom handler). Until then pushes can be sent and received by no device; "push on a phone" stays an owner item in GO_LIVE. (3) The Worker bundles through `vite build` (the Cloudflare plugin builds it into `dist/<worker>`); a `wrangler deploy --dry-run` by CI before the first deploy would also check the upload. (4) The VAPID admin contact is the organization's support contact or the first owner's email, which the push services see in the token. (5) A push held by quiet hours is picked up by the next cron run only (07:00 and 17:00); a notification created at 17:00 inside someone's custom quiet window waits for 07:00. (6) The one unit failure seen locally was the monthly check-in job test hitting Vitest's 5 s default under load (three job runs in one test); the job tests now have a 60 s timeout.
 
