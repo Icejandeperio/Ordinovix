@@ -362,7 +362,7 @@ export function createCommands(ctx: CommandContext) {
       }
       const { rest: m, expected } = takeVersion(input);
       const index = store.memberships.findIndex((item) => item.id === id);
-      if (index === -1) throw new Error('Membership not found');
+      if (index === -1) throw new NotFoundError('Membership not found');
       assertVersion(store.memberships[index], expected);
       store.memberships[index] = { ...store.memberships[index], ...m, version: store.memberships[index].version + 1 };
       if (m.name) {
@@ -431,7 +431,7 @@ export function createCommands(ctx: CommandContext) {
       const now = todayInManila() + 'T00:00:00+08:00';
       if (c.id) {
         const index = store.clients.findIndex((item) => item.id === c.id);
-        if (index === -1) throw new Error('Client not found');
+        if (index === -1) throw new NotFoundError('Client not found');
         assertVersion(store.clients[index], expected);
         store.clients[index] = {
           ...store.clients[index],
@@ -497,7 +497,7 @@ export function createCommands(ctx: CommandContext) {
     async revealTin(id) {
       assertClient(id);
       const client = store.clients.find((c) => c.id === id);
-      if (!client) throw new Error('Client not found');
+      if (!client) throw new NotFoundError('Client not found');
       logActivity('tin_revealed', 'client', id, `Revealed TIN for ${client.displayName}`, id);
       return client.tinFull || '000-000-000-00000';
     },
@@ -594,7 +594,7 @@ export function createCommands(ctx: CommandContext) {
       const now = todayInManila() + 'T00:00:00+08:00';
       if (c.id) {
         const idx = store.contacts.findIndex((item) => item.id === c.id);
-        if (idx === -1) throw new Error('Contact not found');
+        if (idx === -1) throw new NotFoundError('Contact not found');
         assertVersion(store.contacts[idx], expected);
         store.contacts[idx] = { ...store.contacts[idx], ...c, updatedAt: now, version: store.contacts[idx].version + 1 };
         return store.contacts[idx];
@@ -641,7 +641,7 @@ export function createCommands(ctx: CommandContext) {
       const now = todayInManila() + 'T00:00:00+08:00';
       if (a.id) {
         const idx = store.authorizations.findIndex((item) => item.id === a.id);
-        if (idx === -1) throw new Error('Authorization not found');
+        if (idx === -1) throw new NotFoundError('Authorization not found');
         assertVersion(store.authorizations[idx], expected);
         store.authorizations[idx] = { ...store.authorizations[idx], ...a, updatedAt: now, version: store.authorizations[idx].version + 1 };
         return store.authorizations[idx];
@@ -714,13 +714,39 @@ export function createCommands(ctx: CommandContext) {
         };
         store.templates.push(template);
       }
+      // Requirement lines are replaced only when lines are sent (BACKEND_PLAN 4.4); sending none leaves them as they are
+      if (lines && lines.length > 0) {
+        store.reqTemplates = store.reqTemplates.filter((l) => l.taskTemplateId !== template.id);
+        lines.forEach((l, i) => {
+          store.reqTemplates.push({
+            id: l.id || generateId(),
+            orgId: store.org.id,
+            taskTemplateId: template.id,
+            label: l.label || 'Requirement',
+            description: l.description,
+            required: l.required ?? true,
+            copyForm: l.copyForm || 'original',
+            copies: l.copies,
+            suppliedBy: l.suppliedBy || 'client',
+            validityDays: l.validityDays,
+            sortOrder: l.sortOrder ?? i + 1,
+            sourceRef: l.sourceRef,
+            verified: false,
+            createdAt: now,
+            createdBy: user.id,
+            updatedAt: now,
+            updatedBy: user.id,
+            version: 1,
+          });
+        });
+      }
       return template;
     },
     async markVerified(id, v) {
       assertOwner();
       validate(MarkVerifiedSchema, v);
       const t = store.templates.find((item) => item.id === id);
-      if (!t) throw new Error('Template not found');
+      if (!t) throw new NotFoundError('Template not found');
       t.verified = true;
       t.verifiedOn = v.verifiedOn;
       t.sourceRef = v.sourceRef;
@@ -865,7 +891,7 @@ export function createCommands(ctx: CommandContext) {
       rejectIdentityChange(t, store.tasks.find((x) => x.id === id));
       validate(TaskUpdateSchema, t);
       const idx = store.tasks.findIndex((item) => item.id === id);
-      if (idx === -1) throw new Error('Task not found');
+      if (idx === -1) throw new NotFoundError('Task not found');
       assertVersion(store.tasks[idx], expected);
       store.tasks[idx] = { ...store.tasks[idx], ...t, version: store.tasks[idx].version + 1 };
       return store.tasks[idx];
@@ -875,7 +901,7 @@ export function createCommands(ctx: CommandContext) {
       if (reason !== undefined) validateReason(reason);
       const { user, membership } = getCurrentUser();
       const task = store.tasks.find((item) => item.id === id);
-      if (!task) throw new Error('Task not found');
+      if (!task) throw new NotFoundError('Task not found');
       const lines = store.taskLines.filter((l) => l.taskId === id);
 
       assertCanSetStatus(task, lines, to, membership.role);
@@ -890,7 +916,7 @@ export function createCommands(ctx: CommandContext) {
       validate(MarkSubmittedSchema, s);
       const { membership } = getCurrentUser();
       const task = store.tasks.find((item) => item.id === id);
-      if (!task) throw new Error('Task not found');
+      if (!task) throw new NotFoundError('Task not found');
       assertCanSetStatus(task, store.taskLines.filter((l) => l.taskId === id), 'submitted', membership.role);
       task.status = 'submitted';
       task.submittedAt = s.on + 'T00:00:00+08:00';
@@ -905,7 +931,7 @@ export function createCommands(ctx: CommandContext) {
       validate(MarkCompletedSchema, c);
       const { membership } = getCurrentUser();
       const task = store.tasks.find((item) => item.id === id);
-      if (!task) throw new Error('Task not found');
+      if (!task) throw new NotFoundError('Task not found');
       assertCanSetStatus(task, store.taskLines.filter((l) => l.taskId === id), 'completed', membership.role);
       const hasEvidence = store.documents.some(
         (d) => d.taskId === id && !d.deletedAt && (d.kind === 'filed_return' || d.kind === 'acknowledgment'),
@@ -926,7 +952,7 @@ export function createCommands(ctx: CommandContext) {
       const { user, membership } = getCurrentUser();
       if (membership.role !== 'owner') throw new ForbiddenError('Only owners can override task status');
       const task = store.tasks.find((item) => item.id === id);
-      if (!task) throw new Error('Task not found');
+      if (!task) throw new NotFoundError('Task not found');
       task.statusOverride = {
         status,
         reason,
@@ -941,7 +967,7 @@ export function createCommands(ctx: CommandContext) {
       assertOwner();
       validateReason(reason);
       const task = store.tasks.find((item) => item.id === id);
-      if (!task) throw new Error('Task not found');
+      if (!task) throw new NotFoundError('Task not found');
       delete task.statusOverride;
       task.version += 1;
       logActivity('overridden', 'task', id, `Cleared status override: ${reason}`, task.clientId, reason);
@@ -951,7 +977,7 @@ export function createCommands(ctx: CommandContext) {
       assertOwner();
       validate(ChangeDueSchema, { dueDate, ref, reason, url });
       const task = store.tasks.find((item) => item.id === id);
-      if (!task) throw new Error('Task not found');
+      if (!task) throw new NotFoundError('Task not found');
       task.dueDate = dueDate;
       task.dueSource = { kind: 'override', ref };
       task.version += 1;
@@ -962,7 +988,7 @@ export function createCommands(ctx: CommandContext) {
       assertTask(id);
       if (next) validate(NextActionSchema, next);
       const task = store.tasks.find((item) => item.id === id);
-      if (!task) throw new Error('Task not found');
+      if (!task) throw new NotFoundError('Task not found');
       task.nextAction = next || undefined;
       task.version += 1;
       return task;
@@ -989,7 +1015,7 @@ export function createCommands(ctx: CommandContext) {
     async duplicateForNextPeriod(id) {
       assertTask(id);
       const task = store.tasks.find((item) => item.id === id);
-      if (!task) throw new Error('Task not found');
+      if (!task) throw new NotFoundError('Task not found');
       // Pass tasks.create only the line fields it accepts, never the stored records (their id, status and
       // review fields are not the caller's to set, and a helper's create is held to the helper allowlist)
       const lines = store.taskLines
@@ -1074,10 +1100,10 @@ export function createCommands(ctx: CommandContext) {
       if (extra) validate(LineStatusExtraSchema, extra);
       const { user } = getCurrentUser();
       const line = store.taskLines.find((l) => l.id === id);
-      if (!line) throw new Error('Line not found');
+      if (!line) throw new NotFoundError('Line not found');
 
       if (!canTransitionLine(line.status, to)) {
-        throw new Error(`Cannot transition line from ${line.status} to ${to}`);
+        throw new RuleViolationError(`Cannot transition line from ${line.status} to ${to}`);
       }
 
       line.status = to;
@@ -1108,7 +1134,7 @@ export function createCommands(ctx: CommandContext) {
       validate(LineWriteSchema, line);
       const { user } = getCurrentUser();
       const task = store.tasks.find((t) => t.id === taskId);
-      if (!task) throw new Error('Task not found');
+      if (!task) throw new NotFoundError('Task not found');
       const newLine: TaskLine = {
         id: generateId(),
         orgId: store.org.id,
@@ -1141,7 +1167,7 @@ export function createCommands(ctx: CommandContext) {
       rejectIdentityChange(line, store.taskLines.find((x) => x.id === id));
       validate(LineWriteSchema, line);
       const idx = store.taskLines.findIndex((l) => l.id === id);
-      if (idx === -1) throw new Error('Line not found');
+      if (idx === -1) throw new NotFoundError('Line not found');
       assertVersion(store.taskLines[idx], expected);
       store.taskLines[idx] = { ...store.taskLines[idx], ...line, version: store.taskLines[idx].version + 1 };
       return store.taskLines[idx];
@@ -1192,7 +1218,7 @@ export function createCommands(ctx: CommandContext) {
       validate(MarkSentWriteSchema, a);
       const { user } = getCurrentUser();
       const fu = store.followUps.find((item) => item.id === id);
-      if (!fu) throw new Error('Follow up not found');
+      if (!fu) throw new NotFoundError('Follow-up not found');
       fu.status = 'sent';
       fu.expectedBy = a.expectedBy;
       fu.attemptCount += 1;
@@ -1231,7 +1257,7 @@ export function createCommands(ctx: CommandContext) {
       assertFollowUp(id);
       validate(LogResponseWriteSchema, r);
       const fu = store.followUps.find((item) => item.id === id);
-      if (!fu) throw new Error('Follow up not found');
+      if (!fu) throw new NotFoundError('Follow-up not found');
       for (const lineId of r.receivedLineIds ?? []) {
         const line = store.taskLines.find((l) => l.id === lineId);
         if (!line) continue;
@@ -1272,7 +1298,7 @@ export function createCommands(ctx: CommandContext) {
       assertFollowUp(id);
       validateReason(reason);
       const fu = store.followUps.find((item) => item.id === id);
-      if (!fu) throw new Error('Follow up not found');
+      if (!fu) throw new NotFoundError('Follow-up not found');
       fu.status = 'escalated';
       fu.escalatedReason = reason;
       logActivity('escalated', 'follow_up', id, `Escalated: ${reason}`, fu.clientId, reason);
@@ -1282,7 +1308,7 @@ export function createCommands(ctx: CommandContext) {
       assertFollowUp(id);
       if (reason !== undefined) validateReason(reason);
       const fu = store.followUps.find((item) => item.id === id);
-      if (!fu) throw new Error('Follow up not found');
+      if (!fu) throw new NotFoundError('Follow-up not found');
       fu.status = 'resolved';
       fu.resolvedReason = reason || 'Resolved manually';
       fu.resolvedAt = todayInManila() + 'T00:00:00+08:00';
@@ -1422,7 +1448,7 @@ export function createCommands(ctx: CommandContext) {
       rejectIdentityChange(v, store.visits.find((x) => x.id === id));
       validate(VisitUpdateSchema, v);
       const visit = store.visits.find((item) => item.id === id);
-      if (!visit) throw new Error('Visit not found');
+      if (!visit) throw new NotFoundError('Visit not found');
       assertVersion(visit, expected);
       Object.assign(visit, v);
       visit.version += 1;
@@ -1434,7 +1460,7 @@ export function createCommands(ctx: CommandContext) {
       validate(VisitAddItemSchema, { action });
       const { user } = getCurrentUser();
       const task = store.tasks.find((t) => t.id === taskId);
-      if (!task) throw new Error('Task not found');
+      if (!task) throw new NotFoundError('Task not found');
       const vi: VisitItem = {
         id: generateId(),
         orgId: store.org.id,
@@ -1460,7 +1486,7 @@ export function createCommands(ctx: CommandContext) {
       rejectIdentityChange(i, store.visitItems.find((x) => x.id === itemId));
       validate(VisitItemWriteSchema, i);
       const item = store.visitItems.find((vi) => vi.id === itemId);
-      if (!item) throw new Error('Visit item not found');
+      if (!item) throw new NotFoundError('Visit item not found');
       assertVersion(item, expected);
       Object.assign(item, i, { version: item.version + 1, updatedAt: nowInManila(), updatedBy: getCurrentUser().user.id });
       return item;
@@ -1474,7 +1500,7 @@ export function createCommands(ctx: CommandContext) {
       const packedLine = ref.lineId ? store.taskLines.find((x) => x.id === ref.lineId) : undefined;
       if (packedLine) assertClient(packedLine.clientId);
       const v = store.visits.find((item) => item.id === visitId);
-      if (!v) throw new Error('Visit not found');
+      if (!v) throw new NotFoundError('Visit not found');
       if (ref.lineId) {
         if (packed) v.packedLineIds = Array.from(new Set([...v.packedLineIds, ref.lineId]));
         else v.packedLineIds = v.packedLineIds.filter((id) => id !== ref.lineId);
@@ -1488,7 +1514,7 @@ export function createCommands(ctx: CommandContext) {
       assertVisit(id);
       if (leaveAnywayReason !== undefined) validateReason(leaveAnywayReason, 'Reason for leaving');
       const v = store.visits.find((item) => item.id === id);
-      if (!v) throw new Error('Visit not found');
+      if (!v) throw new NotFoundError('Visit not found');
       v.status = 'in_progress';
       v.startedAt = todayInManila() + 'T' + new Date().toTimeString().slice(0, 8) + '+08:00';
       v.departureOverrideReason = leaveAnywayReason;
@@ -1500,9 +1526,9 @@ export function createCommands(ctx: CommandContext) {
       validate(OutcomeWriteSchema, o);
       const { user } = getCurrentUser();
       const item = store.visitItems.find((vi) => vi.id === itemId);
-      if (!item) throw new Error('Visit item not found');
+      if (!item) throw new NotFoundError('Visit item not found');
       const task = store.tasks.find((t) => t.id === item.taskId);
-      if (!task) throw new Error('Task not found');
+      if (!task) throw new NotFoundError('Task not found');
 
       // Lines and documents the outcome names must belong to the item's own client, and flagging a line is a review
       const namedLines = o.affectedLineIds ?? [];
@@ -1623,7 +1649,7 @@ export function createCommands(ctx: CommandContext) {
       assertVisit(id);
       validate(FinishVisitSchema, f);
       const v = store.visits.find((item) => item.id === id);
-      if (!v) throw new Error('Visit not found');
+      if (!v) throw new NotFoundError('Visit not found');
       if (!canFinishVisit(store.visitItems.filter((i) => i.visitId === id))) {
         throw new RuleViolationError('Every item needs a saved outcome before the visit can be finished');
       }

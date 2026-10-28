@@ -6,6 +6,7 @@ import { handleError, handleNotFound } from './errors';
 import { requireActive, requireMembership, requireSession } from './middleware/auth';
 import { readRoutes } from './routes/reads';
 import { sessionRoutes } from './routes/session';
+import { writeRoutes } from './routes/writes';
 import { SECURITY_HEADERS } from './security-headers';
 
 export interface CreateAppOptions {
@@ -49,6 +50,7 @@ export function createApp(options: CreateAppOptions = {}) {
   signedIn.use('*', requireSession, requireMembership, requireActive);
   signedIn.route('/session', sessionRoutes);
   signedIn.route('/', readRoutes);
+  signedIn.route('/', writeRoutes);
   app.route('/api/v1', signedIn);
 
   return app;

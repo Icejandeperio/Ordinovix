@@ -19,7 +19,7 @@ export const TEST_SECRETS = {
   VAPID_PUBLIC_KEY: 'test-vapid-public',
   VAPID_PRIVATE_KEY: 'test-vapid-private',
   FILE_URL_SIGNING_KEY: 'dGVzdC1maWxlLXVybC1zaWduaW5nLWtleS0wMTIzNDU2Nzg5',
-  TIN_ENCRYPTION_KEY: 'dGVzdC10aW4ta2V5LTAxMjM0NTY3ODlhYmNkZWYwMTIzNDU=',
+  TIN_ENCRYPTION_KEY: 'MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=', // 32 bytes
 } as const;
 
 export interface TestPerson {
