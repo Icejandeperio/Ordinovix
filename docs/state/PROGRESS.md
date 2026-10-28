@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-28 U28 Files in R2: upload, signed download URLs, retention job off by default — done
+- Changed: document commands behind a FileStore (shared with the mock), worker/files/store.ts, worker/routes/documents.ts, worker/cron/retention.ts and a daily cron, runWrite persists non-idempotent changes
+- Evidence: verify.mjs exit 0; tests now passing: U28 (27 worker tests); PR #32
+- Notes: Verifier PASS under the run-wide rule; seeded sample files are data: URLs; retain_until is never set, so no file is purged until the client picks a retention period; advisories queued.
+
 ## 2026-10-28 U27 Write routes part 2: follow-ups, visits, payments, notes, settings, memberships, import — done
 - Changed: worker/routes/writes2.ts (38 routes), import batches recorded, invitation linked at first sign-in (users.auth_user_id, migration 0002), revoke deletes sessions in the same batch, ownerOnly middleware
 - Evidence: verify.mjs exit 0; tests now passing: U27 (127 worker route tests); PR #31

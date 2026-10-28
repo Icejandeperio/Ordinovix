@@ -1,11 +1,14 @@
 import type {
   Repositories,
 } from './repositories';
+import { documentDisplayName, extensionOf } from '@/lib/document-name';
 import {
   createQueries,
   type QueryContext,
 } from './queries';
 import type {
+  DocumentFile,
+  DocumentKind,
   User,
   Membership,
   OrgSettings,
@@ -78,6 +81,8 @@ import {
   NoteWriteSchema,
   BaselineWriteSchema,
   PulseWriteSchema,
+  DocumentMetaSchema,
+  DocumentUpdateSchema,
 } from '@/domain/schemas';
 import {
   requireOwner,
@@ -115,7 +120,19 @@ import {
  * changed, in one batch. One copy of the rules, so the mock and the API cannot disagree (BACKEND_PLAN section 11).
  * Nothing here touches storage or the network.
  */
+/**
+ * Where file bytes live. The mock keeps them in IndexedDB; the Worker keeps them in R2. The commands decide what is stored
+ * and under which record; the store decides the key layout, writes the bytes and mints the URL a screen can open.
+ */
+export interface FileStore {
+  keyFor(f: { orgId: ID; clientId: ID; taskId?: ID; documentId: ID; versionNo: number; ext: string; thumb?: boolean }): string;
+  put(key: string, blob: Blob): Promise<void>;
+  urlFor(doc: DocumentFile, purpose: 'view' | 'download' | 'thumb'): Promise<string>;
+}
+
 export interface CommandContext extends QueryContext {
+  /** Required by the document commands. */
+  files?: FileStore;
   /** The caller's user agent, for the activity log's device column. */
   userAgent?: string;
 }
@@ -1939,7 +1956,175 @@ export function createCommands(ctx: CommandContext) {
     },
   };
 
-  return { assertCanSetStatus, rejectIdentityChange, assertRecordWrite, assertCanReview, assertPatch, assertReferences, upsertRow, logActivity, memberships, settings, prefs, clients, contacts, authorizations, templates, deadlineMoves, holidays, tasks, lines, followUps, messages, offices, visits, visitKit, payments, notes, savedViews, notifications, baseline, pulses, queries };
+  /** Spec 9.9 display name for a file attached to a client and, usually, a task. */
+  function nameForDocument(
+    meta: { clientId: ID; taskId?: ID; kind: DocumentKind },
+    versionNo: number,
+    originalName: string,
+    mimeType?: string,
+  ): string {
+    const client = store.clients.find((c) => c.id === meta.clientId);
+    const task = meta.taskId ? store.tasks.find((t) => t.id === meta.taskId) : undefined;
+    const template = task?.templateId ? store.templates.find((t) => t.id === task.templateId) : undefined;
+    return documentDisplayName({
+      clientCode: client?.code ?? 'CLIENT',
+      templateCode: template?.code,
+      period: task?.period ?? task?.transactionDate ?? todayInManila(),
+      kind: meta.kind,
+      versionNo,
+      originalName,
+      mimeType,
+    });
+  }
+
+  const fileStore = (): FileStore => {
+    if (!ctx.files) throw new Error('This command needs a file store');
+    return ctx.files;
+  };
+
+  const documents: Pick<Repositories['documents'], 'upload' | 'replace' | 'update' | 'remove' | 'getUrl'> = {
+    async upload(meta, file, thumb, info) {
+      assertPatch('documents.upload', meta);
+      assertReferences(meta, meta.clientId);
+      assertClient(meta.clientId);
+      validate(DocumentMetaSchema, meta);
+      const { user } = getCurrentUser();
+      const now = todayInManila() + 'T00:00:00+08:00';
+      const docId = generateId();
+      const originalName = info?.originalName || 'file.pdf';
+      const where = { orgId: store.org.id, clientId: meta.clientId, taskId: meta.taskId, documentId: docId, versionNo: 1 };
+      const fileKey = fileStore().keyFor({ ...where, ext: extensionOf(originalName, file.type) });
+      const thumbKey = thumb ? fileStore().keyFor({ ...where, ext: 'jpg', thumb: true }) : undefined;
+      await fileStore().put(fileKey, file);
+      if (thumb && thumbKey) await fileStore().put(thumbKey, thumb);
+      const doc: DocumentFile = {
+        id: docId,
+        orgId: store.org.id,
+        clientId: meta.clientId,
+        taskId: meta.taskId,
+        lineId: meta.lineId,
+        visitItemId: meta.visitItemId,
+        paymentId: meta.paymentId,
+        authorizationId: meta.authorizationId,
+        kind: meta.kind,
+        displayName: nameForDocument(meta, 1, originalName, file.type),
+        originalName,
+        mimeType: file.type || 'application/pdf',
+        sizeBytes: file.size,
+        originalSizeBytes: info?.originalSizeBytes || file.size,
+        compressed: file.size < (info?.originalSizeBytes || file.size),
+        pageCount: info?.pageCount,
+        sha256: info?.sha256 || 'fake-hash-' + Date.now(),
+        storageKey: fileKey,
+        thumbnailKey: thumbKey,
+        versionNo: 1,
+        source: meta.source,
+        createdAt: now,
+        createdBy: user.id,
+        updatedAt: now,
+        updatedBy: user.id,
+        version: 1,
+      };
+      store.documents.push(doc);
+
+      if (meta.lineId) {
+        const line = store.taskLines.find((l) => l.id === meta.lineId);
+        if (line) {
+          line.documentIds.push(doc.id);
+          // Only move the line when the transition is allowed: an accepted line stays accepted, a received one stays received
+          if (line.status !== 'received' && canTransitionLine(line.status, 'received')) {
+            line.status = 'received';
+            line.receivedAt = now;
+          }
+        }
+      }
+
+      logActivity('file_uploaded', 'document', doc.id, `Uploaded ${doc.displayName}`, doc.clientId);
+      return doc;
+    },
+
+    async replace(id, file, thumb, info) {
+      assertDocument(id);
+      const old = store.documents.find((d) => d.id === id);
+      if (!old) throw new NotFoundError('Document not found');
+      const { user } = getCurrentUser();
+      const now = todayInManila() + 'T00:00:00+08:00';
+      const newId = generateId();
+      const originalName = info?.originalName || old.originalName;
+      const where = { orgId: store.org.id, clientId: old.clientId, taskId: old.taskId, documentId: newId, versionNo: old.versionNo + 1 };
+      const fileKey = fileStore().keyFor({ ...where, ext: extensionOf(originalName, file.type) });
+      const thumbKey = thumb ? fileStore().keyFor({ ...where, ext: 'jpg', thumb: true }) : undefined;
+      await fileStore().put(fileKey, file);
+      if (thumb && thumbKey) await fileStore().put(thumbKey, thumb);
+      const next: DocumentFile = {
+        ...old,
+        id: newId,
+        displayName: nameForDocument(old, old.versionNo + 1, originalName, file.type),
+        originalName,
+        mimeType: file.type || old.mimeType,
+        sizeBytes: file.size,
+        originalSizeBytes: info?.originalSizeBytes || file.size,
+        compressed: file.size < (info?.originalSizeBytes || file.size),
+        pageCount: undefined,
+        sha256: info?.sha256 || 'fake-hash-' + Date.now(),
+        storageKey: fileKey,
+        thumbnailKey: thumbKey,
+        versionNo: old.versionNo + 1,
+        replacesId: old.id,
+        deletedAt: undefined,
+        deletedReason: undefined,
+        createdAt: now,
+        createdBy: user.id,
+        updatedAt: now,
+        updatedBy: user.id,
+        version: 1,
+      };
+      store.documents.push(next);
+      if (next.lineId) {
+        const line = store.taskLines.find((l) => l.id === next.lineId);
+        if (line) line.documentIds.push(next.id);
+      }
+      logActivity('file_replaced', 'document', next.id, `Replaced ${old.displayName} with ${next.displayName}`, next.clientId);
+      return next;
+    },
+
+    async update(id, input) {
+      const { rest: d, expected } = takeVersion(input);
+      assertPatch('documents.update', d);
+      assertReferences(d, store.documents.find((x) => x.id === id)?.clientId);
+      assertDocument(id);
+      rejectIdentityChange(d, store.documents.find((x) => x.id === id));
+      validate(DocumentUpdateSchema, d);
+      const doc = store.documents.find((item) => item.id === id);
+      if (!doc) throw new NotFoundError('Document not found');
+      assertVersion(doc, expected);
+      Object.assign(doc, d, { version: doc.version + 1, updatedAt: nowInManila(), updatedBy: getCurrentUser().user.id });
+      logActivity('updated', 'document', id, `Updated ${doc.displayName}`, doc.clientId);
+      return doc;
+    },
+
+    async remove(id, reason) {
+      assertDocument(id);
+      validateReason(reason);
+      const doc = store.documents.find((d) => d.id === id);
+      if (doc) {
+        doc.deletedAt = todayInManila() + 'T00:00:00+08:00';
+        doc.deletedReason = reason;
+        doc.version += 1;
+        logActivity('deleted', 'document', id, `Removed ${doc.displayName}: ${reason}`, doc.clientId, reason);
+      }
+    },
+
+    async getUrl(id, purpose) {
+      assertDocument(id);
+      const doc = store.documents.find((d) => d.id === id);
+      if (!doc || doc.deletedAt) throw new NotFoundError('Document not found');
+      logActivity(purpose === 'download' ? 'file_downloaded' : 'file_viewed', 'document', id, `${purpose} document ${doc.displayName}`, doc.clientId);
+      return fileStore().urlFor(doc, purpose);
+    },
+  };
+
+  return { assertCanSetStatus, rejectIdentityChange, assertRecordWrite, assertCanReview, assertPatch, assertReferences, upsertRow, logActivity, memberships, settings, prefs, clients, contacts, authorizations, templates, deadlineMoves, holidays, tasks, lines, followUps, messages, offices, visits, visitKit, payments, notes, savedViews, notifications, baseline, pulses, queries , documents };
 }
 
 export type Commands = ReturnType<typeof createCommands>;

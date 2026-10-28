@@ -12,7 +12,7 @@
 import { getTableColumns, getTableName } from 'drizzle-orm';
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import type { Context } from 'hono';
-import { createCommands, type Commands } from '@/data/commands';
+import { createCommands, type Commands, type FileStore } from '@/data/commands';
 import type { QueryData } from '@/data/queries';
 import { ValidationError, VersionConflictError } from '@/domain/errors';
 import { scrubTin } from '../lib/tin';
@@ -148,6 +148,8 @@ export interface WriteOptions<T> {
   persisted?: (result: T) => unknown;
   /** false for a POST that writes nothing (a preview, a duplicate check): no key is needed and none is recorded. */
   idempotent?: boolean;
+  /** Where this write puts file bytes (document upload and replace) and how it mints their URLs. */
+  files?: FileStore;
   /** false only for the CSV import preview, which hands the caller's own upload back to them (nothing is stored). */
   scrub?: boolean;
 }
@@ -188,7 +190,7 @@ export async function runWrite<T>(c: Context<AppEnv>, o: WriteOptions<T>): Promi
   await o.prepare?.(store);
 
   const before = snapshot(store);
-  const cmd = createCommands({ store, user, membership, userAgent: c.req.header('user-agent') });
+  const cmd = createCommands({ store, user, membership, userAgent: c.req.header('user-agent'), files: o.files });
   const result = await o.run(cmd, store);
   const after = snapshot(store);
 
@@ -199,7 +201,11 @@ export async function runWrite<T>(c: Context<AppEnv>, o: WriteOptions<T>): Promi
   const status = o.status ?? 200;
   const responseJson = JSON.stringify(body);
   const kept = o.persisted ? JSON.stringify(scrubTin(o.persisted(result))) : responseJson;
-  if (!idempotent) return new Response(responseJson, { status, headers: { 'content-type': 'application/json' } });
+  if (!idempotent) {
+    // no key to record, but a change (a view logged as activity, say) still goes out as one batch
+    if (p.statements.length + extra.length > 0) await d1.batch([...p.statements, ...extra]);
+    return new Response(responseJson, { status, headers: { 'content-type': 'application/json' } });
+  }
   const record = d1
     .prepare('INSERT INTO idempotency_keys (org_id, user_id, key, method, path, status, response_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
     .bind(actor.orgId, actor.userId, key, method, path, status, kept, new Date().toISOString());

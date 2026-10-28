@@ -4,6 +4,7 @@ import { devRoutes } from './dev/sign-in';
 import type { AppEnv } from './env';
 import { handleError, handleNotFound } from './errors';
 import { requireActive, requireMembership, requireSession } from './middleware/auth';
+import { documentRoutes, fileContent } from './routes/documents';
 import { readRoutes } from './routes/reads';
 import { sessionRoutes } from './routes/session';
 import { writeRoutes } from './routes/writes';
@@ -43,6 +44,8 @@ export function createApp(options: CreateAppOptions = {}) {
 
   app.get('/api/v1/health', (c) => c.json({ ok: true, env: c.env.APP_ENV }));
   app.route('/api/v1/dev', devRoutes);
+  // signed file URLs carry their own proof (no cookie): registered before the signed-in group
+  app.route('/', fileContent);
 
   options.before?.(app);
 
@@ -53,6 +56,7 @@ export function createApp(options: CreateAppOptions = {}) {
   signedIn.route('/', readRoutes);
   signedIn.route('/', writeRoutes);
   signedIn.route('/', writeRoutes2);
+  signedIn.route('/', documentRoutes);
   app.route('/api/v1', signedIn);
 
   return app;
