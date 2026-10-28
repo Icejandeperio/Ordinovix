@@ -746,7 +746,7 @@
       "id": "U24",
       "phase": "P3",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U23"
       ],
@@ -773,7 +773,9 @@
       "tests": [
         "U24"
       ],
-      "notes": "Google OAuth client and secrets are created by the owner at U31 (docs/adr/ADR-0002-backend-stack-and-cloud-boundary.md section 4)."
+      "notes": "Google OAuth client and secrets are created by the owner at U31 (docs/adr/ADR-0002-backend-stack-and-cloud-boundary.md section 4).",
+      "pr": 28,
+      "evidence": "verify.mjs exit 0; tests now passing: U24 worker tests (membership middleware 12, auth config 5, dev sign-in 9, first-owner 5); verifier/PR #28; verifier PASS; local dev smoke: 401 without cookie, dev sign-in, session/me; Google is the only provider"
     },
     {
       "id": "U25",

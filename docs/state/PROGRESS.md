@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-28 U24 Auth and membership: Better Auth with Google, membership middleware, dev sign-in — done
+- Changed: better-auth; worker/auth, middleware, routes/session, dev/sign-in; db mappers; first-owner-sql script; UnauthenticatedError; worker test fixture
+- Evidence: verify.mjs exit 0; tests now passing: U24 (31 worker tests); PR #28
+- Notes: Verifier PASS under the run-wide rule; unknown /api/v1 paths are 401 when signed out; advisories queued.
+
 ## 2026-10-28 U23 Database schema, migrations and the Demo seed — done
 - Changed: drizzle-orm/kit; worker/db/schema.ts; migrations 0000 (generated) and 0001 (FTS5 + activity triggers); db:seed-sql from buildInitialStore; mock follow-up data fixes; schema-draft updated
 - Evidence: verify.mjs exit 0; tests now passing: U23 (60+ worker/db tests); PR #27
