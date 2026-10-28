@@ -73,6 +73,13 @@ import type {
   ImportPreview,
 } from '@/domain/types';
 
+/**
+ * An update names the `version` of the record the editor loaded. A stale one fails with VERSION_CONFLICT (the API
+ * answers 409 with the current record). Upserts carry it as the record's own `version`; patches by id carry it here.
+ * Leaving it out skips the check, for programmatic callers and queued writes.
+ */
+export type WithVersion<T> = T & { version?: number };
+
 export interface Repositories {
   session: {
     me(): Promise<{ user: User; membership: Membership; org: Org; settings: OrgSettings; prefs: UserPrefs }>;
@@ -83,7 +90,7 @@ export interface Repositories {
   memberships: {
     list(): Promise<Array<Membership & { name?: string; initials?: string; lastSignInAt?: string }>>;
     invite(m: { email: string; role: Role; clientIds: ID[]; name?: string; note?: string }): Promise<Membership & { name?: string; initials?: string }>;
-    update(id: ID, m: Partial<Pick<Membership, 'role' | 'clientIds' | 'active'>> & { name?: string }): Promise<Membership & { name?: string; initials?: string }>;
+    update(id: ID, m: WithVersion<Partial<Pick<Membership, 'role' | 'clientIds' | 'active'>> & { name?: string }>): Promise<Membership & { name?: string; initials?: string }>;
     revoke(id: ID): Promise<void>;
   };
 
@@ -176,7 +183,7 @@ export interface Repositories {
       followUps: FollowUpView[];
     }>;
     create(t: Partial<Task>, lines: Partial<TaskLine>[]): Promise<Task>;
-    update(id: ID, t: Partial<Pick<Task, 'ownerUserId' | 'channel' | 'tags' | 'notes' | 'officeAction' | 'paymentExpected'>>): Promise<Task>;
+    update(id: ID, t: WithVersion<Partial<Pick<Task, 'ownerUserId' | 'channel' | 'tags' | 'notes' | 'officeAction' | 'paymentExpected'>>>): Promise<Task>;
     setStatus(id: ID, to: TaskStatus, reason?: string): Promise<Task>;
     markSubmitted(id: ID, s: { on: ISODate; via: FilingChannel | 'office'; ref?: string; ackDocumentId?: ID; note?: string }): Promise<Task>;
     markCompleted(id: ID, c: { on: ISODate; noEvidenceReason?: string }): Promise<Task>;
@@ -195,7 +202,7 @@ export interface Repositories {
   lines: {
     setStatus(id: ID, to: LineStatus, extra?: { note?: string; reason?: string; via?: Channel; on?: ISODate }): Promise<TaskLine>;
     addAdHoc(taskId: ID, line: Partial<TaskLine>): Promise<TaskLine>;
-    update(id: ID, line: Partial<Pick<TaskLine, 'label' | 'required' | 'copyForm' | 'copies' | 'suppliedBy' | 'printAndBring' | 'neededBy'>>): Promise<TaskLine>;
+    update(id: ID, line: WithVersion<Partial<Pick<TaskLine, 'label' | 'required' | 'copyForm' | 'copies' | 'suppliedBy' | 'printAndBring' | 'neededBy'>>>): Promise<TaskLine>;
     reorder(taskId: ID, orderedIds: ID[]): Promise<void>;
     history(id: ID): Promise<ActivityEvent[]>;
   };
@@ -235,7 +242,7 @@ export interface Repositories {
       thumb?: Blob,
       info?: { originalName: string; originalSizeBytes: number; sha256: string }
     ): Promise<DocumentFile>;
-    update(id: ID, d: Partial<Pick<DocumentFile, 'kind' | 'lineId' | 'taskId'>>): Promise<DocumentFile>;
+    update(id: ID, d: WithVersion<Partial<Pick<DocumentFile, 'kind' | 'lineId' | 'taskId'>>>): Promise<DocumentFile>;
     remove(id: ID, reason: string): Promise<void>;
     getUrl(id: ID, purpose: 'view' | 'download' | 'thumb'): Promise<string>;
     findBySha(sha256: string, clientId: ID): Promise<DocumentFile[]>;
@@ -266,10 +273,10 @@ export interface Repositories {
     list(f?: { status?: VisitStatus[]; from?: ISODate; to?: ISODate; assigneeUserId?: ID; cursor?: string; limit?: number }): Promise<Page<VisitSummary>>;
     get(id: ID): Promise<VisitDetail>;
     create(v: Partial<Visit>, items?: { taskId: ID; action: VisitAction }[]): Promise<Visit>;
-    update(id: ID, v: Partial<Pick<Visit, 'plannedDate' | 'arriveBy' | 'assigneeUserId' | 'purpose' | 'officeId'>>): Promise<Visit>;
+    update(id: ID, v: WithVersion<Partial<Pick<Visit, 'plannedDate' | 'arriveBy' | 'assigneeUserId' | 'purpose' | 'officeId'>>>): Promise<Visit>;
     suggestTasks(visitId: ID): Promise<TaskSummary[]>;
     addItem(visitId: ID, taskId: ID, action: VisitAction): Promise<VisitItem>;
-    updateItem(itemId: ID, i: Partial<Pick<VisitItem, 'intendedAction' | 'questions'>>): Promise<VisitItem>;
+    updateItem(itemId: ID, i: WithVersion<Partial<Pick<VisitItem, 'intendedAction' | 'questions'>>>): Promise<VisitItem>;
     removeItem(itemId: ID): Promise<void>;
     setPacked(visitId: ID, ref: { lineId?: ID; kitItemId?: ID }, packed: boolean): Promise<void>;
     start(id: ID, leaveAnywayReason?: string): Promise<Visit>;

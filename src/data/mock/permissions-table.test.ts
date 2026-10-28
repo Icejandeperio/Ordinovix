@@ -228,7 +228,8 @@ describe('B11 table: helper allowlists on generic updates and upserts', () => {
       mockDevControls.setPersona('helper');
       const allowed = HELPER_FIELDS[c.method];
       expect(allowed, `${c.method} has a helper allowlist`).toBeDefined();
-      const fields = [...new Set([...Object.keys(stored), ...SENSITIVE_FIELDS])].filter((f) => !allowed.includes(f));
+      // `version` is the expected-version control (U21): it is never written, a stale one is VERSION_CONFLICT
+      const fields = [...new Set([...Object.keys(stored), ...SENSITIVE_FIELDS])].filter((f) => f !== 'version' && !allowed.includes(f));
       const calls = Object.fromEntries(fields.map((f) => [`${c.method}.${f}`, () => c.call(f, stored[f] ?? 'x')]));
       expect(await failures(calls)).toEqual([]);
     });

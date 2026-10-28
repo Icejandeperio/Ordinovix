@@ -34,6 +34,13 @@ export function canReviewLines(actor: PolicyActor, settings: Pick<OrgSettings, '
   return settings.helpersCanAccept;
 }
 
+/** Cancelling a visit: the owner always; a helper only when every item on it belongs to a client they are assigned to. */
+export function canCancelVisit(actor: PolicyActor, itemClientIds: ID[]): boolean {
+  if (!actor.active) return false;
+  if (actor.role === 'owner') return true;
+  return itemClientIds.every((clientId) => actor.clientIds.includes(clientId));
+}
+
 export type InsightsScope = { kind: 'all' } | { kind: 'clients'; clientIds: ID[] };
 
 /** Insights are practice-wide for the owner and limited to assigned clients for a helper. */

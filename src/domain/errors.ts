@@ -2,7 +2,7 @@
  * Typed errors the data layer throws and the screens map to a 403 or 404 view (spec 11.20).
  * `code` matches what the API will return, so the same screens work unchanged against it.
  */
-export type ErrorCode = 'FORBIDDEN' | 'NOT_FOUND' | 'RULE_VIOLATION' | 'VALIDATION';
+export type ErrorCode = 'FORBIDDEN' | 'NOT_FOUND' | 'RULE_VIOLATION' | 'VALIDATION' | 'VERSION_CONFLICT';
 
 export class NotFoundError extends Error {
   readonly code = 'NOT_FOUND' as const;
@@ -17,6 +17,20 @@ export class ForbiddenError extends Error {
   constructor(message = 'No access') {
     super(message);
     this.name = 'ForbiddenError';
+  }
+}
+
+/**
+ * An update that carried an older `version` than the stored record: someone else saved first (spec 21, If-Match).
+ * `current` is the stored record, so a screen can show it again; the API returns it in the 409 body.
+ */
+export class VersionConflictError extends Error {
+  readonly code = 'VERSION_CONFLICT' as const;
+  readonly current: unknown;
+  constructor(current: unknown, message = 'This record was changed by someone else. The latest version has been loaded; review it and save again.') {
+    super(message);
+    this.name = 'VersionConflictError';
+    this.current = current;
   }
 }
 
@@ -43,7 +57,7 @@ export function fieldMessages(error: unknown): Record<string, string> | null {
   return Object.fromEntries(Object.entries(fe).map(([k, v]) => [k, v[0]]));
 }
 
-export type ErrorKind = 'forbidden' | 'not_found' | 'offline' | 'validation' | 'generic';
+export type ErrorKind = 'forbidden' | 'not_found' | 'offline' | 'validation' | 'conflict' | 'generic';
 
 /** Classify any thrown value for display. Falls back to the message for errors from before typed codes existed. */
 export function classifyError(error: unknown): ErrorKind {
@@ -51,6 +65,7 @@ export function classifyError(error: unknown): ErrorKind {
   if (code === 'FORBIDDEN') return 'forbidden';
   if (code === 'NOT_FOUND') return 'not_found';
   if (code === 'VALIDATION') return 'validation';
+  if (code === 'VERSION_CONFLICT') return 'conflict';
   const message = error instanceof Error ? error.message : '';
   if (/offline|network error/i.test(message)) return 'offline';
   return 'generic';
