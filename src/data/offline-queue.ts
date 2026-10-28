@@ -111,7 +111,8 @@ export function createOfflineQueue(deps: QueueDeps) {
     syncing = true;
     emit();
     try {
-      for (const item of items.filter((i) => i.status === 'pending')) {
+      // Take the oldest pending write each time round, so one queued while this replay runs is sent too
+      for (let item = items.find((i) => i.status === 'pending'); item; item = items.find((i) => i.status === 'pending')) {
         // A network error means the connection is still down: stop here so nothing later jumps ahead
         if ((await attempt(item)) === 'offline') break;
       }

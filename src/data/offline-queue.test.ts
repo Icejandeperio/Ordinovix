@@ -118,6 +118,22 @@ describe('offline write queue (spec 19.3, B17)', () => {
     expect(await queue.list()).toEqual([]);
   });
 
+  it('sends a write that is queued while a replay is running', async () => {
+    const calls: Call[] = [];
+    let queue: ReturnType<typeof createOfflineQueue>;
+    const made = setup({
+      call: async (ns, method, args) => {
+        calls.push({ name: `${ns}.${method}`, args });
+        if (calls.length === 1) await queue.enqueue('notes.save', [{ body: 'late' }]);
+      },
+    });
+    queue = made.queue;
+    await queue.enqueue('notes.save', [{ body: 'early' }]);
+    await queue.replay();
+    expect(calls.map((c) => (c.args[0] as { body: string }).body)).toEqual(['early', 'late']);
+    expect(await queue.list()).toEqual([]);
+  });
+
   it('tells subscribers when the queue changes', async () => {
     const { queue } = setup();
     const seen: number[] = [];
