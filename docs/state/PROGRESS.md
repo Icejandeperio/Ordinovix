@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-28 U17 Installable app and offline write queue — done
+- Changed: vite-plugin-pwa service worker and update banner, PNG icons, IndexedDB write queue with idempotency keys, sync indicator
+- Evidence: verify.mjs exit 0; tests now passing: B17, U17 acceptance (5), queue and PWA unit tests; PR #20
+- Notes: Verifier PASS; initial JS 211.9 KB gzip; write-during-replay gap fixed; other findings queued.
+
 ## 2026-10-27 U16 Bundle split and dependency cleanup — done
 - Changed: router lazy routes, lazy mock layer, LazyMotion, chrono on demand, nine unused packages removed, bundle-size script
 - Evidence: verify.mjs exit 0; tests now passing: B26, B27, bundle.test.ts (4); PR #19
