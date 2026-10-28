@@ -22,6 +22,7 @@
   "dependencies": {
     "@date-fns/tz": "^1.2.0",
     "@fontsource-variable/archivo": "^5.2.5",
+    "@pushforge/builder": "2.0.5",
     "@tanstack/react-query": "^5.66.0",
     "better-auth": "1.7.12",
     "browser-image-compression": "^2.0.2",

@@ -902,7 +902,7 @@
       "id": "U29",
       "phase": "P3",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U27"
       ],
@@ -928,7 +928,9 @@
       "tests": [
         "U29"
       ],
-      "notes": "Email is deferred (needs a domain); phone push is the notification channel."
+      "notes": "Email is deferred (needs a domain); phone push is the notification channel.",
+      "pr": 33,
+      "evidence": "verify.mjs exit 0; tests now passing: U29 jobs and push (18), schedule (2), push routes (14): notifications link to records that exist, dedupe, per-type switch, quiet hours, 404/410 removal, codes-only text, real VAPID request built (post stubbed); verifier/PR #33; verifier PASS"
     },
     {
       "id": "U30",

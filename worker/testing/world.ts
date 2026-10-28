@@ -4,6 +4,7 @@ import { applyMigrations } from '../db/migrate-helper';
 import { buildSeedSql } from '../db/seed';
 import type { AppBindings } from '../env';
 import { openLocalBindings } from '../harness';
+import type { PushDeps } from '../push/send';
 
 /**
  * Worker test fixture: a fresh in-memory local D1 and R2 (getPlatformProxy), all migrations applied, the Demo organization
@@ -16,8 +17,9 @@ export const TEST_SECRETS = {
   BETTER_AUTH_SECRET: 'test-only-secret-0123456789abcdef0123456789abcdef',
   GOOGLE_CLIENT_ID: 'test-google-client-id.apps.googleusercontent.invalid',
   GOOGLE_CLIENT_SECRET: 'test-google-client-secret',
-  VAPID_PUBLIC_KEY: 'test-vapid-public',
-  VAPID_PRIVATE_KEY: 'test-vapid-private',
+  // a throwaway P-256 pair made for the tests (public point and private scalar, base64url); it signs nothing real
+  VAPID_PUBLIC_KEY: 'BNuORd-7IR9HJPiZqe5jHsQoQ2nRj3tNnX9OdpVfDkQPTEwdTMy14u-xRHj8_hRVWdtaXe1Ts26wajJJDw7nurI',
+  VAPID_PRIVATE_KEY: 'MJ03qaxzAzxfY7IMHGVI_PDksT2C4Vmu7hBtz9yWRfE',
   FILE_URL_SIGNING_KEY: 'dGVzdC1maWxlLXVybC1zaWduaW5nLWtleS0wMTIzNDU2Nzg5',
   TIN_ENCRYPTION_KEY: 'MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=', // 32 bytes
 } as const;
@@ -44,7 +46,7 @@ export const PERSONAS = {
   helper: { id: 'user-ben', name: 'Ben Morales', email: 'ben@example.com' },
 } satisfies Record<string, TestPerson>;
 
-export async function openWorld(options: { appEnv?: AppBindings['APP_ENV']; devAuth?: boolean; seed?: boolean } = {}): Promise<World> {
+export async function openWorld(options: { appEnv?: AppBindings['APP_ENV']; devAuth?: boolean; seed?: boolean; push?: PushDeps } = {}): Promise<World> {
   const { env: bindings, dispose } = await openLocalBindings();
   await applyMigrations(bindings.DB);
   if (options.seed !== false) await bindings.DB.exec(buildSeedSql(TEST_SEED_DAY));
@@ -56,7 +58,7 @@ export async function openWorld(options: { appEnv?: AppBindings['APP_ENV']; devA
     ...(options.devAuth ? { DEV_AUTH: '1' } : {}),
     ...TEST_SECRETS,
   } as AppBindings;
-  const app = createApp();
+  const app = createApp({ push: options.push });
 
   const cookieFor = async (person: TestPerson) => {
     const now = Date.now();
