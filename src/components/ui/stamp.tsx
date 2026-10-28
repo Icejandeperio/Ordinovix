@@ -36,7 +36,7 @@ export function ReviewStamp({
           <div className="flex flex-col items-center justify-center p-2 text-center select-none tracking-widest font-mono">
             <span className="text-[10px] font-black uppercase text-stamp-ink opacity-90">VISIT</span>
             <span className="text-sm font-black uppercase text-stamp-ink leading-tight">READY TO GO</span>
-            <span className="text-[10px] font-bold uppercase text-stamp-ink/80">{office} · {date}</span>
+            <span className="text-[10px] font-bold uppercase text-stamp-ink">{office} · {date}</span>
           </div>
         );
       case 'done':
@@ -44,7 +44,7 @@ export function ReviewStamp({
           <div className="flex flex-col items-center justify-center p-2 text-center select-none tracking-widest font-mono">
             <span className="text-xs font-black uppercase text-stamp-ink leading-tight">COMPLETED</span>
             <span className="text-[13px] font-black uppercase text-stamp-ink">{date}</span>
-            <span className="text-[9px] font-bold uppercase text-stamp-ink/80">{evidenceCount} EVIDENCE ATTACHED</span>
+            <span className="text-[9px] font-bold uppercase text-stamp-ink">{evidenceCount} EVIDENCE ATTACHED</span>
           </div>
         );
       case 'received':
@@ -60,7 +60,7 @@ export function ReviewStamp({
           <div className="flex flex-col items-center justify-center px-2.5 py-0.5 text-center select-none tracking-wider font-mono">
             <span className="text-[10px] font-black uppercase text-stamp-ink leading-tight">ACCEPTED</span>
             <span className="text-xs font-black uppercase text-stamp-ink leading-tight">{date}</span>
-            <span className="text-[9px] font-bold uppercase text-stamp-ink/80 leading-tight">{initials}</span>
+            <span className="text-[9px] font-bold uppercase text-stamp-ink leading-tight">{initials}</span>
           </div>
         );
     }

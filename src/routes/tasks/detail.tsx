@@ -271,10 +271,10 @@ export function TaskDetailPage() {
 
           {/* Action dropdown */}
           <div className="relative group">
-            <button className="p-1.5 text-ink-3 hover:text-ink rounded-control bg-sheet-2 border border-rule hover:bg-sheet-3">
+            <button type="button" aria-label="More actions" aria-haspopup="menu" className="p-1.5 text-ink-3 hover:text-ink rounded-control bg-sheet-2 border border-rule hover:bg-sheet-3">
               <MoreVertical className="w-4 h-4" />
             </button>
-            <div className="absolute right-0 mt-1 w-52 bg-sheet border border-rule rounded-panel shadow-md py-1 z-30 hidden group-hover:block hover:block">
+            <div className="absolute right-0 mt-1 w-52 bg-sheet border border-rule rounded-panel shadow-md py-1 z-30 hidden group-hover:block group-focus-within:block hover:block">
               {isOwner && (
                 <>
                   <button
