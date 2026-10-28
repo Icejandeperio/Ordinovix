@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-28 U22 API shell: Worker, Hono, Cloudflare Vite plugin, local test harness — done
+- Changed: hono, wrangler, @cloudflare/vite-plugin; wrangler.jsonc per ADR-0002; worker/ (app, error mapper, security headers, health route, harness); public/_headers; dev:vars script; bundle-size reads dist/client; worker type project
+- Evidence: verify.mjs exit 0; tests now passing: U22 (35 worker and pwa-config unit tests); PR #26
+- Notes: Verifier PASS under the run-wide rule; no workers-types package needed (wrangler types); lockfile churn without version changes; advisories queued.
+
 ## 2026-10-28 U21 Align the mock with the API contract — done
 - Changed: VERSION_CONFLICT on stale updates (errors, repositories, mock, edit screens, conflict toast), settings activity event, note id reuse refused, mixed-visit cancel owner-only, unreadCount dropped from the plan
 - Evidence: verify.mjs exit 0; tests now passing: U21 (28 unit, 2 acceptance), policy canCancelVisit; PR #25

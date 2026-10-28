@@ -1,0 +1,8 @@
+# Security headers for the static app shell (BACKEND_PLAN section 8). Cloudflare serves these files without running the
+# Worker, so the headers are repeated here; worker/security-headers.test.ts keeps this block equal to worker/security-headers.ts.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-5m4Igx6Ikp25HsoxuzZvfDTb5xxrs77gacRIF06nKwk='; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; frame-src 'self' blob:; connect-src 'self'; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  X-Robots-Tag: noindex, nofollow
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+  Permissions-Policy: camera=(self), geolocation=()

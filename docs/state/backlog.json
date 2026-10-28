@@ -675,7 +675,7 @@
       "id": "U22",
       "phase": "P3",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U21"
       ],
@@ -705,7 +705,9 @@
       "tests": [
         "U22"
       ],
-      "notes": "Vitest stays on major 3 (docs/adr/ADR-0002-backend-stack-and-cloud-boundary.md section 2). No wrangler command other than the local allowlist."
+      "notes": "Vitest stays on major 3 (docs/adr/ADR-0002-backend-stack-and-cloud-boundary.md section 2). No wrangler command other than the local allowlist.",
+      "pr": 26,
+      "evidence": "verify.mjs exit 0; tests now passing: U22 worker tests (35: wrangler config, app and error mapper, security headers, dev-vars, harness, worker typecheck, pwa config); verifier/PR #26; verifier PASS; initial JS 212.0 KB gzip; app builds to dist/client; nothing touched Cloudflare"
     },
     {
       "id": "U23",
