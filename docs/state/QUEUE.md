@@ -12,20 +12,19 @@ Entry format: a checkbox line `- [ ] <YYYY-MM-DD> U<NN> <short question> (blocks
 lines for Context (one or two lines, link to the PR or draft PR), Options with a recommendation and its reason,
 and, for protected files, the exact change proposed.
 
-- [ ] 2026-10-28 U19 Backend: decisions and accounts the owner must provide before any backend work (blocks the backend build, not the frontend)
-  - Context: the plan is docs/backend/BACKEND_PLAN.md and the table draft is docs/backend/schema-draft.sql (nothing applied, no wrangler, Cloudflare or OAuth command run). Section 13 of the plan has the same list.
-  - Accounts: (1) a Cloudflare account (Free plan to start) with Workers, D1 and R2 enabled; R2 may ask for a payment card even on the free tier. (2) A Google OAuth client (web) in a Google Cloud project: basic scopes only, the exact workers.dev origin and redirect URI, publishing status In production.
-  - Secrets you create yourself with `wrangler secret put` (never committed): BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, FILE_URL_SIGNING_KEY, and the TIN encryption key.
-  - Decisions: the first owner's Google email for the one-time setup command; the Worker name and account subdomain (ordinovix.<account>.workers.dev) and whether she wants a custom domain and an email provider now or later; the retention period for files and records; whether helpers may see Operator Confidence and Hours Finding Records; whether a failed offline write should hold later writes; production deploys by manual approval.
-  - Approvals needed (not on docs/adr/approved-deps.json): Hono, Drizzle ORM and drizzle-kit, Better Auth, @cloudflare/vite-plugin, wrangler, a Web Push library. Editing .github/** for the deploy workflow is also owner work.
-  - Options: (A, recommended) answer these when you are ready to start the backend; nothing in the frontend waits on them. (B) Keep the app on the mock data source and the offline queue for the demo.
+- [ ] 2026-10-28 U10 Practice TIN: should the app store the practice's own TIN? (blocks nothing; decide with the client)
+  - Context: U10 removed a hard-coded fake Practice TIN from Settings; OrgSettings has no field for it. Adding it needs a
+    new OrgSettings field (types.ts) and, in the API, encryption like client TINs.
+  - Options: (A, recommended) decide during the client walkthrough; nothing waits on it. (B) add the field now.
 
-- [ ] 2026-10-27 U10 Delete the stray untracked drafts tests/acceptance/u10-settings.spec.ts, u10-verifier.spec.ts, u11-audit.spec.ts, u11-audit-log.spec.ts and u12-insights.spec.ts (the last has a wrong CSV button name and a persona switch that cannot work; the real spec is u12-insights-data.spec.ts) and u13-welcome-setup.spec.ts (its Today heading locator matches two headings; the real spec is u13-welcome-wizard.spec.ts) (block nothing)
-  - Context: I wrote it during U10 with a race (it counts the visit-kit rows before they load); the guard refuses edits to files already in tests/acceptance, so the corrected tests are in tests/acceptance/u10-settings-sections.spec.ts. The draft was never committed, so CI and main are unaffected, but `node scripts/verify.mjs` in this working copy reports its two failures, so I run the gate on a clean checkout. Same pattern as the U02 and U06 drafts you deleted.
-  - U11 added a third, tests/acceptance/u11-audit.spec.ts (two of its tests have flaws of their own: they read CSS-uppercased text and assert on a table that is replaced by the empty state); the corrected tests are in u11-audit-trail.spec.ts. u11-audit-log.spec.ts was a second attempt whose file contained a literal byte order mark inside a regex, which fails the lint rule no-irregular-whitespace; it was removed from the branch before pushing.
-  - The verifier left a second one, tests/acceptance/u10-verifier.spec.ts (its test 6 has a bug of its own and the guard refused its edit). Delete both.
-  - Options: (A, recommended) delete the files by hand; (B) let the guard allow edits to untracked files in tests/acceptance.
-  - Also from U10: the Practice TIN field was a hard-coded fake and OrgSettings has no field for it, so U10 removed it from the Practice section. Say if you want a practice TIN stored (it needs a new OrgSettings field, a types.ts change).
+- [ ] 2026-10-28 U12/U18 Fix two flaky acceptance tests (owner edit: both files are committed acceptance tests)
+  - tests/acceptance/u18-a11y-responsive.spec.ts, end of `open()`: after `waitForLoadState('networkidle')`, wait until
+    every `.border-stamp-ink` element has computed opacity >= 0.94 (the stamp fades in over 0.36 s and axe samples it
+    mid-fade):
+    `await page.waitForFunction(() => [...document.querySelectorAll<HTMLElement>('.border-stamp-ink')].every((el) => Number(getComputedStyle(el).opacity) >= 0.94), undefined, { timeout: 5_000 });`
+  - tests/acceptance/u12-insights-data.spec.ts, "the client filter changes the numbers": give the `expect.poll` after
+    the URL check `{ timeout: 20_000, intervals: [500, 1_000, 2_000] }`.
+  - Neither blocks a unit; both have failed once under full-gate load and passed on re-run.
 
 ## Proposals (ideas outside the backlog; not scheduled)
 
@@ -57,6 +56,31 @@ and, for protected files, the exact change proposed.
 - 2026-10-27 (from U14 review) More device-time-zone leftovers beyond what audit B25 names: event times labelled `+08:00` but built from the device clock (mock `visits.start` startedAt and recordOutcome outcomeAt, `components/follow-ups/composer.tsx`, the finish-time default in `visits/record.tsx`), "generated/printed" times in `lib/export.ts` and `visits/print.tsx`, and midnight event stamps in `tasks.override`, follow-up respondedAt/resolvedAt and `line.receivedAt`. Use `nowInManila()` and `formatTime`. A B15 test that finishes a visit with empty costs is also missing.
 
 ## Decided
+
+- [x] 2026-10-28 U19 Backend: decisions and accounts the owner must provide before any backend work
+  - Decision (owner, 2026-10-28): build the full backend before the client walkthrough; use the recommended defaults.
+    Accounts in Icejan's name until handover; Worker names ordinovix-preview and ordinovix on workers.dev, no custom
+    domain; email later, phone push now; approve Hono, Drizzle ORM and drizzle-kit, Better Auth, the Cloudflare Vite
+    plugin, wrangler, workers-types and @pushforge/builder; no automatic retention deletion until the client picks a
+    period; helpers do not see Operator Confidence or Hours Finding Records; a failed offline write holds later
+    writes; production deploys by manual dispatch and approval. Recorded in docs/adr/ADR-0002 and backlog U21-U32.
+  - Original request:
+  - Context: the plan is docs/backend/BACKEND_PLAN.md and the table draft is docs/backend/schema-draft.sql (nothing applied, no wrangler, Cloudflare or OAuth command run). Section 13 of the plan has the same list.
+  - Accounts: (1) a Cloudflare account (Free plan to start) with Workers, D1 and R2 enabled; R2 may ask for a payment card even on the free tier. (2) A Google OAuth client (web) in a Google Cloud project: basic scopes only, the exact workers.dev origin and redirect URI, publishing status In production.
+  - Secrets you create yourself with `wrangler secret put` (never committed): BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, FILE_URL_SIGNING_KEY, and the TIN encryption key.
+  - Decisions: the first owner's Google email for the one-time setup command; the Worker name and account subdomain (ordinovix.<account>.workers.dev) and whether she wants a custom domain and an email provider now or later; the retention period for files and records; whether helpers may see Operator Confidence and Hours Finding Records; whether a failed offline write should hold later writes; production deploys by manual approval.
+  - Approvals needed (not on docs/adr/approved-deps.json): Hono, Drizzle ORM and drizzle-kit, Better Auth, @cloudflare/vite-plugin, wrangler, a Web Push library. Editing .github/** for the deploy workflow is also owner work.
+  - Options: (A, recommended) answer these when you are ready to start the backend; nothing in the frontend waits on them. (B) Keep the app on the mock data source and the offline queue for the demo.
+
+- [x] 2026-10-28 U10 Stray untracked drafts in tests/acceptance
+  - Decision (owner, 2026-10-28): option B. The guard now protects only acceptance tests committed on origin/main, so
+    drafts can be fixed or deleted by the agent. Delete the six drafts listed below if they still exist.
+  Original: 2026-10-27 U10 Delete the stray untracked drafts tests/acceptance/u10-settings.spec.ts, u10-verifier.spec.ts, u11-audit.spec.ts, u11-audit-log.spec.ts and u12-insights.spec.ts (the last has a wrong CSV button name and a persona switch that cannot work; the real spec is u12-insights-data.spec.ts) and u13-welcome-setup.spec.ts (its Today heading locator matches two headings; the real spec is u13-welcome-wizard.spec.ts) (block nothing)
+    - Context: I wrote it during U10 with a race (it counts the visit-kit rows before they load); the guard refuses edits to files already in tests/acceptance, so the corrected tests are in tests/acceptance/u10-settings-sections.spec.ts. The draft was never committed, so CI and main are unaffected, but `node scripts/verify.mjs` in this working copy reports its two failures, so I run the gate on a clean checkout. Same pattern as the U02 and U06 drafts you deleted.
+    - U11 added a third, tests/acceptance/u11-audit.spec.ts (two of its tests have flaws of their own: they read CSS-uppercased text and assert on a table that is replaced by the empty state); the corrected tests are in u11-audit-trail.spec.ts. u11-audit-log.spec.ts was a second attempt whose file contained a literal byte order mark inside a regex, which fails the lint rule no-irregular-whitespace; it was removed from the branch before pushing.
+    - The verifier left a second one, tests/acceptance/u10-verifier.spec.ts (its test 6 has a bug of its own and the guard refused its edit). Delete both.
+    - Options: (A, recommended) delete the files by hand; (B) let the guard allow edits to untracked files in tests/acceptance.
+    - Also from U10: the Practice TIN field was a hard-coded fake and OrgSettings has no field for it, so U10 removed it from the Practice section. Say if you want a practice TIN stored (it needs a new OrgSettings field, a types.ts change).
 
 - [x] 2026-10-27 U07 Final attempt FAILED verification; U07 stays blocked (blocks U08, U11, U12 and everything after them)
   - Context: draft PR #9, branch `u07-permission-policy` (tip 5e80f38 plus a docs commit), verdict in `docs/state/reviews/U07.md`. Per your conditions I did not try again. Gate passes and B11 is green. What held up: helper allowlists, the shared reference check, policy-based list filters, the table-driven test (red-on-removal shown for assertPatch, assertReferences, canAccessClient, requireOwner, `active` handling; 21 reference probes and 18 key and nested-field probes rejected; 13 owner probes allowed). Four blocking findings remain, all as the helper (Ben):

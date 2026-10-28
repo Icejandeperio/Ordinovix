@@ -42,7 +42,20 @@
       "Bash(gh run list *)",
       "Bash(gh run view *)",
       "Bash(gh run watch *)",
-      "Bash(gh auth status *)"
+      "Bash(gh auth status *)",
+      "Bash(npx wrangler dev)",
+      "Bash(npx wrangler dev *)",
+      "Bash(npx wrangler types)",
+      "Bash(npx wrangler types *)",
+      "Bash(npx wrangler check *)",
+      "Bash(npx wrangler --version)",
+      "Bash(npx wrangler d1 migrations *)",
+      "Bash(npx wrangler d1 execute *)",
+      "Bash(npx drizzle-kit generate)",
+      "Bash(npx drizzle-kit generate *)",
+      "Bash(npx drizzle-kit check)",
+      "Bash(npx drizzle-kit check *)",
+      "Bash(npm run dev:vars)"
     ],
     "deny": [
       "Read(./.env)",
@@ -74,7 +87,25 @@
       "Bash(gh secret *)",
       "Bash(npm publish *)",
       "Bash(npx wrangler deploy *)",
-      "Bash(wrangler deploy *)"
+      "Bash(wrangler deploy *)",
+      "Read(./.dev.vars)",
+      "Read(./.dev.vars.*)",
+      "Bash(npx wrangler deploy)",
+      "Bash(npx wrangler secret *)",
+      "Bash(npx wrangler login)",
+      "Bash(npx wrangler login *)",
+      "Bash(npx wrangler * --remote *)",
+      "Bash(npx wrangler * --remote)",
+      "Bash(npx wrangler d1 create *)",
+      "Bash(npx wrangler d1 delete *)",
+      "Bash(npx wrangler r2 bucket *)",
+      "Bash(npx wrangler versions *)",
+      "Bash(npx wrangler rollback *)",
+      "Bash(npx wrangler delete *)",
+      "Bash(npx drizzle-kit push *)",
+      "Bash(npx drizzle-kit push)",
+      "Bash(npx drizzle-kit migrate *)",
+      "Bash(npx drizzle-kit migrate)"
     ]
   },
   "env": {
@@ -88,7 +119,9 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/session-context.mjs"],
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/session-context.mjs"
+            ],
             "timeout": 20
           }
         ]
@@ -101,7 +134,9 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/guard.mjs"],
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard.mjs"
+            ],
             "timeout": 20,
             "onFailure": "block"
           }
@@ -113,7 +148,9 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/guard.mjs"],
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard.mjs"
+            ],
             "timeout": 20,
             "onFailure": "block"
           }

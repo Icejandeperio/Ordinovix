@@ -18,6 +18,8 @@ Run one unit. If an ID was given ($ARGUMENTS), use it; otherwise pick the first 
 
 ## 2. Contract (write it in the PR body later; keep it short)
 - Files you expect to change, files you will not touch, how success is shown (test IDs and commands).
+- If the unit needs an owner action (see "Owner actions inside a unit" in `AGENTS.md`), do everything else first and
+  queue the action with exact steps.
 - If the unit is T3 by the rules in `AGENTS.md`, do only safe preparatory work, write the decision to
   `docs/state/QUEUE.md`, set `status: blocked` with the reason, commit on the branch, push, open a draft PR,
   and return. Do not merge.
@@ -37,7 +39,8 @@ Run one unit. If an ID was given ($ARGUMENTS), use it; otherwise pick the first 
 - For any screen you touched: check light and dark themes and 390 px width (Playwright screenshot is enough).
 
 ## 6. Independent review
-- T2 units: invoke the `verifier` subagent with the unit ID and branch. Fix every blocking finding, rerun the
+- T2 units: invoke the `verifier` subagent with the unit ID, the branch, and the blocking rule from `AGENTS.md`
+  ("Review rule"). Fix every blocking finding, rerun the
   gate, and re-invoke until PASS. T1 units: run the verifier if the diff touches more than 8 files.
 
 ## 7. Ship and record

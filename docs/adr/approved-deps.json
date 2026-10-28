@@ -12,13 +12,66 @@
     "vite-plugin-pwa",
     "idb-keyval",
     "zod",
-    "@date-fns/tz"
+    "@date-fns/tz",
+    "hono",
+    "drizzle-orm",
+    "drizzle-kit",
+    "better-auth",
+    "@cloudflare/vite-plugin",
+    "wrangler",
+    "@cloudflare/workers-types",
+    "@pushforge/builder"
   ],
   "groups": {
-    "gate": ["@playwright/test", "eslint", "@eslint/js", "typescript-eslint", "eslint-plugin-react-hooks", "globals"],
-    "test": ["fake-indexeddb", "@axe-core/playwright"],
-    "pwa": ["vite-plugin-pwa"],
-    "already-present": ["idb-keyval", "zod", "@date-fns/tz"]
+    "gate": [
+      "@playwright/test",
+      "eslint",
+      "@eslint/js",
+      "typescript-eslint",
+      "eslint-plugin-react-hooks",
+      "globals"
+    ],
+    "test": [
+      "fake-indexeddb",
+      "@axe-core/playwright"
+    ],
+    "pwa": [
+      "vite-plugin-pwa"
+    ],
+    "already-present": [
+      "idb-keyval",
+      "zod",
+      "@date-fns/tz"
+    ],
+    "backend": [
+      "hono",
+      "drizzle-orm",
+      "drizzle-kit",
+      "better-auth",
+      "@cloudflare/vite-plugin",
+      "wrangler",
+      "@cloudflare/workers-types",
+      "@pushforge/builder"
+    ]
   },
-  "npxBins": ["tsc", "vitest", "vite", "eslint", "playwright"]
+  "npxBins": [
+    "tsc",
+    "vitest",
+    "vite",
+    "eslint",
+    "playwright",
+    "wrangler",
+    "drizzle-kit"
+  ],
+  "backendPins": {
+    "_about": "Versions verified on 2026-10-28 (newest release at least 7 days old; see ADR-0002). At install time use the newest release that is at least 7 days old, same major, --save-exact.",
+    "hono": "4.13.13",
+    "drizzle-orm": "0.45.4",
+    "drizzle-kit": "0.31.11",
+    "better-auth": "1.7.12",
+    "@cloudflare/vite-plugin": "1.64.0",
+    "wrangler": "4.151.3",
+    "@cloudflare/workers-types": "5.20261019.1",
+    "@pushforge/builder": "2.0.5"
+  }
 }

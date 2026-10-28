@@ -2,7 +2,9 @@
 
 Ordinovix is a private workflow web app for one Philippine tax preparer (the operator, persona Ana) and an
 optional helper (persona Ben): clients, BIR filing tasks, document checklists, follow-ups, office visits,
-outcomes, insights. Frontend only for now: React 19 + TypeScript + Vite + Tailwind v4 on a mock data layer.
+outcomes, insights. React 19 + TypeScript + Vite + Tailwind v4, with a mock data layer (frontend phase, done) and a
+Cloudflare Workers backend (Hono, D1 with Drizzle, Better Auth, R2) being built to `docs/backend/BACKEND_PLAN.md`
+under `docs/adr/ADR-0002-backend-stack-and-cloud-boundary.md`.
 
 **Sources of truth, in order:** `docs/state/backlog.json` (what to do next) → `docs/state/QA_AUDIT_2026-10-27.md`
 (confirmed bugs, root causes, fixes) → `Inspirations/Ordinovix_Build_Spec_v2.md` (product and design spec).
@@ -20,6 +22,10 @@ note the assumption in the PR, and keep going.
 | One unit test file | `npx vitest run src/domain/rules.test.ts` |
 | One acceptance test | `npx playwright test -g "B02"` |
 | Install e2e browser (once per machine) | `npx playwright install chromium` |
+| Local backend secrets (once per machine) | `npm run dev:vars` (writes `.dev.vars` with random local values; never read it) |
+| New migration from the Drizzle schema | `npx drizzle-kit generate` |
+| Apply migrations to the local D1 | `npx wrangler d1 migrations apply DB --local` |
+| Worker types after a binding change | `npx wrangler types` |
 
 ## Architecture map
 
@@ -28,6 +34,10 @@ note the assumption in the PR, and keep going.
 - `src/data/repositories.ts` the contract · `src/data/mock/*` the mock implementation (localStorage)
 - `src/domain/types.ts` entities · `rules.ts` pure rules · `metrics.ts` KPIs · `schemas.ts` zod · `labels.ts` copy
 - `tests/acceptance/*` Playwright acceptance tests (the oracle) · `src/**/*.test.ts` Vitest unit tests
+- `worker/*` Hono API on Workers · `worker/db/schema.ts` Drizzle schema · `migrations/*` generated SQL (never edit one
+  that is on `main`) · `wrangler.jsonc` bindings and environments (names fixed by ADR-0002)
+- The Worker imports `src/domain/*` (rules, policy, schemas, errors, types) unchanged: mock and API enforce the same rules.
+- `docs/backend/*` backend plan and schema draft · `docs/adr/*` decisions (read-only)
 - `docs/product/*` product brief and constraints (read-only) · `docs/state/*` backlog, progress, queue, reviews
 - `AI Assist/` and `.agents/` are Antigravity-era files: ignore them.
 
@@ -43,7 +53,9 @@ note the assumption in the PR, and keep going.
 6. Soft delete only (`deletedAt`, `deletedReason`). Every change writes an activity event.
    Never store revealed values (full TIN) in activity `before`/`after`.
 7. Never store BIR portal credentials. Never present an unverified BIR requirement as verified.
-8. Sample data only. Never add real names, TINs, or documents. Never add network calls to third parties.
+8. Sample data only. Never add real names, TINs, or documents. No network calls to third parties except those
+   ADR-0002 names (Google OAuth, Web Push endpoints), and never from tests.
+9. Secrets never enter the repo, logs, test output or PR text. Never read `.env*` or `.dev.vars`.
 
 ## How work happens
 
@@ -59,20 +71,22 @@ note the assumption in the PR, and keep going.
 | Level | Examples | What you do |
 |---|---|---|
 | **Auto** (T1) | Units marked `"tier": "T1"`: UI, hooks, lib, docs, seed data | Build → gate green → PR → CI green → squash-merge yourself |
-| **Auto + verifier** (T2) | Units marked `"tier": "T2"`: `src/domain/**`, `src/data/**`, permissions, persistence, dependencies | Same, plus an independent verifier PASS before merging |
+| **Auto + verifier** (T2) | Units marked `"tier": "T2"`: `src/domain/**`, `src/data/**`, `worker/**`, `migrations/**`, auth, permissions, persistence, dependencies | Same, plus an independent verifier PASS before merging |
 | **Stop and queue** (T3) | Anything below | Do the safe preparatory work, write the decision to `docs/state/QUEUE.md`, mark the unit `blocked`, move to the next unblocked unit |
 
 T3 always includes: editing protected paths; adding a dependency that is not in `docs/adr/approved-deps.json`;
 upgrading a major version of any dependency; removing a user-facing feature; renaming fields in `types.ts`
-beyond what the unit states; any backend or cloud action (Cloudflare, Wrangler, D1, R2, OAuth, secrets, deploys);
-changing repository settings or visibility; anything involving real client data.
+beyond what the unit states; anything that touches the live Cloudflare or Google accounts (deploys, secrets,
+`wrangler login`, `--remote`, creating or deleting databases, buckets or OAuth clients); changing the names,
+bindings or environments ADR-0002 fixes; changing repository settings or visibility; anything involving real
+client data. Local backend work (`wrangler dev`, local D1 and R2, `drizzle-kit generate`) is normal T1/T2 work.
 
 ## Protected paths (human-owned; never edit)
 
 `AGENTS.md`, `CLAUDE.md`, `.claude/**`, `.github/**`, `scripts/verify.mjs`, `scripts/verify.ps1`,
 `eslint.config.js`, `playwright.config.ts`, `docs/product/**`, `docs/adr/**`, `Inspirations/**`,
-`docs/state/QA_AUDIT_2026-10-27.md`, `.env*`, and **existing** files in `tests/acceptance/`
-(new test files there are allowed; `known-failures.json` may only shrink).
+`docs/state/QA_AUDIT_2026-10-27.md`, `.env*`, `.dev.vars`, and files in `tests/acceptance/` that are committed on
+`main` (new test files and drafts not yet on `main` are editable; `known-failures.json` may only shrink).
 Need a change in one of them? Write it to `docs/state/QUEUE.md` with the exact diff you propose.
 
 ## Git and PR workflow
@@ -101,6 +115,18 @@ Need a change in one of them? Write it to `docs/state/QUEUE.md` with the exact d
 Reproduce → minimize → one hypothesis → one change → failing regression test → root-cause fix.
 A test that passes only on retry is flaky: record it in QUEUE, do not retry-until-green.
 Three failed attempts at the same unit → mark it `blocked` with the evidence, move on.
+
+## Review rule (ADR-0002 section 6)
+
+The verifier blocks only on (a) an acceptance criterion of the unit without evidence, or (b) a regression: something
+that works on `main` and no longer does. Every other finding goes to `docs/state/QUEUE.md` under Proposals, or to the
+unit's follow-up if one exists, and does not block.
+
+## Owner actions inside a unit
+
+When a unit needs something only the owner can do (run the setup script, create the OAuth client, approve a
+production deploy), finish everything else, write the exact steps to `docs/state/QUEUE.md` (Open), set the unit to
+`blocked` with the reason `awaiting owner: <action>`, ship what is done, and continue with other eligible units.
 
 ## PROGRESS.md entry format (directly under the title, newest first)
 
