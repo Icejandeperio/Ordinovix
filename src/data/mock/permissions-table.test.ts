@@ -23,7 +23,7 @@ let ids: Ids;
 const NOT_CLIENT_SCOPED = new Set([
   'session.me', 'session.signOut', 'prefs.save', 'today.queue', 'clients.list', 'templates.list', 'templates.get',
   'deadlineMoves.list', 'holidays.list', 'tasks.list', 'tasks.board', 'documents.list', 'followUps.list',
-  'messages.list', 'offices.list', 'offices.get', 'offices.save', 'visits.list', 'visitKit.list', 'payments.list',
+  'messages.list', 'offices.list', 'offices.get', 'visits.list', 'visitKit.list', 'payments.list',
   'savedViews.list', 'savedViews.save', 'savedViews.remove', 'notifications.list', 'notifications.markRead',
   'notifications.unreadCount', 'push.subscribe', 'push.unsubscribe', 'push.test', 'calendar.range', 'insights.get',
   'baseline.get', 'pulses.list', 'search.query',
@@ -104,6 +104,7 @@ function forbiddenCalls(): Record<string, () => Promise<unknown>> {
     'visits.finish': () => R.visits.finish('visit-v3', { finishedAt: '2026-10-27T11:00:00+08:00' }),
     'visits.cancel': () => R.visits.cancel('visit-v3', 'helper test reason'),
     'visitKit.save': () => R.visitKit.save({ label: 'x' } as never),
+    'offices.save': () => R.offices.save({ id: 'off-rdo39', name: 'Renamed by a helper' }),
     'payments.save': () => R.payments.save({ clientId: MARIA, taskId: MARIA_TASK, amount: 100, paidOn: '2026-10-20', channel: 'online', paidBy: 'client' } as never),
     'payments.remove': () => R.payments.remove('pay-demo-2', 'helper test reason'),
     'notes.list': () => R.notes.list('client', MARIA),
