@@ -2,7 +2,7 @@
 
 ## 2026-10-28 U32 Preview live: deployed by CI, smoke-tested, go-live checklist — blocked
 - Changed: docs/backend/GO_LIVE.md (spec 21.11 tracked item by item, access test as a helper, read-only smoke checks with expected results), QUEUE.md owner steps
-- Evidence: docs only; verify.mjs exit 0; PR number in backlog.json
+- Evidence: docs only; verify.mjs exit 0; PR #36
 - Notes: blocked, awaiting owner: run the Cloudflare setup script (QUEUE.md Open, U31 item). Nothing live exists yet: no database ids in wrangler.jsonc, deploy-preview skips on the placeholder ids, so the smoke checks have not been run. When the owner says phase 1 is done: commit the ids, wait for deploy-preview, run the smoke checks, record the results here and set U32 to done. Item 6 (push on a phone) needs a client-side unit first.
 
 ## 2026-10-28 U31 Owner setup script and deploy runbook — done

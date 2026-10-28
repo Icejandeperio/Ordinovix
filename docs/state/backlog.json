@@ -1004,6 +1004,7 @@
       "phase": "P3",
       "tier": "T1",
       "status": "blocked",
+      "pr": 36,
       "blocked_reason": "awaiting owner: run the Cloudflare setup script (QUEUE.md, Open, U31 item); the real database ids, the first preview deploy, the secrets and the first-owner phase are owner actions",
       "evidence": "shipped what does not need the owner: docs/backend/GO_LIVE.md (spec 21.11, eight items with done or owner-pending, the access test as a helper, the read-only smoke checks with expected results) and the QUEUE steps; not done: ids in wrangler.jsonc, deploy-preview green, the smoke checks run against the live preview",
       "depends_on": [
