@@ -53,3 +53,47 @@ jobs:
             playwright-report/
           retention-days: 7
           if-no-files-found: ignore
+
+  # The same acceptance suite with the frontend running against the local Worker (D1 and R2 on disk, no network).
+  # Not a required check yet; make it required once it has been green for a week. Keep the excluded titles in step
+  # with specs that reach into the mock's in-page store (U30 notes in docs/state/QUEUE.md).
+  verify-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Local backend secrets (random values, written to .dev.vars, never printed)
+        run: npm run dev:vars
+
+      - name: Local D1 schema
+        run: npx wrangler d1 migrations apply DB --local
+
+      - name: Acceptance tests against the Worker (one worker; the tests share one database)
+        run: >
+          npx playwright test --workers=1
+          --grep-invert "U21 practice settings|U21 message templates|U06 B14|U04 B18"
+        env:
+          CI: 'true'
+          TZ: Asia/Manila
+          VITE_DATA_SOURCE: api
+
+      - name: Upload test evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-results-api
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore

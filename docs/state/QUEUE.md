@@ -17,61 +17,7 @@ and, for protected files, the exact change proposed.
     new OrgSettings field (types.ts) and, in the API, encryption like client TINs.
   - Options: (A, recommended) decide during the client walkthrough; nothing waits on it. (B) add the field now.
 
-- [ ] 2026-10-28 U12/U18 Fix two flaky acceptance tests (owner edit: both files are committed acceptance tests)
-  - tests/acceptance/u18-a11y-responsive.spec.ts, end of `open()`: after `waitForLoadState('networkidle')`, wait until
-    every `.border-stamp-ink` element has computed opacity >= 0.94 (the stamp fades in over 0.36 s and axe samples it
-    mid-fade):
-    `await page.waitForFunction(() => [...document.querySelectorAll<HTMLElement>('.border-stamp-ink')].every((el) => Number(getComputedStyle(el).opacity) >= 0.94), undefined, { timeout: 5_000 });`
-  - tests/acceptance/u12-insights-data.spec.ts, "the client filter changes the numbers": give the `expect.poll` after
-    the URL check `{ timeout: 20_000, intervals: [500, 1_000, 2_000] }`.
-  - Neither blocks a unit; both have failed once under full-gate load and passed on re-run.
-  - Update 2026-10-28 (U24): the U18 axe stamp-contrast check on `/tasks/task-rsp-0619e` has now failed in CI in the dark theme (U20, U22 verifier) and the light theme (U24 PR #28, passed on one rerun of the failed job); it is the same stamp fade-in. It costs a rerun per PR, so the owner edit above is worth doing soon.
 
-- [ ] 2026-10-28 U30 Add an API-mode acceptance job to `.github/workflows/verify.yml` (owner edit: protected file; blocks nothing)
-  - Context: U30 PR. `VITE_DATA_SOURCE=api` runs the whole app against the local Worker (D1 and R2 on disk, no network). Locally, 160 of
-    the 164 acceptance tests pass in that mode with one worker; the four that cannot run there are excluded in the job below.
-  - Add this job under `jobs:` (it is a second job, so the required check `verify` is unchanged; make it required later if you want):
-    ```yaml
-      verify-api:
-        runs-on: ubuntu-latest
-        timeout-minutes: 30
-        steps:
-          - uses: actions/checkout@v5
-          - uses: actions/setup-node@v6
-            with:
-              node-version: 22
-              cache: npm
-          - run: npm ci
-          - run: npx playwright install --with-deps chromium
-          - name: Local backend secrets (random values, written to .dev.vars, never printed)
-            run: npm run dev:vars
-          - name: Local D1 schema
-            run: npx wrangler d1 migrations apply DB --local
-          - name: Acceptance tests against the Worker (one worker: the tests share one database)
-            run: >
-              npx playwright test --workers=1
-              --grep-invert "U21 practice settings|U21 message templates|U06 B14|U04 B18"
-            env:
-              CI: 'true'
-              TZ: Asia/Manila
-              VITE_DATA_SOURCE: api
-          - name: Upload test evidence on failure
-            if: failure()
-            uses: actions/upload-artifact@v6
-            with:
-              name: test-results-api
-              path: |
-                test-results/
-                playwright-report/
-              retention-days: 7
-              if-no-files-found: ignore
-    ```
-  - Why those four are excluded (each reaches into the mock's in-page store, which does not exist in API mode): the two U21 tests import
-    `/src/data/mock/index.ts` to play "another device"; `U06 B14` corrupts a field the mock accepts and the API rejects (strict bodies);
-    `U04 B18` asserts the "Sample Data Mode" banner, which only mock mode shows. `tests/acceptance/u30-data-source.spec.ts` covers the same
-    behaviour through the data source and runs in both modes.
-  - Expect about 7 minutes (a 164-test run takes 6.6 minutes locally). Parallel workers are not possible: every test starts from a reset of the one
-    Demo organization.
 
 - [ ] 2026-10-28 U32 Release production after the client accepts the MVP (owner decision; nothing waits on it now)
   - Context: `docs/backend/GO_LIVE.md` lists the eight go-live items and which are owner-pending; `docs/backend/DEPLOY.md`, "Releasing production", has the steps. Production is empty and undeployed on purpose.
@@ -147,6 +93,71 @@ and, for protected files, the exact change proposed.
 - 2026-10-27 (from U14 review) More device-time-zone leftovers beyond what audit B25 names: event times labelled `+08:00` but built from the device clock (mock `visits.start` startedAt and recordOutcome outcomeAt, `components/follow-ups/composer.tsx`, the finish-time default in `visits/record.tsx`), "generated/printed" times in `lib/export.ts` and `visits/print.tsx`, and midnight event stamps in `tasks.override`, follow-up respondedAt/resolvedAt and `line.receivedAt`. Use `nowInManila()` and `formatTime`. A B15 test that finishes a visit with empty costs is also missing.
 
 ## Decided
+
+- [x] 2026-10-28 U12/U18 and U30: owner edits applied (owner, 2026-10-28)
+  - Decision: both flaky-test fixes applied as proposed; the verify-api job added to .github/workflows/verify.yml as proposed
+    (not a required check yet; make it required once it has been green for a week).
+- [x] 2026-10-28 U30 and U31 proposals: owner decisions
+  - If-Match: * stays accepted until U37 wires a version into every edit, then it is refused outside local (U37).
+  - TIN_ENCRYPTION_KEY recovery: option A, a one-time --escrow step into the owner's password manager before production
+    holds real client data (U37).
+  - Practice TIN and the retention period: decided with the client during the walkthrough.
+  - MVP completion units U33-U37 added; stop_after U37.
+  - Original items:
+    - (original) 2026-10-28 U12/U18 Fix two flaky acceptance tests (owner edit: both files are committed acceptance tests)
+      - tests/acceptance/u18-a11y-responsive.spec.ts, end of `open()`: after `waitForLoadState('networkidle')`, wait until
+        every `.border-stamp-ink` element has computed opacity >= 0.94 (the stamp fades in over 0.36 s and axe samples it
+        mid-fade):
+        `await page.waitForFunction(() => [...document.querySelectorAll<HTMLElement>('.border-stamp-ink')].every((el) => Number(getComputedStyle(el).opacity) >= 0.94), undefined, { timeout: 5_000 });`
+      - tests/acceptance/u12-insights-data.spec.ts, "the client filter changes the numbers": give the `expect.poll` after
+        the URL check `{ timeout: 20_000, intervals: [500, 1_000, 2_000] }`.
+      - Neither blocks a unit; both have failed once under full-gate load and passed on re-run.
+      - Update 2026-10-28 (U24): the U18 axe stamp-contrast check on `/tasks/task-rsp-0619e` has now failed in CI in the dark theme (U20, U22 verifier) and the light theme (U24 PR #28, passed on one rerun of the failed job); it is the same stamp fade-in. It costs a rerun per PR, so the owner edit above is worth doing soon.
+    - (original) 2026-10-28 U30 Add an API-mode acceptance job to `.github/workflows/verify.yml` (owner edit: protected file; blocks nothing)
+      - Context: U30 PR. `VITE_DATA_SOURCE=api` runs the whole app against the local Worker (D1 and R2 on disk, no network). Locally, 160 of
+        the 164 acceptance tests pass in that mode with one worker; the four that cannot run there are excluded in the job below.
+      - Add this job under `jobs:` (it is a second job, so the required check `verify` is unchanged; make it required later if you want):
+        ```yaml
+          verify-api:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - uses: actions/checkout@v5
+              - uses: actions/setup-node@v6
+                with:
+                  node-version: 22
+                  cache: npm
+              - run: npm ci
+              - run: npx playwright install --with-deps chromium
+              - name: Local backend secrets (random values, written to .dev.vars, never printed)
+                run: npm run dev:vars
+              - name: Local D1 schema
+                run: npx wrangler d1 migrations apply DB --local
+              - name: Acceptance tests against the Worker (one worker: the tests share one database)
+                run: >
+                  npx playwright test --workers=1
+                  --grep-invert "U21 practice settings|U21 message templates|U06 B14|U04 B18"
+                env:
+                  CI: 'true'
+                  TZ: Asia/Manila
+                  VITE_DATA_SOURCE: api
+              - name: Upload test evidence on failure
+                if: failure()
+                uses: actions/upload-artifact@v6
+                with:
+                  name: test-results-api
+                  path: |
+                    test-results/
+                    playwright-report/
+                  retention-days: 7
+                  if-no-files-found: ignore
+        ```
+      - Why those four are excluded (each reaches into the mock's in-page store, which does not exist in API mode): the two U21 tests import
+        `/src/data/mock/index.ts` to play "another device"; `U06 B14` corrupts a field the mock accepts and the API rejects (strict bodies);
+        `U04 B18` asserts the "Sample Data Mode" banner, which only mock mode shows. `tests/acceptance/u30-data-source.spec.ts` covers the same
+        behaviour through the data source and runs in both modes.
+      - Expect about 7 minutes (a 164-test run takes 6.6 minutes locally). Parallel workers are not possible: every test starts from a reset of the one
+        Demo organization.
 
 - [x] 2026-10-28 U19 Backend: decisions and accounts the owner must provide before any backend work
   - Decision (owner, 2026-10-28): build the full backend before the client walkthrough; use the recommended defaults.

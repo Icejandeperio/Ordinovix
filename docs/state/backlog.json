@@ -2,12 +2,13 @@
   "_about": "Ordinovix work queue for Claude Code. Units run in order, respecting depends_on. Claude may edit only status, pr, evidence and notes. Bug IDs refer to docs/state/QA_AUDIT_2026-10-27.md. Backend units U21-U32 were added by the owner on 2026-10-28 (ADR-0002).",
   "version": 1,
   "created": "2026-10-27",
-  "stop_after": "U32",
+  "stop_after": "U37",
   "phases": {
     "P0": "Demo-ready: fix what would break or embarrass the operator preview",
     "P2": "Contract hardening: make the mock the executable spec for the API",
     "P3-prep": "Backend preparation, documents only (no cloud actions)",
-    "P3": "Backend on Cloudflare Workers (ADR-0002): local work by the agent; deploys by CI; accounts, secrets and production by the owner"
+    "P3": "Backend on Cloudflare Workers (ADR-0002): local work by the agent; deploys by CI; accounts, secrets and production by the owner",
+    "P4": "MVP completion before the client walkthrough: gaps found in the U21-U31 reviews (owner, 2026-10-28)"
   },
   "units": [
     {
@@ -1028,6 +1029,151 @@
         "U32"
       ],
       "notes": "Production stays empty and undeployed until the owner releases it after the client accepts the MVP (ADR-0002 section 5)."
+    },
+    {
+      "id": "U33",
+      "phase": "P4",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U31"
+      ],
+      "title": "Phone reminders: Turn on reminders subscribes the device; the service worker shows pushes",
+      "bugs": [],
+      "scope": [
+        "src/**/push*",
+        "src/routes/welcome/**",
+        "src/routes/settings/**",
+        "src/app/**",
+        "public/push-sw.js",
+        "vite.config.ts",
+        "src/data/**",
+        "tests/acceptance/u33-*.spec.ts"
+      ],
+      "acceptance": [
+        "'Turn on reminders' (Welcome wizard and Settings, Notifications) asks for permission only after the tap (spec 19.3 Push), then subscribes with the key from GET /api/v1/push/vapid-key and saves the subscription; it shows On and offers Turn off, which removes the subscription",
+        "iPhone without the app on the Home Screen, or an unsupported browser: the button explains what is needed (iOS 16.4 or later, Add to Home Screen) instead of failing",
+        "The service worker shows a pushed notification with the lock-screen-safe text (client and task codes only, spec 14) and opens its link on click, focusing an open window when there is one; keep vite-plugin-pwa generateSW and add the handler through workbox.importScripts (no new package)",
+        "Sign-out removes this device's push subscription (spec 19.5)",
+        "Mock mode keeps the 'Push preview' toast (spec 14); tests stub Notification and PushManager; no network in tests"
+      ],
+      "tests": [
+        "U33"
+      ],
+      "notes": "Spec sections 14 and 19.3 in Inspirations/Ordinovix_Build_Spec_v2.md. The Worker routes exist since U29."
+    },
+    {
+      "id": "U34",
+      "phase": "P4",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U31"
+      ],
+      "title": "Notifications created by actions (spec 14), in the Worker and the mock",
+      "bugs": [],
+      "scope": [
+        "worker/**",
+        "src/data/mock/**",
+        "src/domain/**",
+        "tests/acceptance/u34-*.spec.ts"
+      ],
+      "acceptance": [
+        "Write handlers create the event notifications of spec 14 with the spec's recipients and text: Received needs review (helper marks a line received or uploads; to the task owner, or the organization owner when helpers can't accept), Visit ready, Left without everything ready, Outcome recorded (by a helper), Assigned to you (task or visit)",
+        "Each notification links to a record that exists; duplicates collapse to one per type, record and day; the notification row is written in the same batch as the change",
+        "Pushes follow each type's push default and the person's settings, respect quiet hours, and use codes only (no names, TINs, amounts or document contents)",
+        "The mock creates the same notifications for the same actions, so both modes show the same Notifications screen; tests cover each type in both"
+      ],
+      "tests": [
+        "U34"
+      ],
+      "notes": "Found in the U29 review: only the cron notifications existed."
+    },
+    {
+      "id": "U35",
+      "phase": "P4",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U31"
+      ],
+      "title": "Reports with real numbers; opening a period returns the real line count",
+      "bugs": [],
+      "scope": [
+        "worker/**",
+        "src/data/mock/**",
+        "src/domain/metrics.ts",
+        "src/routes/reports/**",
+        "tests/acceptance/u35-*.spec.ts"
+      ],
+      "acceptance": [
+        "reports.monthlySummary returns values computed from the data (shared function in src/domain, used by the mock and the Worker), matching what Today and Insights show for the same month",
+        "reports.exportCsv returns the real rows with masked TINs only (spec 19.5), a BOM for Excel, and the same columns as the screen",
+        "tasks.openPeriod returns the real number of tasks and lines it created, in both modes",
+        "Client history and client checklist reports read real data; a fixture-based test checks exact numbers for one month"
+      ],
+      "tests": [
+        "U35"
+      ],
+      "notes": "Found in the U27 review: monthlySummary and exportCsv were stubs."
+    },
+    {
+      "id": "U36",
+      "phase": "P4",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U31"
+      ],
+      "title": "Offline and install details from spec 19.3 and 19.5",
+      "bugs": [],
+      "scope": [
+        "src/data/**",
+        "src/app/**",
+        "src/routes/**",
+        "src/components/**",
+        "tests/acceptance/u36-*.spec.ts"
+      ],
+      "acceptance": [
+        "A failed offline write holds every later write until it is retried or discarded (owner decision, QUEUE.md Decided 2026-10-28); the queue shows the failed item with Retry and Discard",
+        "Creating clients and opening periods are disabled offline with a hint (spec 19.3)",
+        "Sign-out warns when the offline queue is not empty, then clears caches and the queue (spec 19.5)",
+        "An 'Install app' button outside the Welcome wizard uses beforeinstallprompt on Android and desktop, and iPhone gets the Share, Add to Home Screen instructions card; neither shows once the app is installed",
+        "The persisted query cache (spec 19.3 Offline data) needs a package that is not approved: write the proposal to QUEUE.md, do not install it"
+      ],
+      "tests": [
+        "U36"
+      ],
+      "notes": "Found in the U17 review."
+    },
+    {
+      "id": "U37",
+      "phase": "P4",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U36"
+      ],
+      "title": "Every edit sends its version; If-Match * refused outside local; TIN key recovery step",
+      "bugs": [],
+      "scope": [
+        "src/**",
+        "worker/**",
+        "scripts/setup-cloudflare.mjs",
+        "scripts/setup-cloudflare.test.mjs",
+        "docs/backend/DEPLOY.md",
+        "tests/acceptance/u37-*.spec.ts"
+      ],
+      "acceptance": [
+        "Every caller of an update sends the record's version, including calendar drag and undo, the Welcome wizard's sequential settings saves, the helpers-can-accept toggle and settings.save; a test fails if an update route is called without one",
+        "The Worker honours If-Match: * only when the dev sign-in is enabled (local); in preview and production an update without a real version returns 422, and a stale one 409",
+        "setup-cloudflare.mjs gains --escrow for production: it generates TIN_ENCRYPTION_KEY, shows it once with a prompt to store it in a password manager, requires typing the last 6 characters back, then sets it; it never logs or writes it; phase 2 for production refuses to generate the TIN key without --escrow; tests use the stubbed runner",
+        "DEPLOY.md 'Releasing production' includes the escrow step before any real client data"
+      ],
+      "tests": [
+        "U37"
+      ],
+      "notes": "Owner decisions (QUEUE.md Decided 2026-10-28): keep If-Match * until this unit; recovery copy via a password manager."
     }
   ]
 }
