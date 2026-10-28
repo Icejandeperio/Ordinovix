@@ -154,18 +154,24 @@ describe('upload', () => {
   });
 
   it('removes the object again when the database batch fails, so the bucket holds nothing without a record', async () => {
+    // batch #1 is the read of the organization's records; batch #2 is the write: fail the write, after the bytes are in R2
+    let batches = 0;
     const failing = new Proxy(world.env.DB, {
       get(target, prop) {
         if (prop === 'batch') {
-          return (statements: D1PreparedStatement[]) => target.batch([...statements, target.prepare("INSERT INTO orgs (id, name, is_demo, created_at) VALUES (NULL, 'boom', 0, 'x')")]);
+          return (statements: D1PreparedStatement[]) =>
+            ++batches < 2 ? target.batch(statements) : target.batch([...statements, target.prepare("INSERT INTO orgs (id, name, is_demo, created_at) VALUES (NULL, 'boom', 0, 'x')")]);
         }
         const v = (target as any)[prop];
         return typeof v === 'function' ? v.bind(target) : v;
       },
     }) as D1Database;
     const before = { objects: (await objects()).length, docs: await count('SELECT COUNT(*) AS n FROM documents'), activity: await count('SELECT COUNT(*) AS n FROM activity') };
+    const putsBefore = (await objects()).length;
     const res = await upload({ bytes: pdf('doomed'), thumb: jpeg(), env: { DB: failing } });
     expect(res.status).toBe(500);
+    expect(batches).toBe(2); // the write batch really ran (and failed) after the bytes were stored
+    expect(putsBefore).toBe(before.objects);
     expect((await objects()).length).toBe(before.objects);
     expect(await count('SELECT COUNT(*) AS n FROM documents')).toBe(before.docs);
     expect(await count('SELECT COUNT(*) AS n FROM activity')).toBe(before.activity);
