@@ -2,7 +2,7 @@
  * Typed errors the data layer throws and the screens map to a 403 or 404 view (spec 11.20).
  * `code` matches what the API will return, so the same screens work unchanged against it.
  */
-export type ErrorCode = 'FORBIDDEN' | 'NOT_FOUND' | 'RULE_VIOLATION' | 'VALIDATION' | 'VERSION_CONFLICT' | 'ACCESS_PENDING' | 'RATE_LIMITED';
+export type ErrorCode = 'FORBIDDEN' | 'NOT_FOUND' | 'RULE_VIOLATION' | 'VALIDATION' | 'VERSION_CONFLICT' | 'ACCESS_PENDING' | 'RATE_LIMITED' | 'UNAUTHENTICATED';
 
 export class NotFoundError extends Error {
   readonly code = 'NOT_FOUND' as const;
@@ -17,6 +17,15 @@ export class ForbiddenError extends Error {
   constructor(message = 'No access') {
     super(message);
     this.name = 'ForbiddenError';
+  }
+}
+
+/** No valid session (API only, 401): the app sends the person to the sign-in page. */
+export class UnauthenticatedError extends Error {
+  readonly code = 'UNAUTHENTICATED' as const;
+  constructor(message = 'Sign in to continue') {
+    super(message);
+    this.name = 'UnauthenticatedError';
   }
 }
 

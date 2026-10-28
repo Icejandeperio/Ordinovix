@@ -13,7 +13,8 @@ export interface ErrorBody {
   error: { code: string; message: string; fields?: unknown; current?: unknown; errorId?: string };
 }
 
-const STATUS_BY_CODE: Record<string, 400 | 403 | 404 | 409 | 422 | 429> = {
+const STATUS_BY_CODE: Record<string, 400 | 401 | 403 | 404 | 409 | 422 | 429> = {
+  UNAUTHENTICATED: 401,
   VALIDATION: 422,
   FORBIDDEN: 403,
   ACCESS_PENDING: 403,
@@ -23,7 +24,7 @@ const STATUS_BY_CODE: Record<string, 400 | 403 | 404 | 409 | 422 | 429> = {
   RATE_LIMITED: 429,
 };
 
-export function errorResponse(c: Context<AppEnv>, status: 400 | 403 | 404 | 409 | 422 | 429 | 500, body: ErrorBody): Response {
+export function errorResponse(c: Context<AppEnv>, status: 400 | 401 | 403 | 404 | 409 | 422 | 429 | 500, body: ErrorBody): Response {
   return c.json(body, status);
 }
 
