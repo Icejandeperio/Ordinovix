@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-28 U20 Close the remaining helper permission gaps from the U07 review — done
+- Changed: mock data layer: logResponse, recordOutcome, payments/contacts/authorizations, activity/calendar/search/today/offices policy, isVisitListable; Offices page owner-only buttons
+- Evidence: verify.mjs exit 0; tests now passing: B11, permissions-gaps (15), U20 acceptance (1); PR #22
+- Notes: Verifier PASS under the run-wide rule; findings queued.
+
 ## 2026-10-28 U18 Accessibility and responsive sweep — done
 - Changed: axe checks on 20 routes in both themes, 360 px no-scroll checks, four fixes (button name, two contrasts, Tasks header wrap)
 - Evidence: verify.mjs exit 0; tests now passing: U18 (67 acceptance); PR #21

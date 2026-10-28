@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useOffices } from '@/hooks/useData';
+import { useOffices, useSession } from '@/hooks/useData';
 import type { Office, OfficeType } from '@/domain/types';
 import { OFFICE_TYPE_LABELS } from '@/domain/labels';
 import { OfficeFormModal } from '@/components/offices/office-form-modal';
@@ -37,6 +37,9 @@ function getOfficeIcon(type: OfficeType) {
 
 export function OfficesPage() {
   const { data: offices = [], isLoading, isError, error, refetch } = useOffices();
+  // Adding and editing offices is the owner's; a helper reads them
+  const { data: session } = useSession();
+  const isOwner = session?.membership.role === 'owner';
 
   const [activeTypeTab, setActiveTypeTab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,6 +86,7 @@ export function OfficesPage() {
           </p>
         </div>
 
+        {isOwner && (
         <button
           onClick={handleOpenAdd}
           className="px-3.5 py-2 text-xs font-semibold rounded-control bg-stamp text-on-stamp hover:bg-stamp-strong shadow-xs flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
@@ -90,6 +94,7 @@ export function OfficesPage() {
           <Plus className="w-3.5 h-3.5" />
           <span>Add Office</span>
         </button>
+        )}
       </div>
 
       {/* Tabs and Search Bar */}
@@ -205,6 +210,7 @@ export function OfficesPage() {
                   )}
                 </div>
 
+                {isOwner && (
                 <button
                   onClick={() => handleOpenEdit(office)}
                   className="p-1 rounded text-ink-3 hover:text-stamp hover:bg-sheet-2 transition-colors cursor-pointer"
@@ -212,6 +218,7 @@ export function OfficesPage() {
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
+                )}
               </div>
 
               <div>

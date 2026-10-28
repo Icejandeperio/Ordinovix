@@ -812,6 +812,16 @@ function canReachVisit(visitId: ID): boolean {
   if (visit.assigneeUserId === user.id) return true;
   return store.visitItems.some((i) => i.visitId === visitId && canAccessClient(a, i.clientId));
 }
+/**
+ * A visit as the person sees it in lists and calendars: one they can reach, and, for a helper, not one whose items
+ * all belong to unassigned clients (it would read "0 of 0 ready"). A visit with no items at all still shows.
+ */
+function isVisitListable(v: Visit): boolean {
+  if (!canReachVisit(v.id)) return false;
+  if (actor().role === 'owner') return true;
+  const items = store.visitItems.filter((i) => i.visitId === v.id);
+  return items.length === 0 || items.some((i) => isClientAllowed(i.clientId));
+}
 function assertVisit(id: ID): void {
   const v = store.visits.find((x) => x.id === id);
   if (!v || v.deletedAt) throw new NotFoundError('Visit not found');
@@ -1248,7 +1258,7 @@ export const mockRepositories: Repositories = {
     async queue(scope = 'everyone') {
       await simulateLatency();
       const today = todayInManila();
-      const { user, membership } = getCurrentUser();
+      const { user } = getCurrentUser();
 
       // Filter tasks by allowed clients
       const allowedTasks = store.tasks.filter((t) => {
@@ -1330,15 +1340,7 @@ export const mockRepositories: Repositories = {
         .filter((v) => {
           if (v.status === 'cancelled' || v.status === 'done') return false;
           if (v.plannedDate < today) return false;
-          const items = store.visitItems.filter((vi) => vi.visitId === v.id);
-          const hasAllowedClient = items.some((vi) => {
-            const task = store.tasks.find((t) => t.id === vi.taskId);
-            return task && isClientAllowed(task.clientId);
-          });
-          if (membership.role !== 'owner' && !hasAllowedClient && v.assigneeUserId !== user.id) {
-            return false;
-          }
-          return true;
+          return isVisitListable(v);
         })
         .sort((a, b) => a.plannedDate.localeCompare(b.plannedDate))
         .slice(0, 5)
@@ -1396,19 +1398,19 @@ export const mockRepositories: Repositories = {
           (v) =>
             v.plannedDate === d &&
             v.status !== 'cancelled' &&
-            (membership.role === 'owner' || v.assigneeUserId === user.id)
+            isVisitListable(v)
         );
         next14Days.push({ date: d, dayNumber, dayName, hasDueTasks, hasVisits });
       }
 
       // Recent activity
       const recentActivity = store.activity
-        .filter((e) => !e.clientId || isClientAllowed(e.clientId))
+        .filter((e) => (e.clientId ? isClientAllowed(e.clientId) : actor().active && actor().role === 'owner'))
         .sort((a, b) => b.at.localeCompare(a.at))
         .slice(0, 5);
 
       // KPI stats
-      const firstPassRate = calculateFirstPassRate(store.visitItems);
+      const firstPassRate = calculateFirstPassRate(scopedInsightData().visitItems);
       const blockedCount = summaries.filter((s) => s.statusGroup === 'blocked').length;
 
       // Counts
@@ -1416,12 +1418,7 @@ export const mockRepositories: Repositories = {
       const visitsThisWeekCount = store.visits.filter((v) => {
         if (v.status === 'cancelled') return false;
         if (v.plannedDate < today || v.plannedDate > weekEndDate) return false;
-        const items = store.visitItems.filter((vi) => vi.visitId === v.id);
-        const hasAllowedClient = items.some((vi) => {
-          const task = store.tasks.find((t) => t.id === vi.taskId);
-          return task && isClientAllowed(task.clientId);
-        });
-        return membership.role === 'owner' || hasAllowedClient || v.assigneeUserId === user.id;
+        return isVisitListable(v);
       }).length;
 
       const counts = {
@@ -1678,8 +1675,10 @@ export const mockRepositories: Repositories = {
     async upsert(c) {
       await simulateLatency();
       assertPatch('contacts.upsert', c);
-      assertReferences(c, c.clientId ?? store.contacts.find((x) => x.id === c.id)?.clientId);
+      const storedContact = c.id ? store.contacts.find((x) => x.id === c.id) : undefined;
+      assertReferences(c, storedContact?.clientId ?? c.clientId);
       assertRecordWrite(store.contacts, c.id, c.clientId);
+      rejectIdentityChange(c, storedContact);
       validate(ContactWriteSchema, c);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
@@ -1731,8 +1730,10 @@ export const mockRepositories: Repositories = {
     async upsert(a) {
       await simulateLatency();
       assertPatch('authorizations.upsert', a);
-      assertReferences(a, a.clientId ?? store.authorizations.find((x) => x.id === a.id)?.clientId);
+      const storedAuth = a.id ? store.authorizations.find((x) => x.id === a.id) : undefined;
+      assertReferences(a, storedAuth?.clientId ?? a.clientId);
       assertRecordWrite(store.authorizations, a.id, a.clientId);
+      rejectIdentityChange(a, storedAuth);
       validate(AuthorizationWriteSchema, a);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
@@ -2703,6 +2704,12 @@ export const mockRepositories: Repositories = {
       validate(LogResponseWriteSchema, r);
       const fu = store.followUps.find((item) => item.id === id);
       if (!fu) throw new Error('Follow up not found');
+      for (const lineId of r.receivedLineIds ?? []) {
+        const line = store.taskLines.find((l) => l.id === lineId);
+        if (!line) continue;
+        assertClient(line.clientId);
+        if (line.clientId !== fu.clientId) throw new RuleViolationError('A line of another client cannot be marked received here');
+      }
       fu.status = 'answered';
       fu.response = r.text;
       fu.respondedAt = todayInManila() + 'T00:00:00+08:00';
@@ -2805,17 +2812,17 @@ export const mockRepositories: Repositories = {
     },
     async get(id) {
       await simulateLatency();
+      if (!actor().active) throw new ForbiddenError('Your access has been revoked');
       const office = store.offices.find((o) => o.id === id);
       if (!office) throw new Error('Office not found');
-      const vItems = store.visitItems.filter((vi) => {
-        const v = store.visits.find((visit) => visit.id === vi.visitId);
-        return v && v.officeId === id;
-      });
+      // The office is practice-wide; its numbers cover only the visits and clients the person can reach
+      const reachable = store.visits.filter((v) => v.officeId === id && canReachVisit(v.id));
+      const vItems = store.visitItems.filter((vi) => reachable.some((v) => v.id === vi.visitId) && isClientAllowed(vi.clientId));
       const firstPass = calculateFirstPassRate(vItems);
       return {
         office,
         stats: {
-          totalVisits: store.visits.filter((v) => v.officeId === id).length,
+          totalVisits: reachable.length,
           firstPassRate: firstPass,
           topCauses: [],
         },
@@ -2823,6 +2830,7 @@ export const mockRepositories: Repositories = {
     },
     async save(o) {
       await simulateLatency();
+      requireOwner(actor());
       validate(OfficeWriteSchema, o);
       const { user } = getCurrentUser();
       const existing = o.id ? store.offices.find((item) => item.id === o.id) : undefined;
@@ -3104,6 +3112,22 @@ export const mockRepositories: Repositories = {
       const task = store.tasks.find((t) => t.id === item.taskId);
       if (!task) throw new Error('Task not found');
 
+      // Lines and documents the outcome names must belong to the item's own client, and flagging a line is a review
+      const namedLines = o.affectedLineIds ?? [];
+      for (const lineId of namedLines) {
+        const line = store.taskLines.find((l) => l.id === lineId);
+        if (!line) continue;
+        assertClient(line.clientId);
+        if (line.clientId !== item.clientId) throw new RuleViolationError('A line of another client cannot be flagged here');
+      }
+      for (const docId of o.evidenceDocumentIds ?? []) {
+        const doc = store.documents.find((d) => d.id === docId);
+        if (!doc) continue;
+        assertClient(doc.clientId);
+        if (doc.clientId !== item.clientId) throw new RuleViolationError('A document of another client cannot be attached here');
+      }
+      if (namedLines.length > 0 && (o.outcome === 'correction_required' || o.outcome === 'not_accepted')) assertCanReview();
+
       // Check whether this is the first visit outcome recorded for this task
       const earlierOutcomeCount = store.visitItems.filter(
         (vi) => vi.taskId === task.id && vi.id !== item.id && vi.outcome
@@ -3289,8 +3313,10 @@ export const mockRepositories: Repositories = {
     async save(p) {
       await simulateLatency();
       assertPatch('payments.save', p);
-      assertReferences(p, p.clientId ?? store.payments.find((x) => x.id === p.id)?.clientId);
+      const storedPayment = p.id ? store.payments.find((x) => x.id === p.id) : undefined;
+      assertReferences(p, storedPayment?.clientId ?? p.clientId);
       assertRecordWrite(store.payments, p.id, p.clientId);
+      rejectIdentityChange(p, storedPayment);
       validate(PaymentWriteSchema, p);
       const { user } = getCurrentUser();
 
@@ -3476,6 +3502,7 @@ export const mockRepositories: Repositories = {
   calendar: {
     async range(from, to, f) {
       await simulateLatency();
+      if (!actor().active) return [];
       const items: CalendarItem[] = [];
 
       // 1. Task due dates
@@ -3529,7 +3556,8 @@ export const mockRepositories: Repositories = {
             !v.deletedAt &&
             v.status !== 'cancelled' &&
             v.plannedDate >= from &&
-            v.plannedDate <= to
+            v.plannedDate <= to &&
+            isVisitListable(v)
         )
         .forEach((v) => {
           const summary = buildVisitSummary(v);
@@ -3765,15 +3793,15 @@ export const mockRepositories: Repositories = {
   activity: {
     async list(f) {
       await simulateLatency();
-      const { membership } = getCurrentUser();
+      const who = actor();
+      if (!who.active) throw new ForbiddenError('Your access has been revoked');
       if (f?.clientId) assertClient(f.clientId);
-      if (!f?.clientId && !f?.entityId && membership.role !== 'owner') {
+      if (!f?.clientId && !f?.entityId && who.role !== 'owner') {
         throw new ForbiddenError('Access denied: Practice-wide audit log is restricted to practice owners');
       }
       let list = store.activity;
-      if (membership.role === 'helper' && membership.clientIds) {
-        list = list.filter((a) => !a.clientId || membership.clientIds.includes(a.clientId));
-      }
+      // A helper sees only events of clients they can reach; practice-wide events are the owner's
+      if (who.role !== 'owner') list = list.filter((a) => a.clientId && canAccessClient(who, a.clientId));
       if (f?.entity) list = list.filter((a) => a.entity === f.entity);
       if (f?.clientId) list = list.filter((a) => a.clientId === f.clientId);
       if ((f as any)?.entityId) list = list.filter((a) => (a as any).entityId === (f as any).entityId);
@@ -3792,7 +3820,7 @@ export const mockRepositories: Repositories = {
       await simulateLatency();
       const query = q.toLowerCase();
       const today = todayInManila();
-      const { user, membership } = getCurrentUser();
+      if (!actor().active) return { clients: [], tasks: [], documents: [], visits: [], followUps: [], payments: [], offices: [] };
 
       // Clients: match name, code, or contacts
       const matchingClientIds = new Set<ID>();
@@ -3832,15 +3860,7 @@ export const mockRepositories: Repositories = {
       // Visits: match officeName or purpose, respect scoping
       const visits = store.visits
         .filter((v) => {
-          if (v.status === 'cancelled') return false;
-          const items = store.visitItems.filter((vi) => vi.visitId === v.id);
-          const hasAllowedClient = items.some((vi) => {
-            const task = store.tasks.find((t) => t.id === vi.taskId);
-            return task && isClientAllowed(task.clientId);
-          });
-          if (membership.role !== 'owner' && !hasAllowedClient && v.assigneeUserId !== user.id) {
-            return false;
-          }
+          if (v.status === 'cancelled' || !isVisitListable(v)) return false;
           return (
             v.officeName.toLowerCase().includes(query) ||
             (v.purpose && v.purpose.toLowerCase().includes(query))
