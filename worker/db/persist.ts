@@ -127,10 +127,12 @@ function plan(d1: D1Database, before: Snapshot[], after: Snapshot[]): Plan {
   return { statements: [...guardStatements, ...statements, ...updates, ...deletes.reverse()], guards, changed };
 }
 
-export function ifMatchVersion(c: Context<AppEnv>): number {
-  const raw = c.req.header('If-Match');
-  const m = raw ? /^(?:W\/)?"?(\d+)"?$/.exec(raw.trim()) : null;
-  if (!m) throw new ValidationError({ 'If-Match': ['Send the record version you loaded in If-Match, for example "3"'] });
+/** The version in If-Match, or undefined for `*` ("any version", an update that does not name one, like the mock). Required either way. */
+export function ifMatchVersion(c: Context<AppEnv>): number | undefined {
+  const raw = c.req.header('If-Match')?.trim();
+  if (raw === '*') return undefined;
+  const m = raw ? /^(?:W\/)?"?(\d+)"?$/.exec(raw) : null;
+  if (!m) throw new ValidationError({ 'If-Match': ['Send the record version you loaded in If-Match, for example "3", or * for any version'] });
   return Number(m[1]);
 }
 

@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { createAuth, originOf } from './auth/auth';
-import { devRoutes } from './dev/sign-in';
+import { devRoutes, devToday } from './dev/sign-in';
 import type { AppEnv } from './env';
 import { handleError, handleNotFound } from './errors';
 import { requireActive, requireMembership, requireSession } from './middleware/auth';
@@ -40,6 +40,7 @@ export function createApp(options: CreateAppOptions = {}) {
     }
   });
 
+  app.use('*', devToday);
   app.onError(handleError);
   app.notFound(handleNotFound);
 
