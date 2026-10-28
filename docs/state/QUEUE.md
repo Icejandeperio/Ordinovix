@@ -25,6 +25,7 @@ and, for protected files, the exact change proposed.
   - tests/acceptance/u12-insights-data.spec.ts, "the client filter changes the numbers": give the `expect.poll` after
     the URL check `{ timeout: 20_000, intervals: [500, 1_000, 2_000] }`.
   - Neither blocks a unit; both have failed once under full-gate load and passed on re-run.
+  - Update 2026-10-28 (U24): the U18 axe stamp-contrast check on `/tasks/task-rsp-0619e` has now failed in CI in the dark theme (U20, U22 verifier) and the light theme (U24 PR #28, passed on one rerun of the failed job); it is the same stamp fade-in. It costs a rerun per PR, so the owner edit above is worth doing soon.
 
 ## Proposals (ideas outside the backlog; not scheduled)
 
