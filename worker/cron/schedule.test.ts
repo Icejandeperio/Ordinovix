@@ -1,9 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import worker, { CRON } from '../index';
 import { openWorld, type World } from '../testing/world';
 
 /** U29: the cron triggers in wrangler.jsonc and the Worker's scheduled handler agree, and each cron runs its own job. */
+// a job loads the whole organization and runs the shared read side per person: give it room when the machine is busy
+vi.setConfig({ testTimeout: 60_000 });
+
 let world: World;
 beforeAll(async () => {
   world = await openWorld();

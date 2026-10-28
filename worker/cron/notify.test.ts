@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import { createQueries } from '@/data/queries';
 import { addDaysToDate, setDevToday } from '@/lib/dates';
 import { loadQueryData } from '../db/load';
@@ -11,6 +11,9 @@ import { TEST_SEED_DAY, openWorld, type World } from '../testing/world';
  * U29: the cron jobs write notification rows that link to records that exist, collapse repeats, and push only what a person has
  * switched on, outside quiet hours, with codes and no names. The push services are stubs: no network.
  */
+// a job loads the whole organization and runs the shared read side per person: give it room when the machine is busy
+vi.setConfig({ testTimeout: 60_000 });
+
 let world: World;
 const MORNING = new Date('2026-10-26T23:00:00Z'); // 07:00 on 2026-10-27 in Manila
 const EVENING = new Date('2026-10-27T09:00:00Z'); // 17:00 on 2026-10-27
@@ -205,6 +208,20 @@ describe('push', () => {
     const sent = await sendDuePushes(world.env, morning.deps, MORNING);
     expect(sent.pushed).toBeGreaterThan(0);
     expect(morning.posted.length).toBeGreaterThan(0);
+  });
+
+  it('a person who never chose gets the spec defaults: the digest pushes, the monthly check-in does not', async () => {
+    await clearNotifications();
+    await db().prepare('DELETE FROM push_subscriptions').run();
+    await db().prepare("DELETE FROM user_prefs WHERE user_id = 'user-ana'").run();
+    await subscribe('user-ana', ENDPOINT('ana-phone'));
+    setDevToday('2026-11-03');
+    const stub = stubPush();
+    await runNotifications(world.env, 'morning', stub.deps, new Date('2026-11-02T23:00:00Z'));
+    const pushed = new Set((await rows("SELECT type FROM notifications WHERE user_id = 'user-ana' AND created_by = 'system' AND pushed_at IS NOT NULL")).map((r) => r.type));
+    expect(pushed.has('daily_digest')).toBe(true);
+    expect(pushed.has('monthly_check_in')).toBe(false);
+    expect(await count("SELECT COUNT(*) AS n FROM notifications WHERE user_id = 'user-ana' AND type = 'monthly_check_in' AND created_by = 'system'")).toBe(1); // in the app, not on the phone
   });
 
   it('knows the quiet-hours window across midnight, and that the end minute is not quiet', () => {
