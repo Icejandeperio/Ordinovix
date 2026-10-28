@@ -606,7 +606,7 @@
       "id": "U20",
       "phase": "P2",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U07"
       ],
@@ -631,7 +631,9 @@
       "tests": [
         "B11"
       ],
-      "notes": "Opened by the owner decision for U07 (QUEUE.md, Decided). Append new findings of these same classes from later verifier reviews to this acceptance list instead of blocking the unit that found them."
+      "notes": "Opened by the owner decision for U07 (QUEUE.md, Decided). Append new findings of these same classes from later verifier reviews to this acceptance list instead of blocking the unit that found them.",
+      "pr": 22,
+      "evidence": "verify.mjs exit 0; tests now passing: B11, permissions-gaps (15), U20 acceptance (1); verifier/PR #22; Verifier PASS under the run-wide rule; findings queued."
     }
   ]
 }
