@@ -811,7 +811,7 @@
       "id": "U26",
       "phase": "P3",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U25"
       ],
@@ -834,7 +834,9 @@
       "tests": [
         "U26"
       ],
-      "notes": "Split into two PRs if the diff exceeds about 800 lines; keep the unit id."
+      "notes": "Split into two PRs if the diff exceeds about 800 lines; keep the unit id.",
+      "pr": 30,
+      "evidence": "verify.mjs exit 0; tests now passing: U26 write behaviour (23) and permission table (125); verifier/PR #30; verifier PASS; write side moved verbatim into src/data/commands.ts and shared with the Worker; one atomic batch with activity, Idempotency-Key, If-Match, encrypted TINs"
     },
     {
       "id": "U27",
