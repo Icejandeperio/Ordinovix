@@ -123,7 +123,7 @@ import { FAILURE_RATE_KEY, OFFLINE_KEY, PERSONA_KEY } from '@/data/dev-state';
 
 const STORAGE_KEY = 'ox-mock-data-v2';
 
-interface StoreData {
+export interface StoreData {
   org: Org;
   settings: OrgSettings;
   users: User[];
@@ -551,6 +551,16 @@ function loadStore(): StoreData {
   } catch (e) {
     console.error('Failed to load store from localStorage', e);
   }
+  const merged = buildInitialStore(baseDate);
+  saveStore(merged);
+  return merged;
+}
+
+/**
+ * The sample organization the mock starts with, as plain data (no storage involved). The API's Demo seed
+ * (scripts/seed-sql.mjs, U23) is built from this, so the mock and the preview start from the same records.
+ */
+export function buildInitialStore(baseDate: string): StoreData {
   const seed = generateSeedData(baseDate);
   const sampleFu = buildStandardFollowUps(seed.org.id, baseDate);
   const initialStore: StoreData = {
@@ -703,7 +713,6 @@ function loadStore(): StoreData {
     baseline: demo.baseline,
     pulses: demo.pulses,
   };
-  saveStore(merged);
   return merged;
 }
 
