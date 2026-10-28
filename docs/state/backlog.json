@@ -842,7 +842,7 @@
       "id": "U27",
       "phase": "P3",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U26"
       ],
@@ -863,7 +863,9 @@
       "tests": [
         "U27"
       ],
-      "notes": "Split into two PRs if the diff exceeds about 800 lines; keep the unit id."
+      "notes": "Split into two PRs if the diff exceeds about 800 lines; keep the unit id.",
+      "pr": 31,
+      "evidence": "verify.mjs exit 0; tests now passing: U27 permission table (115), behaviour (12: openPeriod, recordOutcome, markCompleted, importCommit roll back completely; invite then first sign-in; revoke signs out; import seals TINs), owner-middleware; verifier/PR #31; verifier PASS"
     },
     {
       "id": "U28",

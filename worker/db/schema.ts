@@ -93,15 +93,24 @@ export const orgSettings = sqliteTable(
 );
 
 /** The app profile of a person, keyed to the Better Auth user (`user`) it belongs to once they sign in. */
-export const users = sqliteTable('users', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  displayName: text('display_name'),
-  email: text('email').notNull().unique(),
-  initials: text('initials').notNull(),
-  mobileE164: text('mobile_e164'),
-  lastSignInAt: text('last_sign_in_at'),
-});
+export const users = sqliteTable(
+  'users',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    displayName: text('display_name'),
+    email: text('email').notNull().unique(),
+    initials: text('initials').notNull(),
+    mobileE164: text('mobile_e164'),
+    lastSignInAt: text('last_sign_in_at'),
+    /**
+     * The Better Auth user this profile belongs to, once that person has signed in with Google. NULL until then: an invited
+     * person's profile exists from the invitation (the id other records already point at) and is claimed at first sign-in.
+     */
+    authUserId: text('auth_user_id'),
+  },
+  (t) => [uniqueIndex('idx_users_auth_user').on(t.authUserId)],
+);
 
 export const userPrefs = sqliteTable(
   'user_prefs',

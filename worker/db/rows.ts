@@ -58,6 +58,7 @@ export function rowsOf(store: QueryData): Array<{ table: SQLiteTable; rows: Row[
     { table: s.users, rows: store.users.map((u) => asRow(u)) },
     { table: s.userPrefs, rows: Object.values(store.prefs).map((p) => asRow(p)) },
     { table: s.offices, rows: store.offices.map((o) => asRow(o)) },
+    { table: s.importBatches, rows: (store.importBatches ?? []).map((b) => asRow(b)) },
     { table: s.clients, rows: store.clients.map((c) => asRow(c, { tinEncrypted: null, tinHash: null })) },
     { table: s.memberships, rows: store.memberships.map((m) => asRow(m)) },
     { table: s.membershipClients, rows: store.memberships.flatMap((m) => m.clientIds.map((clientId) => ({ membershipId: m.id, clientId }))) },

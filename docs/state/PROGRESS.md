@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-28 U27 Write routes part 2: follow-ups, visits, payments, notes, settings, memberships, import — done
+- Changed: worker/routes/writes2.ts (38 routes), import batches recorded, invitation linked at first sign-in (users.auth_user_id, migration 0002), revoke deletes sessions in the same batch, ownerOnly middleware
+- Evidence: verify.mjs exit 0; tests now passing: U27 (127 worker route tests); PR #31
+- Notes: Verifier PASS under the run-wide rule; openPeriod line count, monthlySummary and exportCsv remain mock stubs; advisories queued.
+
 ## 2026-10-28 U26 Write routes part 1: clients, contacts, authorizations, templates, deadlines, messages, tasks, lines — done
 - Changed: src/data/commands.ts (shared write side; all write methods except documents), worker/db/persist.ts (diff and one batch), worker/routes/writes.ts (45 routes), TIN encryption, strict bodies, tests
 - Evidence: verify.mjs exit 0; tests now passing: U26 (148 worker route tests); PR #30

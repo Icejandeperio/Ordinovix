@@ -2,6 +2,7 @@ import type {
   Repositories,
 } from './repositories';
 import type {
+  ImportBatch,
   User,
   Membership,
   Org,
@@ -96,6 +97,8 @@ export interface QueryData {
   prefs: Record<string, UserPrefs>;
   offices: Office[];
   clients: Client[];
+  /** CSV imports; absent in data saved before imports were recorded. */
+  importBatches?: ImportBatch[];
   contacts: Contact[];
   authorizations: Authorization[];
   templates: TaskTemplate[];
