@@ -1,12 +1,13 @@
 {
-  "_about": "Ordinovix work queue for Claude Code. Units run in order, respecting depends_on. Claude may edit only status, pr, evidence and notes. Bug IDs refer to docs/state/QA_AUDIT_2026-10-27.md.",
+  "_about": "Ordinovix work queue for Claude Code. Units run in order, respecting depends_on. Claude may edit only status, pr, evidence and notes. Bug IDs refer to docs/state/QA_AUDIT_2026-10-27.md. Backend units U21-U32 were added by the owner on 2026-10-28 (ADR-0002).",
   "version": 1,
   "created": "2026-10-27",
-  "stop_after": "U19",
+  "stop_after": "U32",
   "phases": {
     "P0": "Demo-ready: fix what would break or embarrass the operator preview",
     "P2": "Contract hardening: make the mock the executable spec for the API",
-    "P3-prep": "Backend preparation, documents only (no cloud actions)"
+    "P3-prep": "Backend preparation, documents only (no cloud actions)",
+    "P3": "Backend on Cloudflare Workers (ADR-0002): local work by the agent; deploys by CI; accounts, secrets and production by the owner"
   },
   "units": [
     {
@@ -636,6 +637,372 @@
       "notes": "Opened by the owner decision for U07 (QUEUE.md, Decided). Append new findings of these same classes from later verifier reviews to this acceptance list instead of blocking the unit that found them.",
       "pr": 22,
       "evidence": "verify.mjs exit 0; tests now passing: B11, permissions-gaps (15), U20 acceptance (1); verifier/PR #22; Verifier PASS under the run-wide rule; findings queued."
+    },
+    {
+      "id": "U21",
+      "phase": "P3",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U20"
+      ],
+      "title": "Align the mock with the API contract before the API exists (plan section 11)",
+      "bugs": [],
+      "scope": [
+        "src/data/mock/*",
+        "src/data/repositories.ts",
+        "src/domain/*",
+        "src/hooks/useData.ts",
+        "src/components/**",
+        "src/routes/**"
+      ],
+      "acceptance": [
+        "deadlineMoves.unreadCount is implemented in the mock (or removed from the interface with its callers), with a test",
+        "Every updatable record carries a version; updates take the expected version and a stale one fails with a typed VERSION_CONFLICT error; screens that edit show a clear message and reload the record; tests cover one conflict per namespace that the UI edits",
+        "settings.save writes an activity event (no secret or revealed TIN in before/after)",
+        "notes.save refuses an id that belongs to an existing note on another entity (RULE_VIOLATION) instead of creating a duplicate",
+        "A helper cannot cancel a visit that holds items for clients they are not assigned to; the owner can",
+        "The mock still passes the full gate; no screen changes its look"
+      ],
+      "tests": [
+        "U21"
+      ],
+      "notes": "Owner decisions taken for this unit: notes id reuse is refused; mixed-visit cancel is owner-only. Source: docs/backend/BACKEND_PLAN.md section 11."
+    },
+    {
+      "id": "U22",
+      "phase": "P3",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U21"
+      ],
+      "title": "API shell: Worker, Hono, Cloudflare Vite plugin, local dev and test harness (plan step 1)",
+      "bugs": [],
+      "scope": [
+        "package.json",
+        "package-lock.json",
+        "vite.config.ts",
+        "wrangler.jsonc",
+        "worker/**",
+        "scripts/dev-vars.mjs",
+        "scripts/bundle-size.mjs",
+        "tsconfig*.json",
+        "worker-configuration.d.ts"
+      ],
+      "acceptance": [
+        "Install hono, wrangler, @cloudflare/vite-plugin (and @cloudflare/workers-types only if needed) per docs/adr/approved-deps.json backendPins rule",
+        "wrangler.jsonc follows ADR-0002 section 3 exactly (main, assets with single-page-application and run_worker_first for /api/*, env.preview and env.production, DB and FILES bindings with placeholder ids 00000000-0000-0000-0000-000000000000, APP_ENV); a Vitest test parses it and asserts every convention",
+        "npm run dev serves the app and the Worker together; GET /api/v1/health returns {ok:true, env} with no auth; the PWA still builds and the service worker does not cache /api/*",
+        "Hono error mapper turns the domain errors into the JSON error shape and status codes in BACKEND_PLAN section 2; unknown errors return 500 without a stack trace",
+        "Security headers from BACKEND_PLAN section 8 on every response, including the SPA HTML",
+        "npm run dev:vars writes .dev.vars with random local values for every secret named in ADR-0002 and never prints them; it refuses to overwrite without --force",
+        "Worker tests run in the existing Vitest via getPlatformProxy() with local D1 and R2; vite.config.ts includes worker/**/*.test.ts",
+        "npm run build still passes; the bundle-size check reads the new output layout and keeps its limit; the acceptance suite stays green in mock mode"
+      ],
+      "tests": [
+        "U22"
+      ],
+      "notes": "Vitest stays on major 3 (docs/adr/ADR-0002-backend-stack-and-cloud-boundary.md section 2). No wrangler command other than the local allowlist."
+    },
+    {
+      "id": "U23",
+      "phase": "P3",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U22"
+      ],
+      "title": "Database schema, migrations and the Demo seed (plan step 2a)",
+      "bugs": [],
+      "scope": [
+        "package.json",
+        "package-lock.json",
+        "drizzle.config.ts",
+        "worker/db/**",
+        "migrations/**",
+        "scripts/seed-sql.mjs",
+        "worker/**/*.test.ts"
+      ],
+      "acceptance": [
+        "Install drizzle-orm and drizzle-kit per the approved pins",
+        "worker/db/schema.ts covers every table and index in docs/backend/schema-draft.sql plus the Better Auth tables (user, session, account, verification) and idempotency_keys; a version column on every updatable table",
+        "npx drizzle-kit generate produces the first migration in migrations/; npx wrangler d1 migrations apply DB --local applies it to a fresh local database; a test applies all migrations and checks tables and indexes",
+        "npm run --silent db:seed-sql prints idempotent SQL (delete then insert) for the Demo organization using the same ids as the mock seed; a test loads it into a fresh local D1 and checks row counts against the mock seed",
+        "TIN columns store ciphertext and a masked display value only"
+      ],
+      "tests": [
+        "U23"
+      ],
+      "notes": "Migrations are generated, never hand-edited once on main (docs/adr/ADR-0002-backend-stack-and-cloud-boundary.md)."
+    },
+    {
+      "id": "U24",
+      "phase": "P3",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U23"
+      ],
+      "title": "Auth and membership: Better Auth with Google, membership middleware, dev sign-in (plan step 2b)",
+      "bugs": [],
+      "scope": [
+        "package.json",
+        "package-lock.json",
+        "worker/auth/**",
+        "worker/middleware/**",
+        "worker/routes/session*",
+        "worker/dev/**",
+        "scripts/first-owner-sql.mjs",
+        "worker/**/*.test.ts"
+      ],
+      "acceptance": [
+        "Install better-auth per the approved pins; Google is the only provider; mounted under /api/auth/*; session cookie HttpOnly, Secure, SameSite=Lax, rolling 30 days",
+        "Membership middleware loads orgId, role, clientIds and active on every /api/v1 request; no membership returns 403 ACCESS_PENDING; a revoked membership reaches no client data",
+        "GET /api/v1/session/me returns the user, membership and settings the frontend session hook needs",
+        "A dev sign-in route signs in as a seed persona (owner Ana, helper Ben) only when APP_ENV=local and DEV_AUTH=1; tests prove it returns 404 under the preview and production configuration",
+        "npm run --silent db:first-owner-sql -- --email <address> prints the SQL that creates the first owner membership for that Google email (the owner runs it remotely later)",
+        "No network in tests: the Google provider is stubbed"
+      ],
+      "tests": [
+        "U24"
+      ],
+      "notes": "Google OAuth client and secrets are created by the owner at U31 (docs/adr/ADR-0002-backend-stack-and-cloud-boundary.md section 4)."
+    },
+    {
+      "id": "U25",
+      "phase": "P3",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U24"
+      ],
+      "title": "Read routes behind the permission middleware (plan step 3)",
+      "bugs": [],
+      "scope": [
+        "worker/routes/**",
+        "worker/db/**",
+        "worker/lib/**",
+        "worker/**/*.test.ts"
+      ],
+      "acceptance": [
+        "Every read method of Repositories has its route from BACKEND_PLAN section 4 (lists, get, search, calendar, today, insights, reports, activity, notifications, offices)",
+        "Lists and aggregates are filtered by org_id and, for a helper, by assigned clients or canReachVisit (rule F); derived fields are computed with src/domain/rules.ts, never stored",
+        "Cursor pagination with limit at most 100",
+        "The permission table from src/data/mock (permissions-table and permissions-gaps cases) runs against the Worker for every read route: owner, helper assigned, helper unassigned, revoked, no membership",
+        "Responses match the shapes the mock returns, checked by a contract test that compares both for the Demo organization"
+      ],
+      "tests": [
+        "U25"
+      ],
+      "notes": "Reuse src/domain/policy.ts; do not fork rules."
+    },
+    {
+      "id": "U26",
+      "phase": "P3",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U25"
+      ],
+      "title": "Write routes, part 1: clients, contacts, authorizations, templates, deadlines and messages, tasks and lines (plan step 4)",
+      "bugs": [],
+      "scope": [
+        "worker/routes/**",
+        "worker/lib/**",
+        "worker/db/**",
+        "worker/**/*.test.ts"
+      ],
+      "acceptance": [
+        "Every write method in these namespaces has its route; bodies validated with src/domain/schemas.ts; unknown keys rejected",
+        "Idempotency-Key required: a repeated key returns the first response and applies nothing; keys stored 7 days",
+        "If-Match version on updates; a stale version returns 409 VERSION_CONFLICT with the current record",
+        "Each change and its activity row are written in one db.batch; inserts chunked under the D1 bound-parameter limit",
+        "Helper field allowlists (rule A) and reference checks (rule X) match the mock; permission cases for every route as in U25",
+        "No revealed TIN in activity, logs or error bodies; full TIN encrypted with TIN_ENCRYPTION_KEY (AES-GCM)"
+      ],
+      "tests": [
+        "U26"
+      ],
+      "notes": "Split into two PRs if the diff exceeds about 800 lines; keep the unit id."
+    },
+    {
+      "id": "U27",
+      "phase": "P3",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U26"
+      ],
+      "title": "Write routes, part 2: follow-ups, offices and visits, payments, notes, saved views, settings, memberships, import (plan step 4)",
+      "bugs": [],
+      "scope": [
+        "worker/routes/**",
+        "worker/lib/**",
+        "worker/db/**",
+        "worker/**/*.test.ts"
+      ],
+      "acceptance": [
+        "Every remaining write method has its route with the same guarantees as U26 (validation, idempotency, versions, batch with activity, rules A and X)",
+        "openPeriod, recordOutcome, markCompleted and importCommit are single batches; a failure leaves no partial write (tested)",
+        "Memberships and settings routes are owner-only in middleware",
+        "Permission cases for every route as in U25"
+      ],
+      "tests": [
+        "U27"
+      ],
+      "notes": "Split into two PRs if the diff exceeds about 800 lines; keep the unit id."
+    },
+    {
+      "id": "U28",
+      "phase": "P3",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U27"
+      ],
+      "title": "Files in R2: upload, signed download URLs, retention job off by default (plan step 5)",
+      "bugs": [],
+      "scope": [
+        "worker/routes/documents*",
+        "worker/files/**",
+        "worker/cron/**",
+        "wrangler.jsonc",
+        "worker/**/*.test.ts"
+      ],
+      "acceptance": [
+        "POST /api/v1/documents (multipart) checks access, magic-byte type, size at most 15 MB, stores SHA-256 and metadata in D1 and the bytes in R2 under the key layout in BACKEND_PLAN section 7; keys are never reused",
+        "documents.getUrl returns a 5-minute HMAC-signed URL (FILE_URL_SIGNING_KEY); expired or tampered URLs are refused; the bucket is never public",
+        "Viewing and downloading write activity rows",
+        "The retention job exists but deletes nothing unless a retention period is configured (default: none, ADR-0002 Deferred); idempotency keys older than 7 days are purged",
+        "Tests use the local R2 from getPlatformProxy"
+      ],
+      "tests": [
+        "U28"
+      ],
+      "notes": "Owner has not chosen a retention period: no automatic deletion of files or records."
+    },
+    {
+      "id": "U29",
+      "phase": "P3",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U27"
+      ],
+      "title": "Scheduled jobs, notifications and Web Push (plan step 6)",
+      "bugs": [],
+      "scope": [
+        "package.json",
+        "package-lock.json",
+        "wrangler.jsonc",
+        "worker/cron/**",
+        "worker/push/**",
+        "worker/routes/notifications*",
+        "worker/routes/push*",
+        "src/**/push*",
+        "worker/**/*.test.ts"
+      ],
+      "acceptance": [
+        "Install @pushforge/builder per the approved pins",
+        "Cron triggers from BACKEND_PLAN section 7a (0 23 * * * and 0 9 * * * UTC) write notification rows, each linking to a record that exists",
+        "Push subscriptions can be saved and removed; pushes are sent with VAPID keys from secrets; 404 or 410 from a push service removes the subscription; quiet hours and lock-screen privacy are respected",
+        "Tests stub the push endpoint; no network in tests"
+      ],
+      "tests": [
+        "U29"
+      ],
+      "notes": "Email is deferred (needs a domain); phone push is the notification channel."
+    },
+    {
+      "id": "U30",
+      "phase": "P3",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U28",
+        "U29"
+      ],
+      "title": "API data source: the frontend runs against the Worker (plan step 7)",
+      "bugs": [],
+      "scope": [
+        "src/data/api/**",
+        "src/data/index.ts",
+        "src/data/repositories.ts",
+        "src/app/**",
+        "src/hooks/**",
+        "worker/dev/**",
+        "tests/acceptance/u30-*.spec.ts"
+      ],
+      "acceptance": [
+        "Repositories implemented over fetch in src/data/api; VITE_DATA_SOURCE=api switches to it; no screen changes its look",
+        "Typed errors from the API map back to the domain errors the screens already handle; the offline queue sends its Idempotency-Key and If-Match",
+        "With APP_ENV=local and DEV_AUTH=1, the acceptance helpers the tests rely on (persona, today override, reset, failure rate) work against the Worker through dev-only routes, so the existing acceptance tests run unchanged",
+        "VITE_DATA_SOURCE=api DEV_AUTH=1 npx playwright test passes locally; tests that cannot run in API mode are listed in the PR with the reason",
+        "The exact change to .github/workflows/verify.yml that adds an API-mode acceptance job is written to QUEUE.md for the owner (protected file)",
+        "Mock mode still passes the full gate"
+      ],
+      "tests": [
+        "U30"
+      ],
+      "notes": "Deploy builds use VITE_DATA_SOURCE=api (ADR-0002)."
+    },
+    {
+      "id": "U31",
+      "phase": "P3",
+      "tier": "T1",
+      "status": "pending",
+      "depends_on": [
+        "U30"
+      ],
+      "title": "Owner setup script and deploy runbook",
+      "bugs": [],
+      "scope": [
+        "scripts/setup-cloudflare.mjs",
+        "scripts/setup-cloudflare.test.mjs",
+        "docs/backend/DEPLOY.md",
+        "package.json"
+      ],
+      "acceptance": [
+        "scripts/setup-cloudflare.mjs (cross-platform Node, run by the owner) creates, idempotently: D1 databases ordinovix-preview and ordinovix, R2 buckets ordinovix-preview-files and ordinovix-files, an R2 lifecycle rule expiring backups/db/ after 84 days; and writes the real database ids into wrangler.jsonc",
+        "It asks for the Cloudflare API token and Google OAuth client id and secret with hidden input, sets the GitHub secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID with gh, and creates the GitHub environment production with the owner as required reviewer",
+        "It fetches the account's workers.dev subdomain and prints the exact Google OAuth origins and redirect URIs for local, preview and production before asking for the client id",
+        "A --secrets phase generates every secret in ADR-0002 with node:crypto (distinct per environment) and sets them with wrangler without printing them; a --first-owner <email> phase runs the first-owner SQL against preview; if a Worker must exist before secrets can be set, the runbook orders the phases around the first preview deploy",
+        "Every phase ends with wrangler logout; --dry-run prints the plan and calls nothing; tests run the script with a stubbed command runner",
+        "docs/backend/DEPLOY.md is a step-by-step runbook for the owner (accounts, R2 card prompt, OAuth client, phases, reseeding preview, production release by dispatch and approval, restore drill)",
+        "Ends with an Open item in QUEUE.md asking the owner to run the script, with the exact commands"
+      ],
+      "tests": [
+        "U31"
+      ],
+      "notes": "The agent writes and tests the script; only the owner runs it (ADR-0002 section 4)."
+    },
+    {
+      "id": "U32",
+      "phase": "P3",
+      "tier": "T1",
+      "status": "pending",
+      "depends_on": [
+        "U31"
+      ],
+      "title": "Preview live: deployed by CI, smoke-tested, go-live checklist",
+      "bugs": [],
+      "scope": [
+        "wrangler.jsonc",
+        "docs/backend/GO_LIVE.md",
+        "docs/state/*"
+      ],
+      "acceptance": [
+        "Awaiting owner until the setup script has run; then commit the real database ids it wrote into wrangler.jsonc and ship them",
+        "After the merge, deploy-preview succeeds (gh run list and gh run watch); the owner runs the --secrets and --first-owner phases and dispatches a reseed",
+        "Read-only checks against the preview URL pass: /api/v1/health ok, /api/v1/session/me without a cookie returns 401 or 403, a deep link such as /tasks returns the app HTML, the security headers are present, the dev sign-in route returns 404",
+        "docs/backend/GO_LIVE.md tracks spec 21.11 (restore drill, access test as Ben, OAuth in production, empty live organization, weekly export, push on a phone, privacy notice, usage dashboard) with done or owner-pending for each",
+        "Final report lists the owner's remaining steps to release production"
+      ],
+      "tests": [
+        "U32"
+      ],
+      "notes": "Production stays empty and undeployed until the owner releases it after the client accepts the MVP (ADR-0002 section 5)."
     }
   ]
 }

@@ -56,3 +56,8 @@ dev-dist/
 # Claude Code personal files (never committed)
 .claude/settings.local.json
 CLAUDE.local.md
+
+# Cloudflare local state and local secrets (ADR-0002)
+.wrangler/
+.dev.vars
+.dev.vars.*

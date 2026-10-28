@@ -55,11 +55,15 @@ describe('backend plan (spec 21, no cloud actions)', () => {
     expect(sql).not.toMatch(/^\s*(INSERT|UPDATE|DELETE|DROP|ATTACH)\b/im);
   });
 
-  it('records the owner decisions and accounts the backend needs in QUEUE.md', () => {
+  it('records the owner decisions and accounts the backend needs in QUEUE.md (open, or decided by the owner)', () => {
     const queue = read('../../docs/state/QUEUE.md');
+    // The U19 item starts in "Open"; once the owner answers it, it moves to "Decided" (ADR-0002, 2026-10-28).
     const open = queue.slice(queue.indexOf('## Open'), queue.indexOf('## Proposals'));
+    const decided = queue.slice(queue.indexOf('## Decided'));
+    const section = open.includes('U19 Backend') ? open : decided;
+    expect(section, 'the U19 backend item is in Open or Decided').toContain('U19 Backend');
     for (const need of ['Cloudflare account', 'Google OAuth client', 'BETTER_AUTH_SECRET', 'VAPID', 'FILE_URL_SIGNING_KEY', 'first owner']) {
-      expect(open, need).toContain(need);
+      expect(section, need).toContain(need);
     }
   });
 });

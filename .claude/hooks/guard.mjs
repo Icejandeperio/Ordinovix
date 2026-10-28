@@ -8,11 +8,15 @@
  *         global git config writes
  *  - gh: merge --admin, repo delete/edit/archive/rename/transfer, secrets/variables, mutating `gh api`
  *  - npm: installing packages not listed in docs/adr/approved-deps.json, global installs, publish;
- *         npx of binaries not on the allowlist; pnpm/yarn/bun installs
- *  - any wrangler command (backend phase is human-gated), curl|sh style pipes,
- *    recursive deletes of protected roots, reading .env files
+ *         npx of binaries not on the allowlist; pnpm/yarn/bun installs; `npm run <script>` is checked
+ *         against the command the script runs
+ *  - wrangler: everything except a local-only allowlist (dev, types, check, whoami, version, and d1
+ *    migrations/execute or r2 object with an explicit --local). Deploys, secrets, login, --remote,
+ *    creating or deleting databases and buckets stay human-owned (see docs/adr/ADR-0002).
+ *  - drizzle-kit: only generate, check, up and export (never push, migrate, pull, drop or studio)
+ *  - curl|sh style pipes, recursive deletes of protected roots, reading .env files
  *  - file edits (Edit/Write/MultiEdit/NotebookEdit and shell writes) to protected paths;
- *    modifying existing files in tests/acceptance/ (creating new ones is allowed)
+ *    modifying acceptance tests that are committed on origin/main (drafts on a branch stay editable)
  * Everything else exits 0 and goes through the normal permission flow (auto mode classifier).
  */
 import { readFileSync, existsSync } from 'node:fs';
@@ -35,6 +39,8 @@ const DEFAULT_APPROVED = {
   packages: [],
   npxBins: ['tsc', 'vitest', 'vite', 'eslint', 'playwright'],
 };
+const WRANGLER_LOCAL_SUBCOMMANDS = new Set(['dev', 'types', 'check', 'whoami', 'version', 'help']);
+const DRIZZLE_KIT_ALLOWED = new Set(['generate', 'check', 'up', 'export']);
 
 // ---------- helpers ----------
 function block(reason) {
@@ -66,7 +72,7 @@ function startsPath(a, prefix) {
 
 function isEnvFile(rel) {
   const base = rel.split('/').pop() || '';
-  return base === '.env' || base.startsWith('.env.');
+  return base === '.env' || base.startsWith('.env.') || base === '.dev.vars' || base.startsWith('.dev.vars.');
 }
 
 /** Returns a reason string if `rel` (project-relative, forward slashes) is protected for writing. */
@@ -84,12 +90,34 @@ function protectedWriteReason(rel, projectDir) {
   for (const d of PROTECTED_DIRS) if (startsPath(rel + '/', d) || startsPath(rel, d)) return `${rel} is inside protected ${d}`;
   if (startsPath(rel, ACCEPTANCE_DIR)) {
     if (eqPath(rel, RATCHET_FILE)) return null; // may only shrink; enforced by scripts/verify.mjs
-    if (existsSync(path.join(projectDir, rel))) {
-      return `${rel} is an existing acceptance test (the oracle). Fix the app, not the test. New test files in ${ACCEPTANCE_DIR} are allowed.`;
+    if (committedOnMain(projectDir, rel)) {
+      return `${rel} is an acceptance test committed on main (the oracle). Fix the app, not the test. ` +
+        `New test files, and drafts not yet on main, are editable.`;
     }
     return null;
   }
   return null;
+}
+
+/** True when `rel` exists on origin/main (falls back to "exists on disk" when git cannot answer). */
+function committedOnMain(projectDir, rel) {
+  try {
+    execFileSync('git', ['cat-file', '-e', `origin/main:${rel}`], {
+      cwd: projectDir, stdio: 'ignore', timeout: 5000,
+    });
+    return true;
+  } catch (e) {
+    // exit status 128 = path not on origin/main; anything else (no git, no origin/main) = be conservative
+    if (e && e.status === 128) {
+      try {
+        execFileSync('git', ['rev-parse', '--verify', '--quiet', 'origin/main'], { cwd: projectDir, stdio: 'ignore', timeout: 5000 });
+        return false;
+      } catch {
+        return existsSync(path.join(projectDir, rel));
+      }
+    }
+    return existsSync(path.join(projectDir, rel));
+  }
 }
 
 function loadApproved(projectDir) {
@@ -282,9 +310,48 @@ function checkNpm(t, approved) {
     }
   }
   if (sub === 'exec' || sub === 'x') {
-    const bin = a[a.indexOf(sub) + 1];
+    const rest = a.slice(a.indexOf(sub) + 1).filter((x) => x !== '--');
+    const bin = rest.find((x) => !x.startsWith('-'));
     if (bin && !approved.npxBins.includes(progName(bin))) block(`npm exec ${bin} is not on the allowlist.`);
+    if (bin) checkToolArgs(progName(bin), rest.slice(rest.indexOf(bin) + 1));
   }
+}
+
+/** Local-only Cloudflare tooling. Anything that can reach a live Cloudflare account is human-owned. */
+function checkWrangler(args) {
+  const human = 'it can change the live Cloudflare account, which is human-owned (docs/adr/ADR-0002). ' +
+    'Deploys run from CI; secrets and resources are created by the owner\'s setup script.';
+  if (args.some((x) => x === '--remote' || x.startsWith('--remote=') || (/remote/i.test(x) && x.startsWith('--x-'))))
+    block(`wrangler with --remote: ${human}`);
+  const pos = args.filter((x) => !x.startsWith('-'));
+  const sub = pos[0];
+  if (!sub) return; // `wrangler --version`, `wrangler --help`
+  if (WRANGLER_LOCAL_SUBCOMMANDS.has(sub)) return;
+  if (sub === 'd1' && pos[1] === 'migrations' && ['create', 'list', 'apply'].includes(pos[2])) {
+    if (pos[2] !== 'create' && !args.includes('--local')) block('wrangler d1 migrations list/apply needs an explicit --local here.');
+    return;
+  }
+  if (sub === 'd1' && pos[1] === 'execute') {
+    if (!args.includes('--local')) block('wrangler d1 execute needs an explicit --local here.');
+    return;
+  }
+  if (sub === 'r2' && pos[1] === 'object' && ['get', 'put', 'delete'].includes(pos[2])) {
+    if (!args.includes('--local')) block('wrangler r2 object needs an explicit --local here.');
+    return;
+  }
+  block(`wrangler ${pos.slice(0, 3).join(' ')}: ${human}`);
+}
+
+function checkDrizzleKit(args) {
+  const sub = args.find((x) => !x.startsWith('-'));
+  if (!sub) return;
+  if (!DRIZZLE_KIT_ALLOWED.has(sub))
+    block(`drizzle-kit ${sub} can write to a database directly. Generate migrations with drizzle-kit generate and apply them locally with wrangler d1 migrations apply --local.`);
+}
+
+function checkToolArgs(name, args) {
+  if (name === 'wrangler') checkWrangler(args);
+  else if (name === 'drizzle-kit') checkDrizzleKit(args);
 }
 
 function checkNpx(t, approved) {
@@ -297,8 +364,8 @@ function checkNpx(t, approved) {
   const bin = a[i];
   if (!bin) return;
   const name = progName(bin);
-  if (name === 'wrangler') block('wrangler commands belong to the human-gated backend phase (T3).');
   if (!approved.npxBins.includes(name)) block(`npx ${bin} is not on the allowlist (${approved.npxBins.join(', ')}).`);
+  checkToolArgs(name, a.slice(i + 1));
 }
 
 function checkRm(t) {
@@ -347,6 +414,54 @@ function checkEnvRead(t) {
   for (const x of t.slice(1)) if (!x.startsWith('-') && isEnvFile(norm(x))) block('reading .env files is not allowed.');
 }
 
+/** `npm run x`, `npm test`, `npm start`: check the command the package.json script actually runs. */
+function npmScriptCommands(t, projectDir) {
+  const a = t.slice(1).filter((x) => !x.startsWith('-'));
+  let name = null;
+  if (['run', 'run-script', 'rum', 'urn'].includes(a[0])) name = a[1];
+  else if (['test', 't', 'tst', 'start', 'stop', 'restart'].includes(a[0])) name = { t: 'test', tst: 'test' }[a[0]] || a[0];
+  if (!name) return [];
+  try {
+    const scripts = JSON.parse(readFileSync(path.join(projectDir, 'package.json'), 'utf8')).scripts || {};
+    return ['pre' + name, name, 'post' + name].filter((n) => typeof scripts[n] === 'string').map((n) => scripts[n]);
+  } catch {
+    return [];
+  }
+}
+
+function checkCommand(cmd, projectDir, cwd, approved, depth) {
+  if (depth > 3) block('npm scripts nest too deeply to check.');
+  if (/\b(curl|wget|iwr|irm|Invoke-WebRequest|Invoke-RestMethod)\b[^\n]*\|\s*(sh|bash|zsh|iex|Invoke-Expression|powershell|pwsh|node|python3?)\b/i.test(cmd))
+    block('piping downloaded content into a shell or interpreter.');
+  if (/--dangerously-skip-permissions|--permission-mode\s+bypassPermissions/.test(cmd)) block('starting Claude Code without permissions.');
+  for (const seg of segments(cmd)) {
+    const t = stripWrappers(tokens(seg));
+    if (t.length === 0) continue;
+    const prog = progName(t[0]);
+    if (prog === 'git') checkGit(t, cwd);
+    else if (prog === 'gh') checkGh(t);
+    else if (prog === 'npm') {
+      checkNpm(t, approved);
+      for (const sc of npmScriptCommands(t, projectDir)) checkCommand(sc, projectDir, cwd, approved, depth + 1);
+    } else if (prog === 'npx') checkNpx(t, approved);
+    else if (prog === 'pnpm' || prog === 'yarn' || prog === 'bun') {
+      if (t.slice(1).some((x) => ['add', 'install', 'i', 'dlx', 'x'].includes(x))) block(`${prog} is not used here; use npm with approved packages.`);
+    } else if (prog === 'wrangler' || prog === 'drizzle-kit') checkToolArgs(prog, t.slice(1));
+    else if ((prog === 'node' || prog === 'bunx' || prog === 'tsx') && t[1]) {
+      // `node node_modules/wrangler/bin/wrangler.js deploy` and similar direct entry points
+      const entry = norm(t[1]);
+      const tool = /(^|\/)node_modules\/(wrangler|drizzle-kit)\//.exec(entry);
+      if (tool) checkToolArgs(tool[2], t.slice(2));
+    }
+    else if (prog === 'rm' || prog === 'rmdir') checkRm(t);
+    else if (prog === 'Remove-Item' || prog === 'ri' || prog === 'del' || prog === 'rd') {
+      if (t.some((x) => /^-r(ecurse)?$/i.test(x) || x === '/s')) block('recursive delete via PowerShell/cmd is not allowed.');
+    }
+    checkEnvRead(t);
+    checkShellWrites(seg, t, projectDir, cwd);
+  }
+}
+
 // ---------- main ----------
 function main() {
   const raw = readStdin();
@@ -367,29 +482,7 @@ function main() {
   }
 
   if (tool === 'Bash' || tool === 'PowerShell') {
-    const cmd = String(ti.command || '');
-    const approved = loadApproved(projectDir);
-    if (/\b(curl|wget|iwr|irm|Invoke-WebRequest|Invoke-RestMethod)\b[^\n]*\|\s*(sh|bash|zsh|iex|Invoke-Expression|powershell|pwsh|node|python3?)\b/i.test(cmd))
-      block('piping downloaded content into a shell or interpreter.');
-    if (/--dangerously-skip-permissions|--permission-mode\s+bypassPermissions/.test(cmd)) block('starting Claude Code without permissions.');
-    for (const seg of segments(cmd)) {
-      const t = stripWrappers(tokens(seg));
-      if (t.length === 0) continue;
-      const prog = progName(t[0]);
-      if (prog === 'git') checkGit(t, cwd);
-      else if (prog === 'gh') checkGh(t);
-      else if (prog === 'npm') checkNpm(t, approved);
-      else if (prog === 'npx') checkNpx(t, approved);
-      else if (prog === 'pnpm' || prog === 'yarn' || prog === 'bun') {
-        if (t.slice(1).some((x) => ['add', 'install', 'i', 'dlx', 'x'].includes(x))) block(`${prog} is not used here; use npm with approved packages.`);
-      } else if (prog === 'wrangler') block('wrangler commands belong to the human-gated backend phase (T3).');
-      else if (prog === 'rm' || prog === 'rmdir') checkRm(t);
-      else if (prog === 'Remove-Item' || prog === 'ri' || prog === 'del' || prog === 'rd') {
-        if (t.some((x) => /^-r(ecurse)?$/i.test(x) || x === '/s')) block('recursive delete via PowerShell/cmd is not allowed.');
-      }
-      checkEnvRead(t);
-      checkShellWrites(seg, t, projectDir, cwd);
-    }
+    checkCommand(String(ti.command || ''), projectDir, cwd, loadApproved(projectDir), 0);
     process.exit(0);
   }
   process.exit(0);
