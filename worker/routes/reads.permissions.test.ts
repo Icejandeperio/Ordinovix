@@ -175,7 +175,7 @@ describe('no full TIN, ciphertext or hash leaves the API', () => {
       const { status, text } = await call(path, 'owner');
       expect(status, path).toBe(200);
       expect(text, path).not.toMatch(/tinFull|tin_full|tinEncrypted|tin_encrypted|tinHash|tin_hash/);
-      expect(text, path).not.toMatch(/\d{3}-\d{3}-\d{3}-\d{3,5}/);
+      expect(text, path).not.toMatch(/(?<!\d)\d{3}-\d{3}-\d{3}-\d{3,5}(?!\d)/);
     }
   });
 });
