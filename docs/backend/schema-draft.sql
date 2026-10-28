@@ -310,8 +310,9 @@ CREATE TABLE tasks (
 CREATE INDEX idx_tasks_client_status ON tasks (org_id, client_id, status);
 CREATE INDEX idx_tasks_due ON tasks (org_id, due_date);
 CREATE INDEX idx_tasks_owner ON tasks (org_id, owner_user_id);
--- One open task per client, template and period: the idempotence rule openPeriod relies on
-CREATE UNIQUE INDEX idx_tasks_open_period ON tasks (org_id, client_id, template_id, period) WHERE deleted_at IS NULL AND template_id IS NOT NULL AND period IS NOT NULL;
+-- One OPEN task per client, template and period: the idempotence rule openPeriod relies on. Completed and archived tasks do
+-- not count (U23: the seeded history repeats a client, template and period once per finished run).
+CREATE UNIQUE INDEX idx_tasks_open_period ON tasks (org_id, client_id, template_id, period) WHERE deleted_at IS NULL AND template_id IS NOT NULL AND period IS NOT NULL AND status NOT IN ('completed', 'archived');
 
 CREATE TABLE task_lines (
   id TEXT PRIMARY KEY,

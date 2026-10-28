@@ -123,7 +123,7 @@ import { FAILURE_RATE_KEY, OFFLINE_KEY, PERSONA_KEY } from '@/data/dev-state';
 
 const STORAGE_KEY = 'ox-mock-data-v2';
 
-interface StoreData {
+export interface StoreData {
   org: Org;
   settings: OrgSettings;
   users: User[];
@@ -386,7 +386,6 @@ function buildStandardFollowUps(
       clientId: 'client-cruz',
       taskId: 'task-cruz-1601c',
       lineIds: ['line-cruz-1'],
-      contactId: 'contact-cruz-1',
       channel: 'viber',
       language: 'en',
       expectedBy: baseDate,
@@ -403,8 +402,8 @@ function buildStandardFollowUps(
       orgId,
       clientId: 'client-rsp',
       taskId: 'task-rsp-1601eq',
-      lineIds: ['line-rsp-2', 'line-rsp-3'],
-      contactId: 'contact-rsp-1',
+      lineIds: ['line-rsp-2'],
+      contactId: 'con-rsp-1',
       channel: 'viber',
       language: 'fil',
       expectedBy: overdueDate,
@@ -420,9 +419,8 @@ function buildStandardFollowUps(
       id: 'fu-horizon-invoices',
       orgId,
       clientId: 'client-horizon',
-      taskId: 'task-horizon-0619e',
-      lineIds: ['line-horizon-1'],
-      contactId: 'contact-horizon-1',
+      taskId: 'task-hlc-1601c',
+      lineIds: [],
       channel: 'email',
       language: 'en',
       expectedBy: futureDate,
@@ -440,7 +438,6 @@ function buildStandardFollowUps(
       clientId: 'client-maria',
       taskId: 'task-maria-2550q',
       lineIds: ['line-maria-1'],
-      contactId: 'contact-maria-1',
       channel: 'messenger',
       language: 'en',
       expectedBy: overdueDate,
@@ -507,22 +504,6 @@ function buildStandardFollowUps(
       updatedBy: 'user-ana',
       version: 1,
     },
-    {
-      id: 'fua-vtl-1',
-      orgId,
-      followUpId: 'fu-vtl-invoices',
-      attemptNo: 1,
-      channel: 'email',
-      sentAt: addDaysToDate(baseDate, -1) + 'T14:00:00+08:00',
-      sentBy: 'user-ben',
-      messageSnapshot: 'Good day Mr. Lim, requesting September sales and purchases summaries for Form 2550-M.',
-      expectedBy: futureDate,
-      createdAt: addDaysToDate(baseDate, -1) + 'T14:00:00+08:00',
-      createdBy: 'user-ben',
-      updatedAt: addDaysToDate(baseDate, -1) + 'T14:00:00+08:00',
-      updatedBy: 'user-ben',
-      version: 1,
-    },
   ];
 
   return { followUps, followUpAttempts };
@@ -551,6 +532,16 @@ function loadStore(): StoreData {
   } catch (e) {
     console.error('Failed to load store from localStorage', e);
   }
+  const merged = buildInitialStore(baseDate);
+  saveStore(merged);
+  return merged;
+}
+
+/**
+ * The sample organization the mock starts with, as plain data (no storage involved). The API's Demo seed
+ * (scripts/seed-sql.mjs, U23) is built from this, so the mock and the preview start from the same records.
+ */
+export function buildInitialStore(baseDate: string): StoreData {
   const seed = generateSeedData(baseDate);
   const sampleFu = buildStandardFollowUps(seed.org.id, baseDate);
   const initialStore: StoreData = {
@@ -703,7 +694,6 @@ function loadStore(): StoreData {
     baseline: demo.baseline,
     pulses: demo.pulses,
   };
-  saveStore(merged);
   return merged;
 }
 

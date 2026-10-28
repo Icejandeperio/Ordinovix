@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-28 U23 Database schema, migrations and the Demo seed — done
+- Changed: drizzle-orm/kit; worker/db/schema.ts; migrations 0000 (generated) and 0001 (FTS5 + activity triggers); db:seed-sql from buildInitialStore; mock follow-up data fixes; schema-draft updated
+- Evidence: verify.mjs exit 0; tests now passing: U23 (60+ worker/db tests); PR #27
+- Notes: Verifier PASS under the run-wide rule; seeded documents are data: URIs (files route must serve them); no encryption key in the seed; search_index left to U25.
+
 ## 2026-10-28 U22 API shell: Worker, Hono, Cloudflare Vite plugin, local test harness — done
 - Changed: hono, wrangler, @cloudflare/vite-plugin; wrangler.jsonc per ADR-0002; worker/ (app, error mapper, security headers, health route, harness); public/_headers; dev:vars script; bundle-size reads dist/client; worker type project
 - Evidence: verify.mjs exit 0; tests now passing: U22 (35 worker and pwa-config unit tests); PR #26
