@@ -215,6 +215,7 @@ export function SettingsPage() {
       await updateMembershipMutation.mutateAsync({
         id: editingMembership.id,
         data: {
+          version: editingMembership.version,
           role: formData.role,
           clientIds: formData.clientIds,
           name: formData.name,
@@ -244,7 +245,7 @@ export function SettingsPage() {
   const handleReactivateOperator = async (m: Membership & { name?: string }) => {
     await updateMembershipMutation.mutateAsync({
       id: m.id,
-      data: { active: true },
+      data: { version: m.version, active: true },
     });
     showUserNotice(`Reactivated operator access for ${m.name || m.email}.`);
   };
@@ -1223,6 +1224,7 @@ export function SettingsPage() {
                   type="button"
                   onClick={async () => {
                     await saveBaselineMutation.mutateAsync({
+                      version: baselineData?.version,
                       periodStart: baselinePeriodStart,
                       periodEnd: baselinePeriodEnd,
                       tripsPerMonth: baselineTrips,

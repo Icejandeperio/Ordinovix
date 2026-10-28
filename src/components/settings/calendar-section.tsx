@@ -37,7 +37,7 @@ function Thresholds({ settings, onSaved }: { settings: OrgSettings; onSaved: () 
   const handleSave = () => {
     setError(null);
     save.mutate(
-      { dueSoonDays: Number(dueSoon), followUpWaitDays: Number(chase), authWarnDays: Number(authWarn) },
+      { version: settings.version, dueSoonDays: Number(dueSoon), followUpWaitDays: Number(chase), authWarnDays: Number(authWarn) },
       { onSuccess: onSaved, onError: (err) => setError((err as Error).message) }
     );
   };

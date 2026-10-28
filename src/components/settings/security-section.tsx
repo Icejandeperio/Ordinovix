@@ -30,7 +30,7 @@ export function SecuritySection({ settings, prefs, isOwner, onSaved, onSignOutEv
     setError(null);
     try {
       if (isOwner && idleLock !== settings.idleLockMinutes) {
-        await saveSettings.mutateAsync({ idleLockMinutes: idleLock });
+        await saveSettings.mutateAsync({ version: settings.version, idleLockMinutes: idleLock });
       }
       await savePrefs.mutateAsync({ privacyModeOnStart: privacyOnStart });
       onSaved();

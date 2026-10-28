@@ -9,10 +9,7 @@ describe('backend plan (spec 21, no cloud actions)', () => {
   const sql = read('../../docs/backend/schema-draft.sql');
 
   it('maps every Repositories method to a route, a permission rule and tables', () => {
-    const methods = [
-      ...Object.entries(mockRepositories).flatMap(([group, m]) => Object.keys(m as object).map((name) => `${group}.${name}`)),
-      'deadlineMoves.unreadCount', // in the Repositories interface; the mock does not implement it yet
-    ];
+    const methods = Object.entries(mockRepositories).flatMap(([group, m]) => Object.keys(m as object).map((name) => `${group}.${name}`));
     const rows = plan.split('\n').filter((line) => line.startsWith('|'));
     const missing = methods.filter((name) => !rows.some((row) => row.includes(`\`${name}\``)));
     expect(missing, 'methods with no row in BACKEND_PLAN.md').toEqual([]);

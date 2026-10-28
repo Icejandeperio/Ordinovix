@@ -70,6 +70,7 @@ export function ContactFormModal({ open, onClose, clientId, contact }: ContactFo
     upsertContact.mutate(
       {
         id: contact?.id,
+        version: contact?.version,
         clientId,
         name: name.trim(),
         title: title ? title : undefined,

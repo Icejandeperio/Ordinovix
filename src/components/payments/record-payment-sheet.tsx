@@ -17,6 +17,7 @@ import {
   Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { classifyError } from '@/domain/errors';
 import { ModalDialog } from '@/components/ui/modal-dialog';
 
 interface RecordPaymentSheetProps {
@@ -119,6 +120,7 @@ export function RecordPaymentSheet({
     try {
       await saveMutation.mutateAsync({
         id: payment?.id,
+        version: payment?.version,
         clientId,
         taskId,
         amount: amountCentavos,
@@ -142,7 +144,8 @@ export function RecordPaymentSheet({
       toast.success(payment ? 'Payment updated' : 'Payment recorded successfully');
       onClose();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to save payment');
+      // A version conflict has already been announced and the record reloaded
+      if (classifyError(err) !== 'conflict') toast.error(err.message || 'Failed to save payment');
     }
   };
 

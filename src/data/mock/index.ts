@@ -56,7 +56,7 @@ import type {
 } from '@/domain/types';
 import { generateSeedData } from './seed';
 import { buildDemoData } from './seed-demo';
-import { NotFoundError, ForbiddenError } from '@/domain/errors';
+import { NotFoundError, ForbiddenError, VersionConflictError } from '@/domain/errors';
 import {
   validate,
   validateReason,
@@ -96,7 +96,7 @@ import {
   BaselineWriteSchema,
   PulseWriteSchema,
 } from '@/domain/schemas';
-import { requireClientAccess, requireOwner, canReviewLines, canAccessClient, insightsScope, type PolicyActor } from '@/domain/policy';
+import { requireClientAccess, requireOwner, canReviewLines, canAccessClient, canCancelVisit, insightsScope, type PolicyActor } from '@/domain/policy';
 import {
   derivedStatus,
   dueState,
@@ -843,6 +843,20 @@ function assertCanReview(): void {
   }
 }
 
+/**
+ * The version an editor loaded rides along in the patch as `version`. It is not a field to write: take it out
+ * before the helper allowlist, the schemas and the merge see the patch.
+ */
+function takeVersion<T extends { version?: number }>(patch: T): { rest: Omit<T, 'version'>; expected: number | undefined } {
+  const { version, ...rest } = patch;
+  return { rest, expected: version };
+}
+
+/** A stale (or future) version fails with VERSION_CONFLICT carrying the stored record. No version skips the check. */
+function assertVersion(current: { version: number }, expected: number | undefined): void {
+  if (expected !== undefined && expected !== current.version) throw new VersionConflictError(current);
+}
+
 /** Records Insights may count for the current user: everything for the owner, assigned clients only for a helper. */
 function scopedInsightData() {
   const scope = insightsScope(actor());
@@ -976,13 +990,15 @@ function upsertRow<T extends { id: ID; version: number; updatedAt: string; updat
   patch: Partial<T>,
   userId: ID,
 ): T {
-  const idx = patch.id ? list.findIndex((x) => x.id === patch.id) : -1;
+  const { rest, expected } = takeVersion(patch as Partial<T> & { version?: number });
+  const idx = rest.id ? list.findIndex((x) => x.id === rest.id) : -1;
   if (idx < 0) {
     list.push(created);
     return created;
   }
   const old = list[idx];
-  const sent = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)) as Partial<T>;
+  assertVersion(old, expected);
+  const sent = Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== undefined)) as Partial<T>;
   list[idx] = { ...old, ...sent, id: old.id, version: old.version + 1, updatedAt: nowInManila(), updatedBy: userId };
   return list[idx];
 }
@@ -1146,8 +1162,15 @@ export const mockRepositories: Repositories = {
     async save(s: Partial<OrgSettings>) {
       await simulateLatency();
       assertOwner();
-      validate(SettingsWriteSchema, s);
-      store.settings = { ...store.settings, ...s, updatedAt: todayInManila() + 'T00:00:00+08:00', version: store.settings.version + 1 };
+      const { rest: patch, expected } = takeVersion(s);
+      validate(SettingsWriteSchema, patch);
+      assertVersion(store.settings, expected);
+      // Field names only: values such as the mobile number or accreditation stay out of the activity log
+      const changed = Object.keys(patch).filter(
+        (key) => key !== 'orgId' && key !== 'updatedAt' && JSON.stringify((patch as Record<string, unknown>)[key]) !== JSON.stringify((store.settings as unknown as Record<string, unknown>)[key]),
+      );
+      store.settings = { ...store.settings, ...patch, updatedAt: todayInManila() + 'T00:00:00+08:00', version: store.settings.version + 1 };
+      if (changed.length > 0) logActivity('updated', 'settings', store.org.id, `Updated practice settings: ${changed.join(', ')}`);
       saveStore();
       return store.settings;
     },
@@ -1210,14 +1233,16 @@ export const mockRepositories: Repositories = {
       saveStore();
       return newM;
     },
-    async update(id, m) {
+    async update(id, input) {
       await simulateLatency();
       const { membership: callerMembership } = getCurrentUser();
       if (callerMembership.role !== 'owner') {
         throw new ForbiddenError('Access denied: Only practice owners can manage operator memberships');
       }
+      const { rest: m, expected } = takeVersion(input);
       const index = store.memberships.findIndex((item) => item.id === id);
       if (index === -1) throw new Error('Membership not found');
+      assertVersion(store.memberships[index], expected);
       store.memberships[index] = { ...store.memberships[index], ...m, version: store.memberships[index].version + 1 };
       if (m.name) {
         const u = store.users.find((user) => user.id === store.memberships[index].userId || user.email === store.memberships[index].email);
@@ -1489,8 +1514,9 @@ export const mockRepositories: Repositories = {
       return { client, summary: buildClientSummary(client) };
     },
 
-    async upsert(c) {
+    async upsert(input) {
       await simulateLatency();
+      const { rest: c, expected } = takeVersion(input);
       assertPatch('clients.upsert', c);
       if (c.id) assertClient(c.id); else assertOwner();
       validate(ClientWriteSchema, c);
@@ -1499,6 +1525,7 @@ export const mockRepositories: Repositories = {
       if (c.id) {
         const index = store.clients.findIndex((item) => item.id === c.id);
         if (index === -1) throw new Error('Client not found');
+        assertVersion(store.clients[index], expected);
         store.clients[index] = {
           ...store.clients[index],
           ...c,
@@ -1672,8 +1699,9 @@ export const mockRepositories: Repositories = {
       assertClient(clientId);
       return store.contacts.filter((c) => c.clientId === clientId && !c.deletedAt);
     },
-    async upsert(c) {
+    async upsert(input) {
       await simulateLatency();
+      const { rest: c, expected } = takeVersion(input);
       assertPatch('contacts.upsert', c);
       const storedContact = c.id ? store.contacts.find((x) => x.id === c.id) : undefined;
       assertReferences(c, storedContact?.clientId ?? c.clientId);
@@ -1685,6 +1713,7 @@ export const mockRepositories: Repositories = {
       if (c.id) {
         const idx = store.contacts.findIndex((item) => item.id === c.id);
         if (idx === -1) throw new Error('Contact not found');
+        assertVersion(store.contacts[idx], expected);
         store.contacts[idx] = { ...store.contacts[idx], ...c, updatedAt: now, version: store.contacts[idx].version + 1 };
         saveStore();
         return store.contacts[idx];
@@ -1727,8 +1756,9 @@ export const mockRepositories: Repositories = {
       assertClient(clientId);
       return store.authorizations.filter((a) => a.clientId === clientId && !a.deletedAt);
     },
-    async upsert(a) {
+    async upsert(input) {
       await simulateLatency();
+      const { rest: a, expected } = takeVersion(input);
       assertPatch('authorizations.upsert', a);
       const storedAuth = a.id ? store.authorizations.find((x) => x.id === a.id) : undefined;
       assertReferences(a, storedAuth?.clientId ?? a.clientId);
@@ -1740,6 +1770,7 @@ export const mockRepositories: Repositories = {
       if (a.id) {
         const idx = store.authorizations.findIndex((item) => item.id === a.id);
         if (idx === -1) throw new Error('Authorization not found');
+        assertVersion(store.authorizations[idx], expected);
         store.authorizations[idx] = { ...store.authorizations[idx], ...a, updatedAt: now, version: store.authorizations[idx].version + 1 };
         saveStore();
         return store.authorizations[idx];
@@ -1793,15 +1824,18 @@ export const mockRepositories: Repositories = {
       const lines = store.reqTemplates.filter((l) => l.taskTemplateId === id);
       return { template, lines };
     },
-    async save(t, lines) {
+    async save(input, lines) {
       await simulateLatency();
       assertOwner();
+      const { rest: t, expected } = takeVersion(input);
       validate(TemplateWriteSchema, t);
       const { user } = getCurrentUser();
       const now = todayInManila() + 'T00:00:00+08:00';
       let template: TaskTemplate;
       if (t.id) {
         const idx = store.templates.findIndex((item) => item.id === t.id);
+        if (idx < 0) throw new NotFoundError('Template not found');
+        assertVersion(store.templates[idx], expected);
         store.templates[idx] = { ...store.templates[idx], ...t, updatedAt: now, version: store.templates[idx].version + 1 };
         template = store.templates[idx];
       } else {
@@ -2042,8 +2076,9 @@ export const mockRepositories: Repositories = {
       return newTask;
     },
 
-    async update(id, t) {
+    async update(id, input) {
       await simulateLatency();
+      const { rest: t, expected } = takeVersion(input);
       assertPatch('tasks.update', t);
       assertReferences(t, store.tasks.find((x) => x.id === id)?.clientId);
       assertTask(id);
@@ -2051,6 +2086,7 @@ export const mockRepositories: Repositories = {
       validate(TaskUpdateSchema, t);
       const idx = store.tasks.findIndex((item) => item.id === id);
       if (idx === -1) throw new Error('Task not found');
+      assertVersion(store.tasks[idx], expected);
       store.tasks[idx] = { ...store.tasks[idx], ...t, version: store.tasks[idx].version + 1 };
       saveStore();
       return store.tasks[idx];
@@ -2379,8 +2415,9 @@ export const mockRepositories: Repositories = {
       return newLine;
     },
 
-    async update(id, line) {
+    async update(id, input) {
       await simulateLatency();
+      const { rest: line, expected } = takeVersion(input);
       assertPatch('lines.update', line);
       assertReferences(line, store.taskLines.find((x) => x.id === id)?.clientId);
       assertLine(id);
@@ -2388,6 +2425,7 @@ export const mockRepositories: Repositories = {
       validate(LineWriteSchema, line);
       const idx = store.taskLines.findIndex((l) => l.id === id);
       if (idx === -1) throw new Error('Line not found');
+      assertVersion(store.taskLines[idx], expected);
       store.taskLines[idx] = { ...store.taskLines[idx], ...line, version: store.taskLines[idx].version + 1 };
       saveStore();
       return store.taskLines[idx];
@@ -2542,8 +2580,9 @@ export const mockRepositories: Repositories = {
       return next;
     },
 
-    async update(id, d) {
+    async update(id, input) {
       await simulateLatency();
+      const { rest: d, expected } = takeVersion(input);
       assertPatch('documents.update', d);
       assertReferences(d, store.documents.find((x) => x.id === id)?.clientId);
       assertDocument(id);
@@ -2551,7 +2590,8 @@ export const mockRepositories: Repositories = {
       validate(DocumentUpdateSchema, d);
       const doc = store.documents.find((item) => item.id === id);
       if (!doc) throw new Error('Document not found');
-      Object.assign(doc, d);
+      assertVersion(doc, expected);
+      Object.assign(doc, d, { version: doc.version + 1, updatedAt: nowInManila(), updatedBy: getCurrentUser().user.id });
       saveStore();
       return doc;
     },
@@ -2772,7 +2812,7 @@ export const mockRepositories: Repositories = {
   messages: {
     async list() {
       await simulateLatency();
-      return store.messageTemplates;
+      return [...store.messageTemplates]; // a copy, like the API: a changed row must look changed to the query cache
     },
     async save(m) {
       await simulateLatency();
@@ -2828,13 +2868,15 @@ export const mockRepositories: Repositories = {
         },
       };
     },
-    async save(o) {
+    async save(input) {
       await simulateLatency();
       requireOwner(actor());
+      const { rest: o, expected } = takeVersion(input);
       validate(OfficeWriteSchema, o);
       const { user } = getCurrentUser();
       const existing = o.id ? store.offices.find((item) => item.id === o.id) : undefined;
       if (existing) {
+        assertVersion(existing, expected);
         if (o.type) existing.type = o.type;
         if (o.name) existing.name = o.name;
         existing.rdoCode = o.rdoCode;
@@ -2996,14 +3038,16 @@ export const mockRepositories: Repositories = {
       return newV;
     },
 
-    async update(id, v) {
+    async update(id, input) {
       await simulateLatency();
+      const { rest: v, expected } = takeVersion(input);
       assertPatch('visits.update', v);
       assertVisit(id);
       rejectIdentityChange(v, store.visits.find((x) => x.id === id));
       validate(VisitUpdateSchema, v);
       const visit = store.visits.find((item) => item.id === id);
       if (!visit) throw new Error('Visit not found');
+      assertVersion(visit, expected);
       Object.assign(visit, v);
       visit.version += 1;
       saveStore();
@@ -3050,15 +3094,17 @@ export const mockRepositories: Repositories = {
       return vi;
     },
 
-    async updateItem(itemId, i) {
+    async updateItem(itemId, input) {
       await simulateLatency();
+      const { rest: i, expected } = takeVersion(input);
       assertPatch('visits.updateItem', i);
       assertVisitItem(itemId);
       rejectIdentityChange(i, store.visitItems.find((x) => x.id === itemId));
       validate(VisitItemWriteSchema, i);
       const item = store.visitItems.find((vi) => vi.id === itemId);
       if (!item) throw new Error('Visit item not found');
-      Object.assign(item, i);
+      assertVersion(item, expected);
+      Object.assign(item, i, { version: item.version + 1, updatedAt: nowInManila(), updatedBy: getCurrentUser().user.id });
       saveStore();
       return item;
     },
@@ -3249,6 +3295,11 @@ export const mockRepositories: Repositories = {
     async cancel(id, reason) {
       await simulateLatency();
       assertVisit(id);
+      // A visit that holds items for clients the helper is not assigned to is the owner's to cancel
+      const heldClients = store.visitItems.filter((i) => i.visitId === id).map((i) => i.clientId);
+      if (!canCancelVisit(actor(), heldClients)) {
+        throw new ForbiddenError('This visit holds items for clients you are not assigned to. Ask the owner to cancel it.');
+      }
       validateReason(reason);
       const v = store.visits.find((item) => item.id === id);
       if (v) {
@@ -3263,7 +3314,7 @@ export const mockRepositories: Repositories = {
   visitKit: {
     async list() {
       await simulateLatency();
-      return store.visitKit;
+      return [...store.visitKit];
     },
     async save(i) {
       await simulateLatency();
@@ -3310,8 +3361,9 @@ export const mockRepositories: Repositories = {
       return { items: list, total: list.length, totalAmount: total };
     },
 
-    async save(p) {
+    async save(input) {
       await simulateLatency();
+      const { rest: p, expected } = takeVersion(input);
       assertPatch('payments.save', p);
       const storedPayment = p.id ? store.payments.find((x) => x.id === p.id) : undefined;
       assertReferences(p, storedPayment?.clientId ?? p.clientId);
@@ -3322,6 +3374,7 @@ export const mockRepositories: Repositories = {
 
       const existing = p.id ? store.payments.find((item) => item.id === p.id) : undefined;
       if (existing) {
+        assertVersion(existing, expected);
         if (p.amount !== undefined) existing.amount = p.amount;
         if (p.paidOn) existing.paidOn = p.paidOn;
         if (p.channel) existing.channel = p.channel;
@@ -3407,12 +3460,30 @@ export const mockRepositories: Repositories = {
       assertNoteTarget(entity, entityId);
       return store.notes.filter((n) => n.entity === entity && n.entityId === entityId && !n.deletedAt);
     },
-    async save(n) {
+    async save(input) {
       await simulateLatency();
+      const { rest: n, expected } = takeVersion(input);
       assertPatch('notes.save', n);
-      assertNoteTarget(n.entity || 'task', n.entityId!);
+      const stored = n.id ? store.notes.find((x) => x.id === n.id) : undefined;
+      if (stored) assertNoteTarget(stored.entity, stored.entityId);
+      assertNoteTarget(n.entity || stored?.entity || 'task', (n.entityId ?? stored?.entityId) as ID);
       validate(NoteWriteSchema, n);
       const { user } = getCurrentUser();
+      if (stored) {
+        // An id names one note on one record: it cannot be reused for a note on another entity
+        if ((n.entity ?? stored.entity) !== stored.entity || (n.entityId ?? stored.entityId) !== stored.entityId) {
+          throw new RuleViolationError('This note id belongs to a note on another record');
+        }
+        assertVersion(stored, expected);
+        stored.body = n.body ?? stored.body;
+        if (n.pinned !== undefined) stored.pinned = n.pinned;
+        stored.editedAt = nowInManila();
+        stored.updatedAt = nowInManila();
+        stored.updatedBy = user.id;
+        stored.version += 1;
+        saveStore();
+        return stored;
+      }
       const note: Note = {
         id: n.id || generateId(),
         orgId: store.org.id,
@@ -3437,9 +3508,23 @@ export const mockRepositories: Repositories = {
       await simulateLatency();
       return store.savedViews.filter((v) => v.page === page);
     },
-    async save(v) {
+    async save(input) {
       await simulateLatency();
+      const { rest: v, expected } = takeVersion(input);
       const { user } = getCurrentUser();
+      const stored = v.id ? store.savedViews.find((x) => x.id === v.id) : undefined;
+      if (stored) {
+        // Views are the signed-in person's own; shared views of other people are read-only
+        if (stored.userId !== user.id) throw new ForbiddenError('You can only change your own saved views');
+        assertVersion(stored, expected);
+        const { id: _id, userId: _userId, ...changes } = v;
+        Object.assign(stored, Object.fromEntries(Object.entries(changes).filter(([, value]) => value !== undefined)));
+        stored.updatedAt = nowInManila();
+        stored.updatedBy = user.id;
+        stored.version += 1;
+        saveStore();
+        return stored;
+      }
       const sv: SavedView = {
         id: v.id || generateId(),
         orgId: store.org.id,
@@ -3680,10 +3765,12 @@ export const mockRepositories: Repositories = {
       await simulateLatency();
       return store.baseline;
     },
-    async save(b) {
+    async save(input) {
       await simulateLatency();
       assertOwner();
+      const { rest: b, expected } = takeVersion(input);
       validate(BaselineWriteSchema, b);
+      if (store.baseline) assertVersion(store.baseline, expected);
       const { user } = getCurrentUser();
       store.baseline = {
         id: store.baseline?.id || generateId(),

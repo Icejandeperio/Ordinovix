@@ -59,7 +59,7 @@ export function VisitKitSection({ onSaved }: { onSaved: () => void }) {
                 checked={item.active}
                 aria-label={`Include ${item.label} on pack lists`}
                 disabled={save.isPending}
-                onChange={(e) => run({ id: item.id, active: e.target.checked })}
+                onChange={(e) => run({ id: item.id, version: item.version, active: e.target.checked })}
                 className="w-4 h-4 accent-[var(--stamp)] rounded"
               />
             </label>

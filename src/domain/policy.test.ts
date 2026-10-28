@@ -4,6 +4,7 @@ import {
   requireClientAccess,
   requireOwner,
   canReviewLines,
+  canCancelVisit,
   insightsScope,
   type PolicyActor,
 } from './policy';
@@ -86,6 +87,22 @@ describe('domain/policy', () => {
 
     it('is empty for a revoked helper', () => {
       expect(insightsScope(revoked)).toEqual({ kind: 'clients', clientIds: [] });
+    });
+  });
+
+  describe('canCancelVisit', () => {
+    it('lets the owner cancel any visit', () => {
+      expect(canCancelVisit(owner, ['client-rsp', 'client-maria'])).toBe(true);
+    });
+
+    it('lets a helper cancel a visit only when every item is for an assigned client', () => {
+      expect(canCancelVisit(ben, ['client-rsp', 'client-cruz'])).toBe(true);
+      expect(canCancelVisit(ben, ['client-rsp', 'client-maria'])).toBe(false);
+      expect(canCancelVisit(ben, ['client-maria'])).toBe(false);
+    });
+
+    it('refuses a revoked membership', () => {
+      expect(canCancelVisit(revoked, ['client-rsp'])).toBe(false);
     });
   });
 });

@@ -108,7 +108,6 @@ One row per `Repositories` method. The Tables column uses the names in `schema-d
 | `templates.save` | PUT `/api/v1/templates/:id` and POST `/api/v1/templates` | O | task_templates, requirement_templates | Replaces the requirement lines only when `lines` is sent. |
 | `templates.markVerified` | POST `/api/v1/templates/:id/verify` | O | task_templates | Source reference required; a template is never shown as verified without it. |
 | `deadlineMoves.list` | GET `/api/v1/deadline-moves` | M | deadline_moves | None. |
-| `deadlineMoves.unreadCount` | GET `/api/v1/deadline-moves/unread-count` | M, U | deadline_moves | In the interface; the mock does not implement it yet (section 11). |
 | `deadlineMoves.save` | POST `/api/v1/deadline-moves` | O | deadline_moves, tasks | `applyToOpenTasks` updates matching open tasks in the same batch and returns their ids. |
 | `deadlineMoves.remove` | DELETE `/api/v1/deadline-moves/:id` | O | deadline_moves | Needs a reason. |
 | `holidays.list` | GET `/api/v1/holidays?year=` | M | holidays | None. |
@@ -280,12 +279,12 @@ Draft: `docs/backend/schema-draft.sql` (not applied anywhere). Rules:
 
 | Finding | Plan |
 |---|---|
-| `deadlineMoves.unreadCount` is in the interface but the mock does not implement it. | Implement in the mock first (or drop it from the interface) before step 3. |
-| The mock does not enforce `If-Match` / version conflicts and does not return `409` for stale writes. | Add version checks to the mock so the UI's conflict handling is exercised before the API exists. |
+| `deadlineMoves.unreadCount` was in this plan but not in `Repositories`, and nothing stores which moves a person has seen. | Dropped in U21: no route, no mock method. Add it with a read marker if the owner wants an unread badge. |
+| The mock does not enforce `If-Match` / version conflicts and does not return `409` for stale writes. | Done in U21: updates take the loaded `version` (`WithVersion` in `repositories.ts`); a stale one throws `VERSION_CONFLICT` with the stored record, and screens show a message and reload. Omitting the version skips the check (the API requires `If-Match`). |
 | The mock applies idempotency only for keyed calls (`src/data/mock/idempotency.ts`); the API stores keys 7 days. | Keep the same rule; same key twice applies once. |
 | Offline queued writes (U17) resolve to nothing in the mock and in the client; the API returns the record on replay. | Screens already take the entity from what they sent; invalidate queries after replay (done). |
-| `settings.save` does not write an activity event in the mock. | The API must; add it to the mock. |
-| `notes.save` can create a duplicate-id note, and a helper who is the assignee of a mixed visit can cancel it (open items in QUEUE.md). | Fix before the API copies the behaviour. |
+| `settings.save` does not write an activity event in the mock. | Done in U21: one `updated` event naming the changed fields, never their values. |
+| `notes.save` can create a duplicate-id note, and a helper who is the assignee of a mixed visit can cancel it (open items in QUEUE.md). | Done in U21: an id that belongs to a note on another entity is `RULE_VIOLATION`; the same entity edits in place. A visit holding items for clients the helper is not assigned to can be cancelled by the owner only (`canCancelVisit`). |
 | File bytes live in IndexedDB in the mock; the API streams from R2. | `documents.getUrl` already returns a URL, so screens do not change. |
 | Derived fields (displayed status, due state, follow-up state, readiness) are computed in the mock. | Compute them in the Worker with `src/domain/rules.ts`; never store them. |
 | Offline cache of query data (spec 19.3 "Offline data") is not persisted yet. | Needs a persisted-cache package that is not on the approved list. |

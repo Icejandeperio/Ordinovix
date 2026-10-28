@@ -298,7 +298,7 @@ export function TaskDetailPage() {
                   const targetUser = task.ownerUserId === 'user-ana' ? 'user-ben' : 'user-ana';
                   const name = targetUser === 'user-ana' ? 'Ana Santos' : 'Ben Morales';
                   if (confirm(`Reassign this task to ${name}?`)) {
-                    updateTask.mutate({ id: task.id, updates: { ownerUserId: targetUser } });
+                    updateTask.mutate({ id: task.id, updates: { version: task.version, ownerUserId: targetUser } });
                   }
                 }}
                 className="w-full text-left px-3 py-1.5 text-xs text-ink hover:bg-sheet-2 font-medium"

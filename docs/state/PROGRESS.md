@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-28 U21 Align the mock with the API contract — done
+- Changed: VERSION_CONFLICT on stale updates (errors, repositories, mock, edit screens, conflict toast), settings activity event, note id reuse refused, mixed-visit cancel owner-only, unreadCount dropped from the plan
+- Evidence: verify.mjs exit 0; tests now passing: U21 (28 unit, 2 acceptance), policy canCancelVisit; PR #25
+- Notes: Verifier PASS under the run-wide rule; unreadCount was never in Repositories, so removed; unwired version cases queued.
+
 ## 2026-10-28 U19 Backend plan document (no cloud actions) — done
 - Changed: docs/backend/BACKEND_PLAN.md, schema-draft.sql, QUEUE owner decisions, coverage test
 - Evidence: verify.mjs exit 0; tests now passing: backend-plan.test.ts (5); PR #23

@@ -642,7 +642,7 @@
       "id": "U21",
       "phase": "P3",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U20"
       ],
@@ -667,7 +667,9 @@
       "tests": [
         "U21"
       ],
-      "notes": "Owner decisions taken for this unit: notes id reuse is refused; mixed-visit cancel is owner-only. Source: docs/backend/BACKEND_PLAN.md section 11."
+      "notes": "Owner decisions taken for this unit: notes id reuse is refused; mixed-visit cancel is owner-only. Source: docs/backend/BACKEND_PLAN.md section 11.",
+      "pr": 25,
+      "evidence": "verify.mjs exit 0; tests now passing: U21 (version-conflicts 28, policy canCancelVisit, 2 acceptance); verifier/PR #25; verifier PASS; unreadCount removed (never in Repositories); calendar drag/undo and wizard saves send no version (queued)"
     },
     {
       "id": "U22",
