@@ -4,10 +4,11 @@
  * Worker) carries them too. worker/security-headers.test.ts keeps the two in step.
  *
  * script-src allows exactly one inline script by hash: the theme bootstrap in index.html that prevents a flash of the
- * wrong theme. The test recomputes the hash from index.html, so editing that script without updating this value fails.
+ * wrong theme. The hash is of the script with LF line endings (.gitattributes keeps index.html LF everywhere). The test recomputes
+ * it from index.html, so editing that script without updating this value fails.
  * style-src keeps 'unsafe-inline' because React and the motion library set inline style attributes.
  */
-export const THEME_SCRIPT_HASH = 'sha256-DHNZJBbqAHWlQ5jX3v4o+VsPJNoJRKCQ04jnFdln8fs=';
+export const THEME_SCRIPT_HASH = 'sha256-5m4Igx6Ikp25HsoxuzZvfDTb5xxrs77gacRIF06nKwk=';
 
 export const SECURITY_HEADERS: Readonly<Record<string, string>> = {
   'Content-Security-Policy': [

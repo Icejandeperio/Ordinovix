@@ -22,6 +22,8 @@ function parseHeadersFile(text: string): Record<string, string> {
   return out;
 }
 
+const CRLF = /\r\n/g;
+
 describe('security headers on the SPA HTML (public/_headers)', () => {
   it('match the headers the Worker puts on every API response, so the app shell and the API agree', () => {
     expect(parseHeadersFile(read('../public/_headers'))).toEqual(SECURITY_HEADERS);
@@ -36,7 +38,8 @@ describe('security headers on the SPA HTML (public/_headers)', () => {
     expect(scriptSrc).not.toContain('unsafe-inline');
     expect(scriptSrc).not.toContain('unsafe-eval');
     for (const body of inline) {
-      const hash = createHash('sha256').update(body).digest('base64');
+      // The deployed file is built from a Linux checkout (LF); a Windows checkout may carry CRLF, so hash the LF form
+      const hash = createHash('sha256').update(body.replace(CRLF, '\n')).digest('base64');
       expect(scriptSrc, 'hash of an inline script in index.html').toContain(`'sha256-${hash}'`);
     }
   });
