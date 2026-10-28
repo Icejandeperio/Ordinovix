@@ -58,11 +58,11 @@ writeRoutes2.post('/follow-ups/:id/resolve', async (c) => {
 });
 
 // ---- offices, visits --------------------------------------------------------------------------------------------
-writeRoutes2.post('/offices', async (c) => {
+writeRoutes2.post('/offices', ownerOnly, async (c) => {
   const body = await readBody(c, OFFICE);
   return runWrite(c, { status: 201, run: (cmd) => cmd.offices.save(body) });
 });
-writeRoutes2.put('/offices/:id', async (c) => {
+writeRoutes2.put('/offices/:id', ownerOnly, async (c) => {
   const body = await readBody(c, OFFICE);
   return runWrite(c, { run: (cmd) => cmd.offices.save({ ...body, id: c.req.param('id'), version: ifMatchVersion(c) }) });
 });
@@ -106,11 +106,11 @@ writeRoutes2.post('/visits/:id/cancel', async (c) => {
   return runWrite(c, { run: (cmd) => cmd.visits.cancel(c.req.param('id'), r) });
 });
 
-writeRoutes2.post('/visit-kit', async (c) => {
+writeRoutes2.post('/visit-kit', ownerOnly, async (c) => {
   const body = await readBody(c, KIT);
   return runWrite(c, { status: 201, run: (cmd) => cmd.visitKit.save(body) });
 });
-writeRoutes2.put('/visit-kit/:id', async (c) => {
+writeRoutes2.put('/visit-kit/:id', ownerOnly, async (c) => {
   const body = await readBody(c, KIT);
   return runWrite(c, { run: (cmd) => cmd.visitKit.save({ ...body, id: c.req.param('id'), version: ifMatchVersion(c) }) });
 });
@@ -156,14 +156,14 @@ writeRoutes2.post('/notifications/read', async (c) => {
 });
 
 // ---- baseline, pulses -------------------------------------------------------------------------------------------
-writeRoutes2.put('/baseline', async (c) => {
+writeRoutes2.put('/baseline', ownerOnly, async (c) => {
   const body = await readBody(c, BASELINE);
   // the first baseline has no version to name; once one exists, an update must carry it
   const exists = await c.env.DB.prepare('SELECT version FROM baselines WHERE org_id = ?').bind(c.get('actor').orgId).first<{ version: number }>();
   const version = exists ? ifMatchVersion(c) : undefined;
   return runWrite(c, { run: (cmd) => cmd.baseline.save({ ...body, ...(version !== undefined ? { version } : {}) }) });
 });
-writeRoutes2.post('/pulses', async (c) => {
+writeRoutes2.post('/pulses', ownerOnly, async (c) => {
   const body = await readBody(c, PULSE);
   return runWrite(c, { status: 201, run: (cmd) => cmd.pulses.save(body) });
 });
