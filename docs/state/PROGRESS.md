@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-10-28 U18 Accessibility and responsive sweep — done
+- Changed: axe checks on 20 routes in both themes, 360 px no-scroll checks, four fixes (button name, two contrasts, Tasks header wrap)
+- Evidence: verify.mjs exit 0; tests now passing: U18 (67 acceptance); PR #21
+- Notes: T1; axe-core/playwright 4.14.0 added; open modals not scanned.
+
 ## 2026-10-28 U17 Installable app and offline write queue — done
 - Changed: vite-plugin-pwa service worker and update banner, PNG icons, IndexedDB write queue with idempotency keys, sync indicator
 - Evidence: verify.mjs exit 0; tests now passing: B17, U17 acceptance (5), queue and PWA unit tests; PR #20
