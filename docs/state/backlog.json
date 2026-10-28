@@ -713,7 +713,7 @@
       "id": "U23",
       "phase": "P3",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "U22"
       ],
@@ -738,7 +738,9 @@
       "tests": [
         "U23"
       ],
-      "notes": "Migrations are generated, never hand-edited once on main (docs/adr/ADR-0002-backend-stack-and-cloud-boundary.md)."
+      "notes": "Migrations are generated, never hand-edited once on main (docs/adr/ADR-0002-backend-stack-and-cloud-boundary.md).",
+      "pr": 27,
+      "evidence": "verify.mjs exit 0; tests now passing: U23 worker/db tests (schema parity, migrations incl. wrangler d1 migrations apply --local, constraints, seed counts equal to the mock seed, idempotence, Demo guard); verifier/PR #27; verifier PASS; five dangling mock follow-up references fixed; open-task index ignores finished tasks"
     },
     {
       "id": "U24",
