@@ -158,7 +158,7 @@ export function FollowUpsPage() {
               : 'bg-sheet border-rule hover:bg-sheet-2'
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-semibold text-amber-700 dark:text-amber-400">
+          <div className="flex items-center justify-between text-xs font-semibold text-amber-800 dark:text-amber-400">
             <span>Due Today</span>
             <Clock className="w-4 h-4" />
           </div>

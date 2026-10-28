@@ -285,7 +285,7 @@ export function TasksPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 no-print">
+        <div className="flex flex-wrap items-center gap-2 no-print">
           {/* View Mode Toggle */}
           <div className="flex items-center p-0.5 bg-sheet-2 border border-rule rounded-control">
             <button
