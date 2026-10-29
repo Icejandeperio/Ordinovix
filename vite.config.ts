@@ -12,6 +12,8 @@ export const pwaWorkbox: NonNullable<Partial<VitePWAOptions>['workbox']> = {
   navigateFallback: '/index.html',
   navigateFallbackDenylist: [/^\/api\//],
   cleanupOutdatedCaches: true,
+  // The push and notification-click handlers (U34) live in public/push-sw.js; the generated worker loads them
+  importScripts: ['push-sw.js'],
 };
 
 // https://vite.dev/config/

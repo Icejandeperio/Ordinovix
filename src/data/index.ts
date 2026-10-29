@@ -121,6 +121,13 @@ export const authControls = {
   },
 };
 
+/** What the reminders button needs besides the repositories (the push key is not part of the contract). */
+export const pushControls = {
+  async vapidKey(): Promise<string> {
+    return (await import('./api/push')).fetchVapidKey();
+  },
+};
+
 /**
  * Dev controls for the shell, dev menu and sign-in screen. Reads come from the saved settings; changes are
  * saved at once and handed to the mock implementation, which applies them (and reloads where it needs to).
