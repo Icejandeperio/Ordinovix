@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-10-29 U39 follow-up: loading skeleton gets a role (broken main) — done
+- Changed: `src/components/ui/query-state.tsx` (QuerySkeleton: `role="status"`), `src/components/ui/query-state.test.tsx`
+- Evidence: verify.mjs exit 0; unit test red before, green after; U18 axe `/audit` and `/clients` pass in API mode; this PR
+- Notes: verify on main after the U39 merge (84ff9a0) failed once on "U18 axe: /audit in the light theme" (`aria-prohibited-attr: .space-y-4`, the QuerySkeleton, sampled while the page loads); it had passed on the PR run and locally, so it is a timing flake that already existed (the U33 note). deploy-preview was skipped for that commit, so the preview still runs the pre-U39 build until this merges. This removes that axe finding; U33's other /audit and /clients contrast findings are untouched.
 ## 2026-10-29 U39 Real sign-in on deployed builds: Google button, session gating, sign-out — done
 - Changed: sign-in and access-pending pages, shell, command palette, router (dev routes), Today and Settings dev-only wording, `src/data/api/http.ts` (reports 401 and ACCESS_PENDING), new `src/data/api/auth.ts`, `src/data/auth-events.ts`, `src/app/auth-gate.ts`, `src/lib/auth.ts`, `src/lib/viewer.ts`, `useViewer` and `useSignOut` hooks
 - Evidence: verify.mjs exit 0 (168 acceptance); tests now passing: U39 (4 acceptance, in mock and API mode; 15 unit); API-mode suite 164 passed locally; red before: the 4 acceptance tests fail on main's code in API mode; verifier PASS (docs/state/reviews/U39.md); PR #40
