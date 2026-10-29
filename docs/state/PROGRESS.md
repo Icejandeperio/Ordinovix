@@ -1,9 +1,9 @@
 # Progress Log
 
-## 2026-10-28 U32 Preview live: deployed by CI, smoke-tested, go-live checklist — blocked
+## 2026-10-29 U32 Preview live: deployed by CI, smoke-tested, go-live checklist — blocked
 - Changed: docs/backend/GO_LIVE.md (spec 21.11 tracked item by item, access test as a helper, read-only smoke checks with expected results), QUEUE.md owner steps
 - Evidence: docs only; verify.mjs exit 0; PR #36
-- Notes: blocked, awaiting owner: run the Cloudflare setup script (QUEUE.md Open, U31 item). Nothing live exists yet: no database ids in wrangler.jsonc, deploy-preview skips on the placeholder ids, so the smoke checks have not been run. When the owner says phase 1 is done: commit the ids, wait for deploy-preview, run the smoke checks, record the results here and set U32 to done. Item 6 (push on a phone) needs a client-side unit first.
+- Notes: blocked, awaiting owner. 2026-10-29: the owner ran phase 1; the preview and production database ids are in wrangler.jsonc (PR #38, wrangler-config test now requires real ids for preview and production, setup-script tests no longer depend on them). deploy-preview runs after that merge; the Worker has no secrets yet, so the app loads and nobody can sign in. Left for the owner: Google OAuth client, --secrets, --first-owner, reseed. Then: run the read-only smoke checks of GO_LIVE.md, record the results here, set U32 to done. Item 6 (push on a phone) needs a client-side unit first.
 
 ## 2026-10-28 U31 Owner setup script and deploy runbook — done
 - Changed: scripts/setup-cloudflare.mjs (three phases: infrastructure, secrets, first owner) with stubbed-runner tests, docs/backend/DEPLOY.md, `npm run setup:cloudflare`

@@ -37,15 +37,23 @@ describe('wrangler.jsonc (ADR-0002 section 3)', () => {
     }
   });
 
-  it('binds D1 as DB with the fixed database names, placeholder ids and the migrations folder', () => {
+  it('binds D1 as DB with the fixed database names, real ids for preview and production, and the migrations folder', () => {
     const expected: Array<[Record<string, any>, string]> = [
       [config.env.preview, 'ordinovix-preview'],
       [config.env.production, 'ordinovix'],
     ];
+    const ids = new Set<string>();
     for (const [scope, name] of expected) {
       expect(scope.d1_databases).toHaveLength(1);
-      expect(scope.d1_databases[0]).toMatchObject({ binding: 'DB', database_name: name, database_id: PLACEHOLDER_ID, migrations_dir: 'migrations' });
+      expect(scope.d1_databases[0]).toMatchObject({ binding: 'DB', database_name: name, migrations_dir: 'migrations' });
+      // the owner's setup script wrote the real ids (U31/U32): a database id, and not the placeholder that makes CI skip the deploy
+      const id = scope.d1_databases[0].database_id as string;
+      expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+      expect(id).not.toBe(PLACEHOLDER_ID);
+      ids.add(id);
     }
+    expect(ids.size).toBe(2); // preview and production never share a database
+    // local development keeps the placeholder: it only names the on-disk database
     expect(config.d1_databases).toHaveLength(1);
     expect(config.d1_databases[0]).toMatchObject({ binding: 'DB', database_id: PLACEHOLDER_ID, migrations_dir: 'migrations' });
   });
