@@ -10,8 +10,8 @@ releases it after the client accepts the MVP (ADR-0002, section 5). The setup an
 |---|---|
 | Backend built and tested locally (U21 to U30) | Done |
 | Owner setup script and runbook (U31) | Done |
-| Owner runs the setup script (phase 1, then merge the database ids) | Owner-pending (QUEUE.md, Open) |
-| Preview deployed by CI and smoke-tested | Waiting for the line above |
+| Owner runs the setup script (phase 1, then merge the database ids) | Done 2026-10-29 |
+| Preview deployed by CI and smoke-tested | Done 2026-10-29: deploy-preview green; the read-only checks below all passed on https://ordinovix-preview.ordinovix.workers.dev (results in PROGRESS.md) |
 | Secrets, first owner, reseed of the preview | Owner-pending (QUEUE.md, Open) |
 | Production released | Not started on purpose |
 

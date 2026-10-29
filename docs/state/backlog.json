@@ -1006,8 +1006,8 @@
       "tier": "T1",
       "status": "blocked",
       "pr": 36,
-      "blocked_reason": "awaiting owner: phase 1 done and its database ids shipped (PR #38); left for the owner: Google OAuth client, setup-cloudflare --secrets, --first-owner, the reseed (QUEUE.md, Open, U31 item); then the smoke checks and GO_LIVE.md",
-      "evidence": "shipped what does not need the owner: docs/backend/GO_LIVE.md (spec 21.11, eight items with done or owner-pending, the access test as a helper, the read-only smoke checks with expected results) and the QUEUE steps; not done: ids in wrangler.jsonc, deploy-preview green, the smoke checks run against the live preview",
+      "blocked_reason": "awaiting owner: Google OAuth client, setup-cloudflare --secrets, --first-owner and the reseed (QUEUE.md, Open, U31 item); then the access test as a helper and GO_LIVE.md",
+      "evidence": "ids shipped (PR #38) and deploy-preview green (run 40797390461); read-only smoke checks all pass on the live preview (health, 401 without cookie, deep link, security headers, dev sign-in and dev reset 404, unsigned file link 403); GO_LIVE.md shipped (PR #36); left for the owner: OAuth client, --secrets, --first-owner, reseed",
       "depends_on": [
         "U31"
       ],
