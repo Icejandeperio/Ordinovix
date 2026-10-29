@@ -1,9 +1,9 @@
 # Progress Log
 
 ## 2026-10-29 U32 Preview live: deployed by CI, smoke-tested, go-live checklist — blocked
-- Changed: docs/backend/GO_LIVE.md (spec 21.11 tracked item by item, access test as a helper, read-only smoke checks with expected results), QUEUE.md owner steps
-- Evidence: docs only; verify.mjs exit 0; PR #36
-- Notes: blocked, awaiting owner. 2026-10-29: the owner ran phase 1; the preview and production database ids are in wrangler.jsonc (PR #38, wrangler-config test now requires real ids for preview and production, setup-script tests no longer depend on them). deploy-preview runs after that merge; the Worker has no secrets yet, so the app loads and nobody can sign in. Left for the owner: Google OAuth client, --secrets, --first-owner, reseed. Then: run the read-only smoke checks of GO_LIVE.md, record the results here, set U32 to done. Item 6 (push on a phone) needs a client-side unit first.
+- Changed: docs/backend/GO_LIVE.md (spec 21.11 item by item, access test as a helper, read-only smoke checks); the real preview and production D1 ids in wrangler.jsonc (PR #38); QUEUE.md owner steps
+- Evidence: verify.mjs exit 0; PR #36 and #38; deploy-preview run 40797390461 succeeded on e0135d2 (migrations applied, build, deploy, health). Read-only checks of https://ordinovix-preview.ordinovix.workers.dev on 2026-10-29: /api/v1/health 200 {"ok":true,"env":"preview"}; /api/v1/session/me without a cookie 401; /tasks returns the app HTML; CSP, X-Content-Type-Options, Referrer-Policy, Permissions-Policy and X-Robots-Tag present; dev sign-in 404; dev reset 404; an unsigned file link 403
+- Notes: blocked, awaiting owner: the Worker has no secrets yet, so nobody can sign in. Left for the owner (QUEUE.md, Open, U31 item): Google OAuth client, setup-cloudflare --secrets, --first-owner, reseed. After that: the access test as a helper (GO_LIVE.md) and set U32 to done. Go-live item 6 (push on a phone) is U34. The owner also added verify-api and units U33 to U38 (PR #37); stop_after is now U38, which is beyond the stop point of this run.
 
 ## 2026-10-28 U31 Owner setup script and deploy runbook — done
 - Changed: scripts/setup-cloudflare.mjs (three phases: infrastructure, secrets, first owner) with stubbed-runner tests, docs/backend/DEPLOY.md, `npm run setup:cloudflare`
