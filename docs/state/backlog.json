@@ -1074,7 +1074,9 @@
       "id": "U33",
       "phase": "P4",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
+      "pr": 43,
+      "evidence": "verify.mjs exit 0 (173 acceptance); tests now passing: U33 (5 unit, 2 Worker, 5 acceptance in mock and API mode); API-mode suite 169 passed locally; verifier PASS (docs/state/reviews/U33.md); PR #43; criterion 5 (verify-api zero failures on the PR and on the next merge to main, then the owner edit in QUEUE.md) finished after the merge",
       "depends_on": [
         "U31"
       ],
