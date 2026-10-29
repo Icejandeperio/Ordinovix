@@ -56,6 +56,10 @@ devRoutes.post('/sign-in', async (c) => {
  */
 devRoutes.post('/reset', async (c) => {
   if (!import.meta.env.DEV) return errorResponse(c, 404, { error: { code: 'NOT_FOUND', message: 'Not found' } });
+  // The body ({}) is read although nothing in it is used: when a handler answers without reading the request body, workerd closes
+  // the connection, and "vite dev" (whose pool may reuse it a moment later) then drops the next request ("fetch failed", about
+  // one request in six right after a reset). Reading it keeps the connection alive.
+  await c.req.text();
   const { resetDemoData } = await import('./reset');
   await resetDemoData(c.env.DB, todayInManila(), c.env.TIN_ENCRYPTION_KEY);
   return c.json({ ok: true });
