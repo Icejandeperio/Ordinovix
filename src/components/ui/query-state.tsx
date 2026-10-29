@@ -89,7 +89,7 @@ export function QueryErrorPanel({ error, onRetry, subject = 'this page' }: Query
 /** Default loading skeleton when a page does not pass its own. */
 export function QuerySkeleton() {
   return (
-    <div className="space-y-4 animate-pulse" aria-busy="true" aria-label="Loading">
+    <div className="space-y-4 animate-pulse" role="status" aria-busy="true" aria-label="Loading">
       <div className="h-6 w-40 bg-sheet-3 rounded" />
       <div className="h-32 bg-sheet-3 rounded-panel" />
       <div className="h-32 bg-sheet-3 rounded-panel" />
