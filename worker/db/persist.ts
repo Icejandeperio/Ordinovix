@@ -96,7 +96,9 @@ function plan(d1: D1Database, before: Snapshot[], after: Snapshot[]): Plan {
       for (let i = 0; i < inserted.length; i += perStatement) {
         const chunk = inserted.slice(i, i + perStatement);
         const marks = `(${names.map(() => '?').join(', ')})`;
-        statements.push(d1.prepare(`INSERT INTO ${post.name} (${names.join(', ')}) VALUES ${chunk.map(() => marks).join(', ')}`).bind(...chunk.flatMap((p) => names.map((n) => p[n]))));
+        // a notification that another request wrote first (same id: one per type, record, person and day) is not an error: its twin is already there
+        const insert = post.name === 'notifications' ? 'INSERT OR IGNORE INTO' : 'INSERT INTO';
+        statements.push(d1.prepare(`${insert} ${post.name} (${names.join(', ')}) VALUES ${chunk.map(() => marks).join(', ')}`).bind(...chunk.flatMap((p) => names.map((n) => p[n]))));
       }
       changed += inserted.length;
     }

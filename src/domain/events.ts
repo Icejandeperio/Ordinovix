@@ -143,7 +143,8 @@ export function deriveEventNotifications(before: EventState, store: EventStore, 
       if (!task) continue;
       const ownerM = memberOf(task.ownerUserId);
       const ownerCanReview = !!ownerM && (ownerM.role === 'owner' || store.settings.helpersCanAccept);
-      const recipients = ownerM && ownerM.userId !== actor.user.id && ownerCanReview ? [ownerM.userId!] : store.settings.helpersCanAccept ? [] : owners;
+      // a task nobody looks after (no owner, or one who has left) is the organization owner's to review
+      const recipients = !ownerM ? owners : ownerM.userId !== actor.user.id && ownerCanReview ? [ownerM.userId!] : store.settings.helpersCanAccept ? [] : owners;
       for (const userId of recipients) {
         if (!reaches(userId, task.clientId)) continue;
         add(userId, 'received_needs_review', task.id, {
@@ -178,7 +179,7 @@ export function deriveEventNotifications(before: EventState, store: EventStore, 
         for (const userId of owners) {
           add(userId, 'left_not_ready', visit.id, {
             title: `${where(visit)} visit started with ${plural(missing, 'item')} not ready.`,
-            body: `${first} started the ${where(visit)} visit with ${plural(missing, 'item')} not ready: ${visit.departureOverrideReason}.`,
+            body: `${first} started the ${where(visit)} visit with ${plural(missing, 'item')} not ready: ${visit.departureOverrideReason.replace(/[.s]+$/, '')}.`,
             link: `/visits/${visit.id}`,
             entity: 'visit',
             entityId: visit.id,

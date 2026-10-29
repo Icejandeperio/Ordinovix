@@ -38,6 +38,15 @@ const withRequestedLine = (s: Store) => {
 };
 
 describe('U35 Received, needs review', () => {
+  it('goes to the organization owner when the task has no owner at all', async () => {
+    const { cmd, made } = as('helper', (s) => {
+      withRequestedLine(s);
+      s.tasks.find((t) => t.id === 'task-rsp-0619e')!.ownerUserId = undefined as never;
+    });
+    await cmd.lines.setStatus('line-rsp-2', 'received');
+    expect(made().map((n) => [n.userId, n.type])).toEqual([['user-ana', 'received_needs_review']]);
+  });
+
   it('a helper marking a line received tells the task owner, with a lock-screen-safe title and a fuller body', async () => {
     const { store, cmd, made } = as('helper', withRequestedLine);
     await cmd.lines.setStatus('line-rsp-2', 'received');
@@ -132,6 +141,12 @@ describe('U35 Left without everything ready', () => {
     expect(n.body).toContain('SPA expired');
     expect(n.title).toMatch(/not ready/);
     expect(n.title).not.toMatch(/Ben|SPA expired/);
+  });
+
+  it('does not end the body with two full stops when the reason already ends in one', async () => {
+    const { cmd, made } = as('helper', (s) => (s.visits.find((v) => v.id === 'visit-today')!.assigneeUserId = 'user-ben'));
+    await cmd.visits.start('visit-today', 'SPA expired.');
+    expect(made().find((x) => x.type === 'left_not_ready')!.body).toMatch(/SPA expired.$/);
   });
 
   it('starting without a reason, or the owner starting it, makes none', async () => {

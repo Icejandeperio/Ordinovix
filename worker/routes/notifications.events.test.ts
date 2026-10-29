@@ -122,6 +122,25 @@ describe('U35 the notification is written with the change', () => {
   });
 });
 
+describe('U35 visit ready and an assigned visit', () => {
+  it('the line that makes the last item ready tells the assignee, and giving a visit to someone tells them', async () => {
+    // only the lines decide: no authorization is needed, every line is accepted but one
+    await db().prepare("UPDATE tasks SET office_action = 0 WHERE id = 'task-rsp-0619e'").run();
+    await db().prepare("UPDATE task_lines SET status = 'accepted' WHERE task_id = 'task-rsp-0619e'").run();
+    await db().prepare("UPDATE task_lines SET status = 'received' WHERE id = 'line-rsp-2'").run();
+    const r = await send('owner', 'POST', '/api/v1/lines/line-rsp-2/status', { to: 'accepted' });
+    expect(r.status).toBe(200);
+    const ready = await eventRows('visit_ready');
+    expect(ready).toHaveLength(1);
+    expect(ready[0]).toMatchObject({ user_id: 'user-ana', link: '/visits/visit-today', entity: 'visit', entity_id: 'visit-today' });
+    expect(ready[0].title).toMatch(/visit is ready to go.$/);
+
+    const given = await send('owner', 'PATCH', '/api/v1/visits/visit-today', { assigneeUserId: 'user-ben' }, undefined, { 'If-Match': '*' });
+    expect(given.status).toBe(200);
+    expect((await eventRows('assigned')).map((x) => [x.user_id, x.link, x.entity])).toEqual([['user-ben', '/visits/visit-today', 'visit']]);
+  });
+});
+
 describe('U35 pushes follow the type default, the person and the quiet hours', () => {
   const quietNow = () => {
     const now = new Date();
