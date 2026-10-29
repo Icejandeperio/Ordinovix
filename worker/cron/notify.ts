@@ -207,6 +207,9 @@ export async function runNotifications(env: AppBindings, job: 'morning' | 'eveni
   return { created, ...sent };
 }
 
+/** Notification types made by actions, not by the jobs (src/domain/events.ts). */
+const EVENT_TYPES = new Set<string>(['received_needs_review', 'visit_ready', 'left_not_ready', 'outcome_recorded', 'assigned']);
+
 const clip = (text: string, max: number) => (text.length <= max ? text : `${text.slice(0, max - 1)}…`);
 
 /**
@@ -252,7 +255,11 @@ export async function sendDuePushes(env: AppBindings, deps: PushDeps, now: Date 
     if (!(await enabledTypes(n.user_id)).includes(n.type)) continue;
     const { results: subs } = await env.DB.prepare('SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE org_id = ? AND user_id = ?').bind(n.org_id, n.user_id).all<{ id: string; endpoint: string; p256dh: string; auth: string }>();
     if (subs.length === 0) continue;
-    const payload: PushPayload = { title: clip(n.title, 60), body: clip(n.body, 120), url: n.link, tag: n.type };
+    // The notifications that actions cause (src/domain/events.ts) have a lock-screen-safe title and a body with a first name in it:
+    // their push shows the title. The jobs' own text is codes only already.
+    const payload: PushPayload = EVENT_TYPES.has(n.type)
+      ? { title: 'Ordinovix', body: clip(n.title, 120), url: n.link, tag: n.type }
+      : { title: clip(n.title, 60), body: clip(n.body, 120), url: n.link, tag: n.type };
     let delivered = false;
     for (const sub of subs) {
       const result = await sendPush(deps, env, sub, payload, contact);

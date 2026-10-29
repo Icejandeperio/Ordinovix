@@ -6,7 +6,7 @@ import { handleError, handleNotFound } from './errors';
 import { requireActive, requireMembership, requireSession } from './middleware/auth';
 import { documentRoutes, fileContent } from './routes/documents';
 import { pushRoutes } from './routes/push';
-import type { PushDeps } from './push/send';
+import { realPushDeps, type PushDeps } from './push/send';
 import { readRoutes } from './routes/reads';
 import { sessionRoutes } from './routes/session';
 import { writeRoutes } from './routes/writes';
@@ -57,6 +57,11 @@ export function createApp(options: CreateAppOptions = {}) {
   // Everything else under /api/v1: signed in, allowlisted, active. An unknown path is a 401 until signed in, never a hint.
   const signedIn = new Hono<AppEnv>();
   signedIn.use('*', requireSession, requireMembership, requireActive);
+  const pushDeps = options.push ?? realPushDeps();
+  signedIn.use('*', async (c, next) => {
+    c.set('push', pushDeps);
+    await next();
+  });
   signedIn.route('/session', sessionRoutes);
   signedIn.route('/', readRoutes);
   signedIn.route('/', writeRoutes);

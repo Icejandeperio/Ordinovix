@@ -16,6 +16,7 @@ import { createCommands, type Commands, type FileStore } from '@/data/commands';
 import type { QueryData } from '@/data/queries';
 import { ValidationError, VersionConflictError } from '@/domain/errors';
 import { scrubTin } from '../lib/tin';
+import { sendDuePushes } from '../cron/notify';
 import type { AppEnv } from '../env';
 import { ALL_TABLES, loadQueryData } from './load';
 import { rowsOf, type Row } from './rows';
@@ -192,6 +193,7 @@ export async function runWrite<T>(c: Context<AppEnv>, o: WriteOptions<T>): Promi
   await o.prepare?.(store);
 
   const before = snapshot(store);
+  const notificationsBefore = store.notifications.length;
   const cmd = createCommands({ store, user, membership, userAgent: c.req.header('user-agent'), files: o.files });
   const result = await o.run(cmd, store);
   const after = snapshot(store);
@@ -206,6 +208,7 @@ export async function runWrite<T>(c: Context<AppEnv>, o: WriteOptions<T>): Promi
   if (!idempotent) {
     // no key to record, but a change (a view logged as activity, say) still goes out as one batch
     if (p.statements.length + extra.length > 0) await d1.batch([...p.statements, ...extra]);
+    await pushNew(c, store.notifications.length > notificationsBefore);
     return new Response(responseJson, { status, headers: { 'content-type': 'application/json' } });
   }
   const record = d1
@@ -234,5 +237,21 @@ export async function runWrite<T>(c: Context<AppEnv>, o: WriteOptions<T>): Promi
     }
     throw error;
   }
+  await pushNew(c, store.notifications.length > notificationsBefore);
   return new Response(responseJson, { status, headers: { 'content-type': 'application/json' } });
+}
+
+/**
+ * After a write that made notifications: send the pushes that are due (a type the person has switched on, outside their quiet hours,
+ * to their devices). The answer to the person who wrote does not wait for the push services: on Workers the sending goes on in the
+ * background; with no background (a test), it is awaited. A failure here never fails the write, which is already saved.
+ */
+async function pushNew(c: Context<AppEnv>, made: boolean): Promise<void> {
+  if (!made) return;
+  const sending = sendDuePushes(c.env, c.get('push')).then(() => undefined, () => undefined);
+  try {
+    c.executionCtx.waitUntil(sending);
+  } catch {
+    await sending;
+  }
 }
