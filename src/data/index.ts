@@ -56,7 +56,11 @@ const write = (key: string, value: string): void => {
   }
 };
 
-const isOffline = (): boolean => (typeof navigator !== 'undefined' && navigator.onLine === false) || read(OFFLINE_KEY) === 'true';
+/** The simulated-offline switch exists in mock mode and on the dev server; a deployed API build ignores a saved value. */
+const devSwitches = !useApi || import.meta.env.DEV;
+const simulatedOffline = (): boolean => devSwitches && read(OFFLINE_KEY) === 'true';
+
+const isOffline = (): boolean => (typeof navigator !== 'undefined' && navigator.onLine === false) || simulatedOffline();
 
 /**
  * Spec 19.3 offline writes: line status, notes, packing and counter outcomes made without a connection wait in
@@ -105,6 +109,18 @@ function lazyRepositories(): Repositories {
 
 export const repositories: Repositories = lazyRepositories();
 
+/** Real sign-in, for builds that talk to the API (the sign-in page and the access-pending page). */
+export const authControls = {
+  /** The Google URL to send the person to; the server brings them back to `next` once signed in. */
+  async googleSignInUrl(next: string): Promise<string> {
+    return (await import('./api/auth')).requestGoogleSignIn(next);
+  },
+  /** The address the person signed in with, when the server knows it. */
+  async signedInEmail(): Promise<string | undefined> {
+    return (await import('./api/auth')).fetchSignedInEmail();
+  },
+};
+
 /**
  * Dev controls for the shell, dev menu and sign-in screen. Reads come from the saved settings; changes are
  * saved at once and handed to the mock implementation, which applies them (and reloads where it needs to).
@@ -149,7 +165,7 @@ export const devControls = {
     });
   },
   getOffline(): boolean {
-    return read(OFFLINE_KEY) === 'true';
+    return simulatedOffline();
   },
   setFailureRate(rate: number) {
     write(FAILURE_RATE_KEY, String(rate));

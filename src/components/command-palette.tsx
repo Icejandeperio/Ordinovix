@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Command } from 'cmdk';
 import { m, AnimatePresence, useReducedMotion } from 'motion/react';
-import { useClients, useTasks } from '@/hooks/useData';
+import { useClients, useSignOut, useTasks, useViewer } from '@/hooks/useData';
 import { useTheme, PALETTES } from '@/app/theme';
 import { devControls } from '@/data';
 import { centerModalStore } from '@/lib/modal-store';
@@ -110,7 +110,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     callback();
   };
 
-  const currentPersona = devControls.getPersona();
+  const viewer = useViewer();
+  const signOut = useSignOut();
 
   const systemReducedMotion = useReducedMotion();
   const htmlReduceMotion =
@@ -302,7 +303,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 value="action switch persona operator helper ana ben"
                 onSelect={() =>
                   handleSelect(() =>
-                    devControls.setPersona(currentPersona === 'owner' ? 'helper' : 'owner')
+                    devControls.setPersona(viewer.role === 'owner' ? 'helper' : 'owner')
                   )
                 }
                 className="px-3 py-2 text-xs font-semibold rounded-control flex items-center justify-between cursor-pointer data-[selected=true]:bg-stamp-soft data-[selected=true]:text-stamp-strong hover:bg-sheet-2 text-ink"
@@ -310,7 +311,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 <div className="flex items-center gap-2.5">
                   <UserCheck className="w-3.5 h-3.5 text-stamp" />
                   <span>
-                    Switch to {currentPersona === 'owner' ? 'Ben Morales (Helper)' : 'Ana Santos (Owner)'}
+                    Switch to {viewer.role === 'owner' ? 'Ben Morales (Helper)' : 'Ana Santos (Owner)'}
                   </span>
                 </div>
               </Command.Item>
@@ -318,7 +319,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
               <Command.Item
                 value="action sign out logout leave session"
-                onSelect={() => handleSelect(() => navigate('/sign-in'))}
+                onSelect={() => handleSelect(() => void signOut())}
                 className="px-3 py-2 text-xs font-semibold rounded-control flex items-center justify-between cursor-pointer data-[selected=true]:bg-critical-bg data-[selected=true]:text-critical-fg hover:bg-sheet-2 text-ink hover:text-critical-fg transition-colors"
               >
                 <div className="flex items-center gap-2.5">
@@ -469,7 +470,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 <span className="text-[10px] text-ink-3">/settings</span>
               </Command.Item>
 
-              {currentPersona === 'owner' && (
+              {viewer.role === 'owner' && (
                 <Command.Item
                   value="nav super admin user accounts permissions access control helper owner allowlist"
                   onSelect={() => handleSelect(() => navigate('/settings/users'))}

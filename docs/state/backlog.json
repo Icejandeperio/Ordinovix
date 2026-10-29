@@ -1031,6 +1031,46 @@
       "notes": "Production stays empty and undeployed until the owner releases it after the client accepts the MVP (ADR-0002 section 5)."
     },
     {
+      "id": "U39",
+      "phase": "P4",
+      "tier": "T2",
+      "status": "done",
+      "pr": 40,
+      "evidence": "verify.mjs exit 0 (168 acceptance); tests now passing: U39 (4 acceptance in mock and API mode, 15 unit), red before on main's code in API mode; whole suite in API mode 164 passed locally; verifier PASS (docs/state/reviews/U39.md); PR #40; criterion 6 (preview check of sign-in/social) runs after the merge and deploy",
+      "depends_on": [
+        "U31"
+      ],
+      "title": "Real sign-in on deployed builds: Google button, session gating, sign-out",
+      "bugs": [],
+      "scope": [
+        "src/routes/sign-in/**",
+        "src/routes/access-pending/**",
+        "src/routes/today/page.tsx",
+        "src/routes/settings/page.tsx",
+        "src/app/**",
+        "src/components/command-palette.tsx",
+        "src/data/api/**",
+        "src/data/index.ts",
+        "src/hooks/useData.ts",
+        "src/lib/**",
+        "src/main.tsx",
+        "tests/acceptance/u39-*.spec.ts",
+        "docs/state/*"
+      ],
+      "acceptance": [
+        "With VITE_DATA_SOURCE=api, \"Continue with Google\" posts to /api/auth/sign-in/social (provider google, callback to the app) and navigates to the URL the server returns; a failure shows an inline error with Retry. Mock mode keeps today's persona behaviour.",
+        "The mock-only block (persona buttons, \"Simulate unauthorized Google account\") and every other dev-only control or wording (dev menu, sample-data banner, \"simulated network latency\" in error states) never render in an API build.",
+        "In API mode a 401 UNAUTHENTICATED from any request sends the person to /sign-in and back to the page they wanted after signing in; 403 ACCESS_PENDING goes to /access-pending; nothing renders sample or cached data while signed out; ox-mock-persona in localStorage is ignored.",
+        "Sign-out calls the server sign-out under /api/auth before clearing local state and returning to /sign-in.",
+        "A Playwright test in API mode stubs the Google round trip with route interception (no network to Google) and proves: button, then the sign-in/social request, then navigation to the returned URL; a signed-out visit to /tasks lands on /sign-in; sign-out ends the server session.",
+        "After the merge and a green deploy-preview, one read-only check: POST https://ordinovix-preview.ordinovix.workers.dev/api/auth/sign-in/social with header Origin: https://ordinovix-preview.ordinovix.workers.dev and body {\"provider\":\"google\",\"callbackURL\":\"/\"} returns an accounts.google.com URL with a non-empty client_id and redirect_uri https://ordinovix-preview.ordinovix.workers.dev/api/auth/callback/google. If client_id is empty or the call fails for lack of secrets, record in QUEUE.md that the owner has not run --secrets yet, and continue."
+      ],
+      "tests": [
+        "U39"
+      ],
+      "notes": "Added by the owner (2026-10-29): the deployed preview could not sign anyone in. Sign-in called the mock persona switch; nothing routed a 401 or 403 ACCESS_PENDING to /sign-in or /access-pending; the acceptance suite missed it because API mode signs in through the dev route. U32 stays blocked until the owner confirms a Google sign-in on the preview showing the Demo organization with data."
+    },
+    {
       "id": "U33",
       "phase": "P4",
       "tier": "T2",

@@ -9,6 +9,7 @@ import {
 } from '@/domain/errors';
 import { RuleViolationError } from '@/domain/rules';
 import { getDevToday } from '@/lib/dates';
+import { notifyAuthFailure } from '../auth-events';
 import { FAILURE_RATE_KEY, OFFLINE_KEY } from '../dev-state';
 
 /**
@@ -104,10 +105,13 @@ export const setBeforeFirstRequest = (fn: (() => Promise<void>) | undefined) => 
 let ready: Promise<void> | undefined;
 
 export async function request<T = unknown>(method: string, path: string, o: RequestOptions = {}): Promise<T> {
-  // The dev controls of the sample-data days still work: simulate an offline device or a failing network
-  if (read(OFFLINE_KEY) === 'true') throw new Error('Network error: Device is currently simulated as offline');
-  const failureRate = parseFloat(read(FAILURE_RATE_KEY) || '0');
-  if (failureRate > 0 && Math.random() < failureRate) throw new Error('Simulated network request failure');
+  // The dev controls of the sample-data days still work on the dev server: simulate an offline device or a failing network.
+  // A deployed build ignores them, so a stale setting in someone's browser never fails a real request.
+  if (import.meta.env.DEV) {
+    if (read(OFFLINE_KEY) === 'true') throw new Error('Network error: Device is currently simulated as offline');
+    const failureRate = parseFloat(read(FAILURE_RATE_KEY) || '0');
+    if (failureRate > 0 && Math.random() < failureRate) throw new Error('Simulated network request failure');
+  }
 
   if (beforeFirstRequest && !o.bootstrap) await (ready ??= beforeFirstRequest());
 
@@ -137,7 +141,12 @@ export async function request<T = unknown>(method: string, path: string, o: Requ
     } catch {
       body = null;
     }
-    throw toDomainError(res.status, body);
+    const error = toDomainError(res.status, body);
+    // No session (401) or no membership yet (403 ACCESS_PENDING): the app routes the person to /sign-in or /access-pending
+    const code = (error as { code?: string }).code;
+    if (code === 'UNAUTHENTICATED') notifyAuthFailure('unauthenticated');
+    else if (code === 'ACCESS_PENDING') notifyAuthFailure('access-pending');
+    throw error;
   }
   if (o.blob) return (await res.blob()) as T;
   const text = await res.text();
