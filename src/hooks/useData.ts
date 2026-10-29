@@ -1,5 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { repositories } from '@/data';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { devControls, repositories } from '@/data';
+import { isMockData } from '@/lib/data-source';
+import { deriveViewer } from '@/lib/viewer';
+import { signInPath } from '@/lib/auth';
 import type { InsightsTab, InsightsFilter, TaskStatus, LineStatus, VisitAction, Outcome, OutcomeCause, NextAction, Baseline } from '@/domain/types';
 
 export function useSession() {
@@ -8,6 +13,37 @@ export function useSession() {
     queryFn: () => repositories.session.me(),
     staleTime: 5 * 60 * 1000,
   });
+}
+
+/** Who is signed in: the persona in mock mode, the server session against the API (the saved persona is ignored there). */
+export function useViewer() {
+  const { data: session } = useSession();
+  return deriveViewer({ mock: isMockData, persona: devControls.getPersona(), session });
+}
+
+/**
+ * Sign out. Against the API the server ends the session first; only then is the local state dropped and the person returned to
+ * /sign-in, so a failed call leaves them signed in and says so. Mock mode just returns to /sign-in, as before.
+ */
+export function useSignOut() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  return async () => {
+    if (!isMockData) {
+      try {
+        await repositories.session.signOut();
+      } catch (error) {
+        // Already signed out (the session ended): carry on to the sign-in page
+        if ((error as { code?: string } | null)?.code !== 'UNAUTHENTICATED') {
+          toast.error('Could not sign out. Check your connection and try again.');
+          return;
+        }
+      }
+    }
+    // Leave the signed-in screens first, then drop their cached data, so nothing refetches (and nothing signed-out shows data)
+    await navigate(signInPath(), { replace: !isMockData });
+    if (!isMockData) qc.clear();
+  };
 }
 
 export function useOrgSettings() {

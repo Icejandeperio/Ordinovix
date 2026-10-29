@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useToday, useSetLineStatus, useSession } from '@/hooks/useData';
+import { isMockData } from '@/lib/data-source';
 import { formatDate, formatRelative, formatTime } from '@/lib/format';
 import { formatHeaderDate } from '@/lib/dates';
 import { Button } from '@/components/ui/button';
@@ -83,7 +84,7 @@ export function TodayPage() {
         <AlertCircle className="w-10 h-10 text-critical mx-auto" />
         <div className="space-y-1">
           <h3 className="text-base font-bold text-ink">Failed to load Today queue</h3>
-          <p className="text-xs text-ink-3">Check simulated network latency or retry the request.</p>
+          <p className="text-xs text-ink-3">{isMockData ? 'Check simulated network latency or retry the request.' : 'Check your connection or retry the request.'}</p>
         </div>
         <Button variant="secondary" size="sm" onClick={() => refetch()}>
           Retry

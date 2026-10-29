@@ -1,8 +1,32 @@
-import { useNavigate } from 'react-router-dom';
-import { devControls } from '@/data';
+import { useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { authControls, devControls } from '@/data';
+import { safeNext } from '@/lib/auth';
+import { isMockData } from '@/lib/data-source';
 
 export function SignInPage() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const next = safeNext(params.get('next'));
+  const [starting, setStarting] = useState(false);
+  // A failed Google round trip comes back here as /sign-in?error=...
+  const [failed, setFailed] = useState(params.has('error'));
+
+  // Mock builds keep the persona switch; builds against the API start the real Google sign-in and follow the URL the server returns
+  const handleGoogle = async () => {
+    if (isMockData) {
+      handlePersonaSelect('owner');
+      return;
+    }
+    setStarting(true);
+    setFailed(false);
+    try {
+      window.location.assign(await authControls.googleSignInUrl(next));
+    } catch {
+      setFailed(true);
+      setStarting(false);
+    }
+  };
 
   const handlePersonaSelect = (role: 'owner' | 'helper') => {
     devControls.setPersona(role);
@@ -37,7 +61,9 @@ export function SignInPage() {
         <div className="pt-2">
           <button
             type="button"
-            onClick={() => handlePersonaSelect('owner')}
+            onClick={() => void handleGoogle()}
+            disabled={starting}
+            aria-busy={starting}
             className="w-full h-12 px-4 rounded-lg border border-[var(--rule-strong)] bg-[var(--sheet)] hover:bg-[var(--sheet-2)] text-[var(--ink)] text-sm font-semibold flex items-center justify-center gap-3 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--stamp)]"
           >
             {/* Google "G" SVG */}
@@ -61,13 +87,26 @@ export function SignInPage() {
             </svg>
             <span>Continue with Google</span>
           </button>
+          {failed && (
+            <div role="alert" className="mt-3 rounded-lg border border-[var(--critical-bd)] bg-[var(--critical-bg)] text-[var(--critical-fg)] p-3 text-xs text-left space-y-2">
+              <p>We could not start Google sign-in. Check your connection and try again.</p>
+              <button
+                type="button"
+                onClick={() => void handleGoogle()}
+                className="min-h-[44px] px-4 rounded-lg border border-[var(--critical-bd)] bg-[var(--sheet)] text-[var(--ink)] text-xs font-semibold hover:bg-[var(--sheet-2)] focus:outline-none focus:ring-2 focus:ring-[var(--stamp)]"
+              >
+                Retry
+              </button>
+            </div>
+          )}
         </div>
 
         <p className="text-xs text-[var(--ink-3)]">
           Only people the owner has added can sign in.
         </p>
 
-        {/* Mock Mode Switcher */}
+        {/* Mock Mode Switcher (mock builds only) */}
+        {isMockData && (
         <div className="pt-2 border-t border-[var(--rule)] space-y-3">
           <div className="flex items-center gap-2">
             <div className="h-px bg-[var(--rule)] flex-1" />
@@ -101,6 +140,7 @@ export function SignInPage() {
             </button>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { AppShell } from './shell';
 // Today stays in the initial chunk; every other route loads when it is first visited
 import { TodayPage } from '@/routes/today/page';
 import { RouteErrorPage } from '@/routes/error-page';
+import { isMockData } from '@/lib/data-source';
 
 // Code-split routes per Section 19.4
 const TasksPage = lazy(() => import('@/routes/tasks/page').then((m) => ({ default: m.TasksPage })));
@@ -101,8 +102,13 @@ export const router = createBrowserRouter([
       { path: 'admin/users', element: <Navigate to="/settings/users" replace /> },
       { path: 'audit', element: <RouteSuspense><AuditPage /></RouteSuspense> },
       { path: 'help', element: <RouteSuspense><HelpPage /></RouteSuspense> },
-      { path: 'dev/tokens', element: <RouteSuspense><DevTokensPage /></RouteSuspense> },
-      { path: 'dev/states', element: <RouteSuspense><DevStatesPage /></RouteSuspense> },
+      // Design-check pages: mock builds only (an API build answers "not found")
+      ...(isMockData
+        ? [
+            { path: 'dev/tokens', element: <RouteSuspense><DevTokensPage /></RouteSuspense> },
+            { path: 'dev/states', element: <RouteSuspense><DevStatesPage /></RouteSuspense> },
+          ]
+        : []),
       { path: '*', element: <RouteSuspense><NotFoundPage /></RouteSuspense> },
     ],
   },

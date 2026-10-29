@@ -9,6 +9,7 @@ import {
 } from '@/domain/errors';
 import { RuleViolationError } from '@/domain/rules';
 import { getDevToday } from '@/lib/dates';
+import { notifyAuthFailure } from '../auth-events';
 import { FAILURE_RATE_KEY, OFFLINE_KEY } from '../dev-state';
 
 /**
@@ -137,7 +138,12 @@ export async function request<T = unknown>(method: string, path: string, o: Requ
     } catch {
       body = null;
     }
-    throw toDomainError(res.status, body);
+    const error = toDomainError(res.status, body);
+    // No session (401) or no membership yet (403 ACCESS_PENDING): the app routes the person to /sign-in or /access-pending
+    const code = (error as { code?: string }).code;
+    if (code === 'UNAUTHENTICATED') notifyAuthFailure('unauthenticated');
+    else if (code === 'ACCESS_PENDING') notifyAuthFailure('access-pending');
+    throw error;
   }
   if (o.blob) return (await res.blob()) as T;
   const text = await res.text();

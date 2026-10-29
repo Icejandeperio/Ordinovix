@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { useSession, useUnreadNotificationsCount } from '@/hooks/useData';
+import { useSession, useSignOut, useUnreadNotificationsCount, useViewer } from '@/hooks/useData';
 import { devControls } from '@/data';
 import {
   CalendarDays,
@@ -31,7 +31,6 @@ import {
   Download,
   LogOut,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { DevMenu } from './dev-menu';
 import { isMockData } from '@/lib/data-source';
 import { CommandPalette } from '@/components/command-palette';
@@ -53,9 +52,11 @@ export function LogoMark({ className = 'w-7 h-7 text-stamp' }: { className?: str
 }
 
 export function AppShell() {
-  const { data: session } = useSession();
+  const { data: session, error: sessionError, errorUpdateCount: sessionFailures, fetchStatus: sessionFetch } = useSession();
+  const sessionRefusedRef = useRef(false);
+  const viewer = useViewer();
+  const signOut = useSignOut();
   const { data: unreadCount = 0 } = useUnreadNotificationsCount();
-  const navigate = useNavigate();
   const isModalOpen = useIsCenterModalOpen();
   const [commandOpen, setCommandOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -266,8 +267,7 @@ export function AppShell() {
     setMobileDrawerOpen(false);
   }, [location.pathname]);
 
-  const currentPersona = devControls.getPersona();
-  const isHelper = currentPersona === 'helper';
+  const isHelper = viewer.role === 'helper';
 
   const navItems = [
     { to: '/', label: 'Today', icon: CalendarDays },
@@ -285,6 +285,23 @@ export function AppShell() {
     { to: '/settings', label: 'Settings', icon: Settings },
     { to: '/help', label: 'Help', icon: HelpCircle },
   ];
+
+  // Against the API nothing of the app shows until the server has said who this is, and nothing shows once it has refused the
+  // session (401 or access pending): the auth gate then routes to /sign-in or /access-pending. Any other failure (offline, a
+  // server error) keeps the shell, and each page shows its own error with Retry. Only the first answer decides: the pages
+  // ask for the session again, which must not swap the shell for the loading screen and back.
+  if (['UNAUTHENTICATED', 'ACCESS_PENDING'].includes((sessionError as { code?: string } | null)?.code ?? '')) sessionRefusedRef.current = true;
+  // (A session call held back because the device is offline keeps the shell too: the pages say they are offline.)
+  if (!isMockData && !session && (sessionRefusedRef.current || (sessionFailures === 0 && sessionFetch !== 'paused'))) {
+    return (
+      <div className="min-h-screen bg-paper flex items-center justify-center" role="status" aria-label="Loading">
+        <div className="text-center">
+          <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-brand-green border-t-transparent mb-2" />
+          <div className="text-xs text-ink-3">Loading...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`h-screen max-h-screen flex flex-col bg-paper text-ink overflow-hidden ${privacyMode ? 'privacy-mode' : ''}`}>
@@ -307,7 +324,7 @@ export function AppShell() {
         <span>Sample Data Mode</span>
         <span className="text-ink-3">|</span>
         <span className="text-ink-2">
-          Persona: <strong>{currentPersona === 'owner' ? 'Ana Santos (Owner)' : 'Ben Morales (Helper)'}</strong>
+          Persona: <strong>{viewer.name} ({viewer.role === 'owner' ? 'Owner' : 'Helper'})</strong>
         </span>
       </div>
       )}
@@ -450,26 +467,26 @@ export function AppShell() {
             <button
               type="button"
               onClick={() => {
-                if (collapsed) navigate('/sign-in');
+                if (collapsed) void signOut();
               }}
               className="w-8 h-8 rounded-full bg-stamp text-on-stamp flex items-center justify-center text-xs font-bold shrink-0 shadow-xs cursor-pointer hover:opacity-90"
-              title={collapsed ? `Sign out (${currentPersona === 'owner' ? 'Ana Santos' : 'Ben Morales'})` : (currentPersona === 'owner' ? 'Ana Santos (Owner)' : 'Ben Morales (Helper)')}
+              title={collapsed ? `Sign out (${viewer.name})` : `${viewer.name} (${viewer.role === 'owner' ? 'Owner' : 'Helper'})`}
             >
-              {currentPersona === 'owner' ? 'AS' : 'BM'}
+              {viewer.initials}
             </button>
             {!collapsed && (
               <>
                 <div className="overflow-hidden min-w-0 flex-1">
                   <div className="text-xs font-bold text-ink truncate">
-                    {currentPersona === 'owner' ? 'Ana Santos' : 'Ben Morales'}
+                    {viewer.name}
                   </div>
                   <div className="text-[11px] text-ink-3 truncate">
-                    {currentPersona === 'owner' ? 'Preparer / Owner' : 'Helper Account'}
+                    {viewer.subtitle}
                   </div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => navigate('/sign-in')}
+                  onClick={() => void signOut()}
                   className="p-1.5 rounded-control text-ink-3 hover:text-critical-fg hover:bg-sheet-3 transition-colors cursor-pointer shrink-0"
                   title="Sign out (Log out)"
                   aria-label="Sign out"
@@ -597,7 +614,7 @@ export function AppShell() {
                 <span className="font-semibold truncate max-w-[130px] lg:max-w-none">{session?.org.name || 'Santos Tax Services'}</span>
                 <button
                   type="button"
-                  onClick={() => navigate('/sign-in')}
+                  onClick={() => void signOut()}
                   className="p-1.5 rounded-control text-ink-3 hover:text-critical-fg hover:bg-sheet-2 transition-colors cursor-pointer ml-0.5 shrink-0"
                   title="Sign out (Log out)"
                   aria-label="Sign out"
@@ -645,7 +662,7 @@ export function AppShell() {
               </button>
               <button
                 type="button"
-                onClick={() => navigate('/sign-in')}
+                onClick={() => void signOut()}
                 className="w-full py-2.5 px-4 rounded-control border border-rule bg-sheet text-ink-2 hover:bg-sheet-2 hover:text-ink text-xs font-medium transition-colors"
               >
                 Sign Out
@@ -744,11 +761,11 @@ export function AppShell() {
             <div className="p-3 border-t border-rule bg-sheet-2 flex items-center justify-between gap-2 shrink-0">
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-8 h-8 rounded-full bg-stamp text-on-stamp flex items-center justify-center text-xs font-bold shrink-0">
-                  {currentPersona === 'owner' ? 'AS' : 'BM'}
+                  {viewer.initials}
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-ink truncate">
-                    {currentPersona === 'owner' ? 'Ana Santos' : 'Ben Morales'}
+                    {viewer.name}
                   </div>
                   <div className="text-[10px] text-ink-3 truncate">
                     {session?.org.name || 'Santos Tax Services'}
@@ -759,7 +776,7 @@ export function AppShell() {
                 type="button"
                 onClick={() => {
                   setMobileDrawerOpen(false);
-                  navigate('/sign-in');
+                  void signOut();
                 }}
                 className="p-1.5 rounded-control text-ink-3 hover:text-critical-fg hover:bg-sheet-3 transition-colors cursor-pointer shrink-0"
                 title="Sign out"

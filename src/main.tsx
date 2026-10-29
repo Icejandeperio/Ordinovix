@@ -7,6 +7,8 @@ import { LazyMotion } from 'motion/react';
 import { ThemeProvider } from '@/app/theme';
 import { router } from '@/app/router';
 import { offlineQueue } from '@/data';
+import { installAuthGate } from '@/app/auth-gate';
+import { isMockData } from '@/lib/data-source';
 
 // Styles
 import '@/styles/tokens.css';
@@ -37,6 +39,9 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Against the API a refused session sends the person to /sign-in or /access-pending
+if (!isMockData) installAuthGate(queryClient);
 
 // When queued writes have been sent, every screen shows the saved result
 let queued = 0;

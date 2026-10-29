@@ -105,6 +105,18 @@ function lazyRepositories(): Repositories {
 
 export const repositories: Repositories = lazyRepositories();
 
+/** Real sign-in, for builds that talk to the API (the sign-in page and the access-pending page). */
+export const authControls = {
+  /** The Google URL to send the person to; the server brings them back to `next` once signed in. */
+  async googleSignInUrl(next: string): Promise<string> {
+    return (await import('./api/auth')).requestGoogleSignIn(next);
+  },
+  /** The address the person signed in with, when the server knows it. */
+  async signedInEmail(): Promise<string | undefined> {
+    return (await import('./api/auth')).fetchSignedInEmail();
+  },
+};
+
 /**
  * Dev controls for the shell, dev menu and sign-in screen. Reads come from the saved settings; changes are
  * saved at once and handed to the mock implementation, which applies them (and reloads where it needs to).

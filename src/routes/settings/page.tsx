@@ -12,6 +12,7 @@ import {
   useSaveSettings,
 } from '@/hooks/useData';
 import { devControls } from '@/data';
+import { isMockData } from '@/lib/data-source';
 import { useTheme, PALETTES } from '@/app/theme';
 import {
   User,
@@ -1302,26 +1303,29 @@ export function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl border border-[var(--critical-bd)] bg-[var(--critical-bg)] text-[var(--critical-fg)] flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-bold">Reset Sample Data</div>
-                    <div className="text-xs opacity-90 mt-0.5">
-                      Clears mock local storage and re-seeds clean sample clients, tasks, and visits.
+                {/* Mock builds only: an API build has no sample data to reset */}
+                {isMockData && (
+                  <div className="p-4 rounded-xl border border-[var(--critical-bd)] bg-[var(--critical-bg)] text-[var(--critical-fg)] flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-bold">Reset Sample Data</div>
+                      <div className="text-xs opacity-90 mt-0.5">
+                        Clears mock local storage and re-seeds clean sample clients, tasks, and visits.
+                      </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm("Are you sure you want to reset all mock sample data? Current local edits will be reset to seed data.")) {
+                          devControls.reset();
+                        }
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--critical-solid)] text-[var(--on-critical-solid)] text-xs font-bold hover:opacity-90 transition-opacity"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Reset to Seed</span>
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm("Are you sure you want to reset all mock sample data? Current local edits will be reset to seed data.")) {
-                        devControls.reset();
-                      }
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--critical-solid)] text-[var(--on-critical-solid)] text-xs font-bold hover:opacity-90 transition-opacity"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span>Reset to Seed</span>
-                  </button>
-                </div>
+                )}
               </div>
             </div>
           )}
