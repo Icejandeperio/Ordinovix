@@ -99,6 +99,21 @@ describe('U34 Turn on reminders', () => {
     expect(t.raw.save).toHaveBeenCalledWith(t.created.toJSON());
   });
 
+  it('asks first thing: iOS Safari wants the question inside the tap, before anything is awaited', async () => {
+    const order: string[] = [];
+    const t = deps();
+    t.raw.requestPermission.mockImplementation(async () => {
+      order.push('ask');
+      return 'granted';
+    });
+    t.raw.registration.mockImplementation(async () => {
+      order.push('registration');
+      return { pushManager: { getSubscription: async () => null, subscribe: t.subscribe } };
+    });
+    await turnOn(t.d);
+    expect(order).toEqual(['ask', 'registration']);
+  });
+
   it('stops at a refusal: nothing is subscribed or saved', async () => {
     const t = deps({ granted: 'denied' });
     expect(await turnOn(t.d)).toBe('blocked');

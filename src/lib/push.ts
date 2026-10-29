@@ -76,9 +76,11 @@ export async function readStatus(deps: PushDeps): Promise<RemindersStatus> {
 export async function turnOn(deps: PushDeps): Promise<RemindersStatus> {
   const support = pushSupport(deps.env);
   if (support !== 'ok') return support;
+  // The question comes first, inside the tap: iOS Safari only allows it while the tap is still the active gesture, and looking up
+  // the service worker is asynchronous. (On the development server there is no worker, and the person is told so after the question.)
+  if ((await deps.requestPermission()) !== 'granted') return 'blocked';
   const registration = await deps.registration();
   if (!registration) return 'unavailable';
-  if ((await deps.requestPermission()) !== 'granted') return 'blocked';
   const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(await deps.vapidKey()),
