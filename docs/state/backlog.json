@@ -1139,7 +1139,9 @@
       "id": "U35",
       "phase": "P4",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
+      "pr": 46,
+      "evidence": "verify.mjs exit 0 (179 acceptance); tests now passing: U35 (17 command-level, 9 Worker, 1 acceptance in mock and API mode); API-mode suite 175 passed locally; verifier PASS (docs/state/reviews/U35.md); PR #46",
       "depends_on": [
         "U31"
       ],

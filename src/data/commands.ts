@@ -111,6 +111,7 @@ import {
 import {
   describeDevice,
 } from '@/lib/audit';
+import { captureEventState, deriveEventNotifications } from '@/domain/events';
 
 
 
@@ -2129,7 +2130,39 @@ export function createCommands(ctx: CommandContext) {
     },
   };
 
-  return { assertCanSetStatus, rejectIdentityChange, assertRecordWrite, assertCanReview, assertPatch, assertReferences, upsertRow, logActivity, memberships, settings, prefs, clients, contacts, authorizations, templates, deadlineMoves, holidays, tasks, lines, followUps, messages, offices, visits, visitKit, payments, notes, savedViews, notifications, baseline, pulses, queries , documents };
+  /**
+   * The notifications an action causes (spec 14) are made here, once, for every command that can cause one: the state is read
+   * before the command, and what the command changed decides which notifications are added to the store, in the same change
+   * (the Worker persists them in the same batch). A command that throws adds none.
+   */
+  function withEvents<T extends object>(namespace: T): T {
+    const wrapped: Record<string, unknown> = {};
+    for (const [name, member] of Object.entries(namespace)) {
+      if (typeof member !== 'function') {
+        wrapped[name] = member;
+        continue;
+      }
+      wrapped[name] = async (...args: unknown[]) => {
+        const before = captureEventState(store);
+        const result = await (member as (...a: unknown[]) => unknown)(...args);
+        const made = deriveEventNotifications(before, store, { user: ctx.user, membership: ctx.membership }, todayInManila(), nowInManila());
+        store.notifications.push(...made);
+        return result;
+      };
+    }
+    return wrapped as T;
+  }
+
+  return {
+    assertCanSetStatus, rejectIdentityChange, assertRecordWrite, assertCanReview, assertPatch, assertReferences, upsertRow, logActivity,
+    memberships, settings, prefs, clients, contacts, templates, deadlineMoves, holidays, messages, offices, visitKit, payments, notes, savedViews, notifications, baseline, pulses, queries,
+    authorizations: withEvents(authorizations),
+    tasks: withEvents(tasks),
+    lines: withEvents(lines),
+    followUps: withEvents(followUps),
+    visits: withEvents(visits),
+    documents: withEvents(documents),
+  };
 }
 
 export type Commands = ReturnType<typeof createCommands>;

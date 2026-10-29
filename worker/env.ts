@@ -1,5 +1,6 @@
 import type { Auth } from './auth/auth';
 import type { Actor } from './auth/membership';
+import type { PushDeps } from './push/send';
 
 /**
  * Everything the Worker reads from its environment (ADR-0002 section 3). Bindings come from wrangler.jsonc; the secrets
@@ -29,6 +30,8 @@ export interface AppVariables {
   authUser: { id: string; name: string; email: string; emailVerified: boolean };
   /** Their membership: organization, role, assigned clients and whether it is still active. */
   actor: Actor;
+  /** How pushes are built and sent: the real push services, or a stub in tests. */
+  push: PushDeps;
 }
 
 export type AppEnv = { Bindings: AppBindings; Variables: AppVariables };
