@@ -1,5 +1,8 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { PERSONAS, addMembership, openWorld, type World } from '../testing/world';
+
+// About 100 cases share one world; under the full gate (several heavy files at once) a case can pass 5 s that takes 1 s alone
+vi.setConfig({ testTimeout: 60_000 });
 
 /**
  * U25 permission table for every read route, as .claude/rules/backend.md asks: the owner, a helper on an assigned client,

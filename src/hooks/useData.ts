@@ -5,6 +5,7 @@ import { devControls, repositories } from '@/data';
 import { isMockData } from '@/lib/data-source';
 import { deriveViewer } from '@/lib/viewer';
 import { signInPath } from '@/lib/auth';
+import { removeThisDevicePush } from '@/hooks/push';
 import type { InsightsTab, InsightsFilter, TaskStatus, LineStatus, VisitAction, Outcome, OutcomeCause, NextAction, Baseline } from '@/domain/types';
 
 export function useSession() {
@@ -29,6 +30,8 @@ export function useSignOut() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   return async () => {
+    // This device stops getting reminders for the person who signs out; the session is still valid for that call
+    await removeThisDevicePush();
     if (!isMockData) {
       try {
         await repositories.session.signOut();

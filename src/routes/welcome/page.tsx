@@ -14,17 +14,16 @@ import {
   Upload,
   UserPlus2,
   Clock,
-  Bell,
   Sparkles,
 } from 'lucide-react';
 import { DateField } from '@/components/inputs/date-field';
+import { PushReminders } from '@/components/push-reminders';
 import {
   useTemplates,
   useSession,
   useSaveSettings,
   useSaveTemplate,
   useInviteMembership,
-  useSubscribePush,
   useClients,
 } from '@/hooks/useData';
 import { FREQUENCY_LABELS } from '@/domain/labels';
@@ -39,7 +38,6 @@ export function WelcomePage() {
   const saveSettings = useSaveSettings();
   const saveTemplate = useSaveTemplate();
   const inviteMember = useInviteMembership();
-  const subscribePush = useSubscribePush();
 
   const totalSteps = 5;
   const requested = Number(params.get('step'));
@@ -74,7 +72,6 @@ export function WelcomePage() {
   const [helperScope, setHelperScope] = useState<'all' | 'specific'>('all');
 
   // Step 5: Reminders permission
-  const [remindersEnabled, setRemindersEnabled] = useState(false);
 
   // Nothing can be saved until the saved settings (and, on step 3, the templates) have loaded
   const notReady = !settings || (step === 3 && templatesLoading);
@@ -116,7 +113,6 @@ export function WelcomePage() {
           await saveProgress({ onboarding: markDone('helper') });
         }
       } else if (step === 5) {
-        if (remindersEnabled) await subscribePush.mutateAsync({ endpoint: 'ordinovix://browser-push' });
         await saveProgress({ onboarding: markDone('phone') });
       }
       return true;
@@ -526,23 +522,12 @@ export function WelcomePage() {
               </div>
 
               {/* Reminders button */}
-              <div className="p-4 rounded-xl border border-[var(--rule)] bg-[var(--sheet)] flex items-center justify-between">
+              <div className="p-4 rounded-xl border border-[var(--rule)] bg-[var(--sheet)] flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="text-sm font-bold text-[var(--ink)]">Daily Reminders & Push Alerts</div>
                   <div className="text-xs text-[var(--ink-3)]">Receive notifications for overdue client lines and morning trip alerts.</div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setRemindersEnabled(!remindersEnabled)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors ${
-                    remindersEnabled
-                      ? 'bg-[var(--good-bg)] text-[var(--good-fg)] border border-[var(--good-bd)]'
-                      : 'bg-[var(--stamp)] text-[var(--on-stamp)] hover:bg-[var(--stamp-strong)]'
-                  }`}
-                >
-                  <Bell className="w-3.5 h-3.5" />
-                  <span>{remindersEnabled ? 'Reminders On' : 'Turn on reminders'}</span>
-                </button>
+                <PushReminders />
               </div>
             </div>
           )}

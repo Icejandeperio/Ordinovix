@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSavePrefs } from '@/hooks/useData';
 import { SaveBar } from './save-bar';
+import { PushReminders } from '@/components/push-reminders';
 import type { NotificationType, OrgSettings, UserPrefs } from '@/domain/types';
 
 interface NotificationsSectionProps {
@@ -46,18 +47,12 @@ export function NotificationsSection({ settings, prefs, onSaved }: Notifications
       </div>
 
       <div className="space-y-4">
-        <div className="p-4 rounded-lg bg-[var(--sheet-2)] border border-[var(--rule)] flex items-center justify-between">
+        <div className="p-4 rounded-lg bg-[var(--sheet-2)] border border-[var(--rule)] flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="text-sm font-bold text-[var(--ink)]">Browser Push Alerts</div>
             <div className="text-xs text-[var(--ink-3)]">Receive critical deadline alerts even when the tab is closed.</div>
           </div>
-          <button
-            type="button"
-            onClick={() => alert('Push permissions mock activated')}
-            className="px-3 py-1.5 rounded-md border border-[var(--rule-strong)] text-xs font-semibold text-[var(--ink)] hover:bg-[var(--sheet-3)] transition-colors"
-          >
-            Enable Push
-          </button>
+          <PushReminders tone="outline" />
         </div>
 
         <div className="space-y-3">

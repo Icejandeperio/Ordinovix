@@ -1105,7 +1105,9 @@
       "id": "U34",
       "phase": "P4",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
+      "pr": 45,
+      "evidence": "verify.mjs exit 0 (178 acceptance); tests now passing: U34 (25 unit, 5 acceptance in mock and API mode); API-mode suite 174 passed locally; built sw.js imports push-sw.js; verifier PASS (docs/state/reviews/U34.md); PR #45",
       "depends_on": [
         "U31"
       ],
