@@ -108,3 +108,28 @@ describe('If-Match', () => {
     expect(none.status).toBe(422); // a missing If-Match is still refused; only an explicit "*" skips the check
   });
 });
+
+describe('U33 a fresh local database', () => {
+  it('has no Demo organization until the dev reset has run, and the dev sign-in works right after it', { timeout: 120_000 }, async () => {
+    world = await openWorld({ devAuth: true, seed: false });
+    const signIn = () => world!.request('/api/v1/dev/sign-in', { method: 'POST', headers: json, body: JSON.stringify({ persona: 'owner' }) });
+
+    expect((await signIn()).status).toBe(422); // nothing seeded yet: what the CI job and a first `npm run dev` saw
+
+    expect((await world.request('/api/v1/dev/reset', { method: 'POST', headers: json, body: '{}' })).status).toBe(200);
+    const res = await signIn();
+    expect(res.status).toBe(200);
+    const me = await world.request('/api/v1/session/me', { cookie: res.headers.get('set-cookie')!.split(';')[0] });
+    expect(((await me.json()) as { membership: { id: string } }).membership.id).toBe('mem-ana');
+  });
+});
+
+describe('U33 the request that follows a reset', () => {
+  it('POST /dev/reset reads its request body: an unread body makes workerd close the connection, and "vite dev" then loses the next request', { timeout: 120_000 }, async () => {
+    world = await openWorld({ devAuth: true });
+    const req = new Request('https://ordinovix.test/api/v1/dev/reset', { method: 'POST', headers: json, body: '{}' });
+    const res = await world.app.request(req, undefined, world.env);
+    expect(res.status).toBe(200);
+    expect(req.bodyUsed).toBe(true);
+  });
+});
