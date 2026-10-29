@@ -1034,7 +1034,9 @@
       "id": "U39",
       "phase": "P4",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
+      "pr": 40,
+      "evidence": "verify.mjs exit 0 (168 acceptance); tests now passing: U39 (4 acceptance in mock and API mode, 15 unit), red before on main's code in API mode; whole suite in API mode 164 passed locally; verifier PASS (docs/state/reviews/U39.md); PR #40; criterion 6 (preview check of sign-in/social) runs after the merge and deploy",
       "depends_on": [
         "U31"
       ],
