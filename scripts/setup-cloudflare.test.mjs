@@ -17,7 +17,9 @@ import {
  * U31: the owner's setup script, run here with every outside call stubbed: the command runner (wrangler, gh, node), the Cloudflare
  * API, the prompts and the file system. Nothing here reaches Cloudflare, GitHub or Google, and the real scripts/ files are only read.
  */
-const REAL_CONFIG = readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
+// The repository's wrangler.jsonc as a fresh checkout has it: once the owner has run phase 1 it holds real ids, so they are reset to
+// the placeholder here and the tests do not depend on the owner's account.
+const REAL_CONFIG = readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8').replace(/("database_id"\s*:\s*")[^"]*(")/g, '$100000000-0000-0000-0000-000000000000$2');
 const TOKEN = 'cf-test-token-ABC123-never-print-me';
 const GOOGLE_ID = 'google-client-id-12345.apps.googleusercontent.com';
 const GOOGLE_SECRET = 'GOCSPX-test-google-secret-never-print-me';

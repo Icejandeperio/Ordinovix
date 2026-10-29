@@ -33,7 +33,7 @@
       "triggers": { "crons": ["0 19 * * *", "0 23 * * *", "0 9 * * *"] },
       "vars": { "APP_ENV": "preview" },
       "d1_databases": [
-        { "binding": "DB", "database_name": "ordinovix-preview", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+        { "binding": "DB", "database_name": "ordinovix-preview", "database_id": "cc5ec0a6-c682-4c1e-9df3-a63176183387", "migrations_dir": "migrations" }
       ],
       "r2_buckets": [{ "binding": "FILES", "bucket_name": "ordinovix-preview-files" }]
     },
@@ -46,7 +46,7 @@
       "triggers": { "crons": ["0 19 * * *", "0 23 * * *", "0 9 * * *"] },
       "vars": { "APP_ENV": "production" },
       "d1_databases": [
-        { "binding": "DB", "database_name": "ordinovix", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+        { "binding": "DB", "database_name": "ordinovix", "database_id": "032ca71e-2078-4a27-bea9-a3c48c550e8f", "migrations_dir": "migrations" }
       ],
       "r2_buckets": [{ "binding": "FILES", "bucket_name": "ordinovix-files" }]
     }
