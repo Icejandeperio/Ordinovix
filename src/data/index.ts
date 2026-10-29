@@ -56,7 +56,11 @@ const write = (key: string, value: string): void => {
   }
 };
 
-const isOffline = (): boolean => (typeof navigator !== 'undefined' && navigator.onLine === false) || read(OFFLINE_KEY) === 'true';
+/** The simulated-offline switch exists in mock mode and on the dev server; a deployed API build ignores a saved value. */
+const devSwitches = !useApi || import.meta.env.DEV;
+const simulatedOffline = (): boolean => devSwitches && read(OFFLINE_KEY) === 'true';
+
+const isOffline = (): boolean => (typeof navigator !== 'undefined' && navigator.onLine === false) || simulatedOffline();
 
 /**
  * Spec 19.3 offline writes: line status, notes, packing and counter outcomes made without a connection wait in
@@ -161,7 +165,7 @@ export const devControls = {
     });
   },
   getOffline(): boolean {
-    return read(OFFLINE_KEY) === 'true';
+    return simulatedOffline();
   },
   setFailureRate(rate: number) {
     write(FAILURE_RATE_KEY, String(rate));

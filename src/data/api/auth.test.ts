@@ -62,3 +62,25 @@ describe('U39 a request that is refused for want of a session tells the app', ()
     setAuthFailureHandler(undefined);
   });
 });
+
+describe('U39 the sample-data dev switches do nothing in a deployed build', () => {
+  const stubStorage = () =>
+    vi.stubGlobal('window', { localStorage: { getItem: (k: string) => (k === 'ox-mock-offline' ? 'true' : k === 'ox-mock-failure-rate' ? '1' : null) } });
+  const ok = (async () => json(200, { fine: true })) as unknown as typeof fetch;
+
+  it('a saved offline or failure-rate setting does not stop a request in a build that is not the dev server', async () => {
+    stubStorage();
+    vi.stubEnv('DEV', false);
+    await expect(request('GET', '/api/v1/x', { fetchImpl: ok })).resolves.toEqual({ fine: true });
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it('they still work on the dev server', async () => {
+    stubStorage();
+    vi.stubEnv('DEV', true);
+    await expect(request('GET', '/api/v1/x', { fetchImpl: ok })).rejects.toThrow(/offline/i);
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+});
