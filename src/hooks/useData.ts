@@ -585,8 +585,8 @@ export function useChangeTaskDueDate() {
 export function useSetTaskNextAction() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, next }: { id: string; next: NextAction | null }) =>
-      repositories.tasks.setNextAction(id, next),
+    mutationFn: ({ id, next, version }: { id: string; next: NextAction | null; version?: number }) =>
+      repositories.tasks.setNextAction(id, next, version),
     onSuccess: (saved) => {
       qc.invalidateQueries({ queryKey: ['task', saved.id] });
       qc.invalidateQueries({ queryKey: ['tasks'] });

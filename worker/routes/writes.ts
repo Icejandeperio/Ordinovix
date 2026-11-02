@@ -228,7 +228,7 @@ writeRoutes.post('/tasks/:id/due', async (c) => {
 });
 writeRoutes.put('/tasks/:id/next-action', async (c) => {
   const body = await readBody(c, ['next']);
-  return runWrite(c, { run: (cmd) => cmd.tasks.setNextAction(c.req.param('id'), body.next ?? null) });
+  return runWrite(c, { run: (cmd) => cmd.tasks.setNextAction(c.req.param('id'), body.next ?? null, ifMatchVersion(c)) });
 });
 writeRoutes.post('/tasks/:id/archive', async (c) => {
   const r = reason(await readBody(c, REASON));

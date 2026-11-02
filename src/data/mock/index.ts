@@ -1148,9 +1148,9 @@ export const mockRepositories: Repositories = {
       return result;
     },
 
-    async setNextAction(id, next) {
+    async setNextAction(id, next, version) {
       await simulateLatency();
-      const result = await command().tasks.setNextAction(id, next);
+      const result = await command().tasks.setNextAction(id, next, version);
       saveStore();
       return result;
     },
