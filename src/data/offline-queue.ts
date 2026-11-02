@@ -2,8 +2,9 @@ import { createStore, get, set, type UseStore } from 'idb-keyval';
 
 /**
  * Spec 19.3: writes made without a connection wait in IndexedDB with their idempotency keys, replay in order
- * when the connection is back, and show in the sync indicator. A write the server rejects stays in the queue
- * as "failed" with Retry and Discard.
+ * when the connection is back, and show in the sync indicator. A write the server rejects (409, 422, anything with an
+ * error code) stays in the queue as "failed" with Retry and Discard, and holds every later write until it is retried or
+ * discarded (owner decision, 2026-10-28). Retry sends the same call again: same arguments, same idempotency key.
  *
  * Only the writes that spec 19.3 says work offline are queued; anything else needs a connection.
  */
@@ -42,7 +43,9 @@ export interface QueueDeps {
   dbName?: string;
 }
 
-const isNetworkError = (err: unknown): boolean => /network|failed to fetch|offline|timed? ?out/i.test((err as Error)?.message ?? '');
+/** A lost connection has no error code; an answer from the server (409, 422, ...) always has one, whatever its words say. */
+const isNetworkError = (err: unknown): boolean =>
+  typeof (err as { code?: unknown } | null)?.code !== 'string' && /network|failed to fetch|offline|timed? ?out/i.test((err as Error)?.message ?? '');
 
 export function createOfflineQueue(deps: QueueDeps) {
   let store: UseStore | null = null;
@@ -111,9 +114,11 @@ export function createOfflineQueue(deps: QueueDeps) {
     syncing = true;
     emit();
     try {
-      // Take the oldest pending write each time round, so one queued while this replay runs is sent too
-      for (let item = items.find((i) => i.status === 'pending'); item; item = items.find((i) => i.status === 'pending')) {
+      // Take the oldest write each time round, so one queued while this replay runs is sent too. A sent write leaves the queue, so
+      // the oldest is the next to send; when it is a failed one, everything behind it waits until it is retried or discarded.
+      for (let item = items[0]; item && item.status === 'pending'; item = items[0]) {
         // A network error means the connection is still down: stop here so nothing later jumps ahead
+        // A rejection marks the write failed, and the next round stops on it
         if ((await attempt(item)) === 'offline') break;
       }
     } finally {
@@ -125,6 +130,8 @@ export function createOfflineQueue(deps: QueueDeps) {
   return {
     isQueueable: (name: string): boolean => name in QUEUEABLE,
     hasPending: (): boolean => items.some((i) => i.status === 'pending'),
+    /** Anything not yet applied, failed ones included: a new write must queue behind it to keep the order. */
+    hasWaiting: (): boolean => items.length > 0,
 
     async enqueue(method: string, args: unknown[]): Promise<QueuedWrite> {
       await ready;
@@ -172,6 +179,14 @@ export function createOfflineQueue(deps: QueueDeps) {
     async discard(id: string): Promise<void> {
       await ready;
       items = items.filter((i) => i.id !== id);
+      await persist();
+      emit();
+    },
+
+    /** Drops every waiting write and the saved copy (sign-out, after the person was warned). */
+    async clear(): Promise<void> {
+      await ready;
+      items = [];
       await persist();
       emit();
     },

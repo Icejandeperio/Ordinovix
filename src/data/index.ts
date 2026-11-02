@@ -93,7 +93,7 @@ function lazyRepositories(): Repositories {
         const name = `${ns}.${method}`;
         return async (...args: unknown[]) => {
           // Queueable writes wait their turn behind anything already queued, so they stay in order
-          if (offlineQueue.isQueueable(name) && (isOffline() || offlineQueue.hasPending())) {
+          if (offlineQueue.isQueueable(name) && (isOffline() || offlineQueue.hasWaiting())) {
             await offlineQueue.enqueue(name, args);
             if (!isOffline()) void offlineQueue.replay();
             return undefined;

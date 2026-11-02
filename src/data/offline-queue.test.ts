@@ -76,7 +76,7 @@ describe('offline write queue (spec 19.3, B17)', () => {
     expect(await queue.list()).toEqual([]);
   });
 
-  it('a write the server rejects stays in the queue as failed, with its reason, and the others still go', async () => {
+  it('a write the server rejects stays in the queue as failed, with its reason, and holds the later ones (U37)', async () => {
     const calls: Call[] = [];
     const { queue } = setup({
       call: async (ns, method, args) => {
@@ -88,11 +88,12 @@ describe('offline write queue (spec 19.3, B17)', () => {
     await queue.enqueue('lines.setStatus', ['good', 'accepted']);
     await queue.replay();
 
-    expect(calls.map((c) => c.args[0])).toEqual(['good']);
+    expect(calls).toEqual([]);
     const left = await queue.list();
-    expect(left).toHaveLength(1);
+    expect(left).toHaveLength(2);
     expect(left[0]).toMatchObject({ status: 'failed', error: 'Line not found' });
-    expect(queue.getSnapshot()).toMatchObject({ pending: 0, failed: 1 });
+    expect(left[1]).toMatchObject({ status: 'pending' });
+    expect(queue.getSnapshot()).toMatchObject({ pending: 1, failed: 1 });
   });
 
   it('Retry replays a failed write with the same key; Discard removes it', async () => {
@@ -107,7 +108,7 @@ describe('offline write queue (spec 19.3, B17)', () => {
     await queue.enqueue('lines.setStatus', ['x', 'accepted']);
     await queue.enqueue('notes.save', [{ body: 'discard me' }]);
     await queue.replay();
-    expect(queue.getSnapshot().failed).toBe(2);
+    expect(queue.getSnapshot()).toMatchObject({ failed: 1, pending: 1 });
 
     const [first, second] = await queue.list();
     await queue.discard(second.id);
