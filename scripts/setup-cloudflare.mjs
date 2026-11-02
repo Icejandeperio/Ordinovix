@@ -5,6 +5,7 @@
 //   node scripts/setup-cloudflare.mjs --secrets             phase 2, secrets of the preview Worker (it must have been deployed once)
 //   node scripts/setup-cloudflare.mjs --first-owner <email> phase 3, the first owner of the preview Demo organization
 //   add --env production to phases 2 and 3 for the production Worker (after its first release); --dry-run prints the plan and calls nothing
+//   node scripts/setup-cloudflare.mjs --secrets --env production --escrow   phase 2 for production: shows TIN_ENCRYPTION_KEY once for a password manager
 //
 // Every phase asks for the Cloudflare API token with hidden input (or reads CLOUDFLARE_API_TOKEN), passes it only to the commands it
 // starts, and ends with `wrangler logout`: the laptop keeps no Cloudflare credentials. Secret values are generated here or typed
@@ -31,7 +32,7 @@ export class SetupError extends Error {}
 
 // ---- arguments --------------------------------------------------------------------------------------------------------
 export function parseArgs(argv) {
-  const o = { phase: 'infra', env: 'preview', dryRun: false, rotate: [], help: false, wranglerConfig: 'wrangler.jsonc' };
+  const o = { phase: 'infra', env: 'preview', dryRun: false, escrow: false, rotate: [], help: false, wranglerConfig: 'wrangler.jsonc' };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const value = () => {
@@ -42,6 +43,7 @@ export function parseArgs(argv) {
     if (a === '--help' || a === '-h') o.help = true;
     else if (a === '--dry-run') o.dryRun = true;
     else if (a === '--secrets') o.phase = 'secrets';
+    else if (a === '--escrow') o.escrow = true;
     else if (a === '--first-owner') {
       o.phase = 'first-owner';
       o.email = value().trim().toLowerCase();
@@ -57,6 +59,7 @@ export function parseArgs(argv) {
     if (!ALL_SECRETS.includes(name)) throw new SetupError(`--rotate ${name}: not a secret of this app (${ALL_SECRETS.join(', ')})`);
     if (name === 'TIN_ENCRYPTION_KEY') throw new SetupError('TIN_ENCRYPTION_KEY is never rotated here: every stored TIN would become unreadable.');
   }
+  if (o.escrow && (o.phase !== 'secrets' || o.env !== 'production')) throw new SetupError('--escrow goes with --secrets --env production: it makes the recovery copy of the production TIN key');
   if (o.phase === 'first-owner') {
     const email = o.email;
     if (!email || !/^[a-z0-9._%+'-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(email) || email.includes("'") || email.length > 254) {
@@ -73,6 +76,10 @@ export const USAGE = `Ordinovix Cloudflare setup (run by the owner)
                                                              wrangler.jsonc, GitHub secrets and the production environment
   node scripts/setup-cloudflare.mjs --secrets                phase 2: generate and set the Worker secrets (preview Worker must exist)
   node scripts/setup-cloudflare.mjs --first-owner <email>    phase 3: make that Google account the first owner of the preview Demo organization
+  node scripts/setup-cloudflare.mjs --secrets --env production --escrow
+                                                             phase 2 for production: generates TIN_ENCRYPTION_KEY, shows it once so you can store
+                                                             it in your password manager, asks for its last 6 characters, then sets it
+                                                             (production refuses to create the TIN key without --escrow)
   options: --env preview|production (phases 2 and 3), --org <id> --org-name <name> (phase 3, production),
            --rotate <SECRET> (phase 2, replaces one secret; never TIN_ENCRYPTION_KEY), --dry-run (print the plan, call nothing)
 Steps and order: docs/backend/DEPLOY.md`;
@@ -159,6 +166,14 @@ export function describePlan(o) {
       '  2. print the Google OAuth origins and redirect URIs',
       `  3. list the secrets already on ${WORKERS[o.env]} (names only) and stop if the Worker has not been deployed yet`,
       `  4. generate ${GENERATED_SECRETS.join(', ')} with node:crypto, only the ones that are missing${o.rotate.length ? ` (and replace: ${o.rotate.join(', ')})` : ''}`,
+      ...(o.escrow
+        ? [
+            '     --escrow: show TIN_ENCRYPTION_KEY once on this screen (nowhere else), ask you to store it in your password manager,',
+            '     ask for its last 6 characters (hidden), and clear the screen; nothing is set unless they match',
+          ]
+        : o.env === 'production'
+          ? ['     (production refuses to create TIN_ENCRYPTION_KEY without --escrow)']
+          : []),
       `  5. ask for ${TYPED_SECRETS.join(' and ')} (hidden), if missing`,
       '  6. send them to wrangler on stdin in one `wrangler secret bulk` call; nothing is printed or written',
       '  7. run wrangler logout',
@@ -309,6 +324,36 @@ export async function runInfra(ctx) {
   );
 }
 
+/**
+ * Shows the new production TIN key once, straight to the terminal (never through the log), asks for its last 6 characters back as
+ * proof it was stored, then clears the screen. Nothing has been sent to Cloudflare yet: if the proof fails, nothing is set and the
+ * key is gone.
+ */
+async function escrowTinKey(ctx, key) {
+  say(
+    ctx,
+    '',
+    'RECOVERY COPY OF TIN_ENCRYPTION_KEY. This is shown once and nowhere else.',
+    'Without it, a restored backup holds client TINs that nobody can decrypt. Copy the key below into your password manager now',
+    '(a secure note named "Ordinovix production TIN_ENCRYPTION_KEY"), then come back here.',
+  );
+  ctx.deps.reveal(`
+    ${key}
+
+`);
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const typed = (await ctx.deps.prompt('Type the LAST 6 characters of the key to confirm it is stored (typing is hidden): ', { hidden: true })).trim();
+    if (typed === key.slice(-6)) {
+      ctx.deps.clear();
+      say(ctx, 'Confirmed: the recovery copy is stored. The screen was cleared; the key is not shown again.');
+      return;
+    }
+    say(ctx, attempt < 3 ? 'That does not match the end of the key. Check the copy in your password manager and try again.' : 'Still not matching.');
+  }
+  ctx.deps.clear();
+  throw new SetupError('The recovery copy was not confirmed, so TIN_ENCRYPTION_KEY was not set and the key shown is void. Run the command again for a new one.');
+}
+
 export async function runSecrets(ctx) {
   const o = ctx.opts;
   const worker = WORKERS[o.env];
@@ -328,10 +373,19 @@ export async function runSecrets(ctx) {
   const rotate = new Set(o.rotate);
   const needed = (name) => !have.has(name) || rotate.has(name);
 
+  // Production never creates the key it cannot get back unless the owner is shown it once to keep a recovery copy
+  if (o.env === 'production' && needed('TIN_ENCRYPTION_KEY') && !o.escrow) {
+    throw new SetupError('Production needs a recovery copy of TIN_ENCRYPTION_KEY before it is created, so nothing was set. Run: npm run setup:cloudflare -- --secrets --env production --escrow');
+  }
+  if (o.escrow && !needed('TIN_ENCRYPTION_KEY')) {
+    throw new SetupError(`TIN_ENCRYPTION_KEY is already set on ${worker}. Cloudflare cannot show it again, so a recovery copy cannot be made now. Nothing was set.`);
+  }
+
   const values = {};
   const vapidPair = ['VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY'];
   const wanted = GENERATED_SECRETS.filter((n) => (vapidPair.includes(n) ? vapidPair.some(needed) : needed(n)));
   Object.assign(values, generateSecrets(wanted));
+  if (o.escrow) await escrowTinKey(ctx, values.TIN_ENCRYPTION_KEY);
   for (const name of TYPED_SECRETS.filter(needed)) {
     const typed = (await ctx.deps.prompt(`${name} (typing is hidden): `, { hidden: true })).trim();
     if (!typed) throw new SetupError(`${name} is needed`);
@@ -493,6 +547,9 @@ export function defaultDeps() {
     readText: (path) => readFileSync(path, 'utf8'),
     writeText: (path, text) => writeFileSync(path, text, { mode: 0o600 }),
     log: (...lines) => lines.forEach((l) => console.log(l)),
+    // for the recovery copy only: straight to the terminal, never through log, and cleared (screen and scrollback) afterwards
+    reveal: (text) => process.stdout.write(text),
+    clear: () => process.stdout.write('[2J[3J[H'),
     env: process.env,
   };
 }

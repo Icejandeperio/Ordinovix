@@ -118,7 +118,15 @@ Production stays empty and undeployed until you decide.
 
 1. **Actions, deploy-production, Run workflow**, type `DEPLOY`, then approve the run as the required reviewer of the `production`
    environment. CI refuses a commit whose `verify` run did not pass. It migrates the production database, builds, deploys, and checks health.
-2. `npm run setup:cloudflare -- --secrets --env production` (fresh values, different from preview).
+2. **Recovery copy of the TIN key, before any real client data.** `npm run setup:cloudflare -- --secrets --env production --escrow`
+   (fresh values, different from preview). Cloudflare cannot show a secret again, and without `TIN_ENCRYPTION_KEY` a restored backup
+   holds TINs nobody can decrypt, so production refuses to create the key without `--escrow`. The script:
+   - generates the key and prints it **once** on your screen (it is never logged or written to a file);
+   - asks you to copy it into your password manager (a secure note, for example "Ordinovix production TIN_ENCRYPTION_KEY");
+   - asks you to type its **last 6 characters** (hidden) to prove it is stored; three wrong answers set nothing and void the key;
+   - clears the screen and the scrollback, then sets the key with the other secrets (the Google client id and secret are asked after).
+   If the Worker already has a `TIN_ENCRYPTION_KEY`, `--escrow` stops: the key cannot be shown again, so make the recovery copy
+   before the first production secrets run.
 3. `npm run setup:cloudflare -- --first-owner you@example.org --env production --org org-main --org-name "Your practice name"`.
 4. Sign in on the production site; it starts with no sample data.
 

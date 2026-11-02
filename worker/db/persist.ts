@@ -9,6 +9,7 @@
  *   command; a concurrent write that lands between the load and the batch trips a guard statement in the batch.
  * - Inserts are grouped into multi-row statements of at most 100 bound values, D1's limit per statement.
  */
+import { devAuthEnabled } from '../dev/sign-in';
 import { getTableColumns, getTableName } from 'drizzle-orm';
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import type { Context } from 'hono';
@@ -130,12 +131,16 @@ function plan(d1: D1Database, before: Snapshot[], after: Snapshot[]): Plan {
   return { statements: [...guardStatements, ...statements, ...updates, ...deletes.reverse()], guards, changed };
 }
 
-/** The version in If-Match, or undefined for `*` ("any version", an update that does not name one, like the mock). Required either way. */
+/**
+ * The version in If-Match. `*` ("any version", an update that does not name one) is accepted only where the dev sign-in is enabled
+ * (a local dev server); in preview and production an update must carry the version it was made from: a missing or `*` value is a
+ * 422, and a stale one is a 409 raised by the batch's guard.
+ */
 export function ifMatchVersion(c: Context<AppEnv>): number | undefined {
   const raw = c.req.header('If-Match')?.trim();
-  if (raw === '*') return undefined;
+  if (raw === '*' && devAuthEnabled(c.env)) return undefined;
   const m = raw ? /^(?:W\/)?"?(\d+)"?$/.exec(raw) : null;
-  if (!m) throw new ValidationError({ 'If-Match': ['Send the record version you loaded in If-Match, for example "3", or * for any version'] });
+  if (!m) throw new ValidationError({ 'If-Match': ['Send the record version you loaded in If-Match, for example "3"'] });
   return Number(m[1]);
 }
 

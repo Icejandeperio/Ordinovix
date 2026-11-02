@@ -15,7 +15,7 @@ const cookie: Record<string, string> = {};
 let n = 0;
 
 beforeAll(async () => {
-  world = await openWorld({ push: stub.deps });
+  world = await openWorld({ push: stub.deps, devAuth: true });
   cookie.owner = await world.cookieFor(PERSONAS.owner);
   cookie.helper = await world.cookieFor(PERSONAS.helper);
   seededPrefs = (await db().prepare('SELECT * FROM user_prefs').all<Record<string, unknown>>()).results;

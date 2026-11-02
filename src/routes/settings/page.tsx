@@ -997,7 +997,7 @@ export function SettingsPage() {
                       setHelpersAcceptError(null);
                       setHelpersCanAccept(e.target.checked);
                       saveSettingsMutation.mutate(
-                        { helpersCanAccept: e.target.checked },
+                        { version: session?.settings.version, helpersCanAccept: e.target.checked },
                         {
                           onSuccess: handleSave,
                           onError: (err) => {

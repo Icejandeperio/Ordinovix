@@ -101,9 +101,10 @@ describe('writes', () => {
     expect(classifyError(stale)).toBe('conflict');
   });
 
-  it('an update that names no version still goes through (If-Match: *), like the mock', async () => {
+  it('an update must name the version it was made from; without one it is refused (U38), with one it goes through', async () => {
     const task = (await owner.tasks.list({ clientId: 'client-maria' })).items[0].task;
-    const saved = await owner.tasks.update(task.id, { notes: 'Called the client' });
+    await expect(owner.tasks.update(task.id, { notes: 'Called the client' })).rejects.toBeInstanceOf(ValidationError);
+    const saved = await owner.tasks.update(task.id, { version: task.version, notes: 'Called the client' });
     expect(saved.notes).toBe('Called the client');
   });
 
