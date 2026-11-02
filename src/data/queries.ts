@@ -47,6 +47,7 @@ import type {
 import {
   NotFoundError,
   ForbiddenError,
+  ValidationError,
 } from '@/domain/errors';
 
 import {
@@ -71,7 +72,9 @@ import {
 import {
   calculateFirstPassRate,
   computeInsights,
+  computeMonthlySummary,
 } from '@/domain/metrics';
+import { EXPORT_HEADERS, pesoDecimal, toCsv } from '@/domain/exports';
 import {
   todayInManila,
   addDaysToDate,
@@ -1096,10 +1099,10 @@ export function createQueries(ctx: QueryContext) {
     async clientChecklist(clientId) {
       assertClient(clientId);
       const client = store.clients.find((c) => c.id === clientId)!;
-      const tasks = store.tasks.filter((t) => t.clientId === clientId);
+      const tasks = store.tasks.filter((t) => t.clientId === clientId && !t.deletedAt);
       const res = tasks.map((t) => ({
         task: t,
-        lines: store.taskLines.filter((l) => l.taskId === t.id),
+        lines: store.taskLines.filter((l) => l.taskId === t.id && !l.deletedAt),
       }));
       return {
         client,
@@ -1110,8 +1113,9 @@ export function createQueries(ctx: QueryContext) {
     async clientHistory(clientId, year) {
       assertClient(clientId);
       const client = store.clients.find((c) => c.id === clientId)!;
-      const tasks = store.tasks.filter((t) => t.clientId === clientId && t.dueDate.startsWith(`${year}`));
-      const payments = store.payments.filter((p) => p.clientId === clientId);
+      const tasks = store.tasks.filter((t) => t.clientId === clientId && !t.deletedAt && t.dueDate.startsWith(`${year}`));
+      // The year's payments, not every payment ever made
+      const payments = store.payments.filter((p) => p.clientId === clientId && !p.deletedAt && p.paidOn.startsWith(`${year}`));
       const total = payments.reduce((acc, p) => acc + p.amount, 0);
       return {
         client,
@@ -1122,19 +1126,54 @@ export function createQueries(ctx: QueryContext) {
     },
     async monthlySummary(month) {
       assertOwner();
-      return {
+      const scoped = scopedInsightData();
+      return computeMonthlySummary(
+        {
+          tasks: scoped.tasks.filter((t) => !t.deletedAt),
+          visits: scoped.visits.filter((v) => !v.deletedAt),
+          visitItems: scoped.visitItems,
+          payments: store.payments.filter((p) => !p.deletedAt && isClientAllowed(p.clientId)),
+          baseline: store.baseline,
+        },
         month,
-        filingsCount: 16,
-        onTimeFilingsCount: 15,
-        totalVisits: 8,
-        firstPassRate: 88,
-        paymentsHandled: 4500000,
-      };
+        todayInManila(),
+      );
     },
     async exportCsv(kind) {
       assertOwner();
-      const csv = `Entity,ID,Timestamp\n${kind},${generateId()},${todayInManila()}`;
-      return new Blob([csv], { type: 'text/csv' });
+      const code = (clientId: ID) => store.clients.find((c) => c.id === clientId)?.code ?? '';
+      let rows: Array<Array<string | number | boolean>>;
+      switch (kind) {
+        case 'clients':
+          rows = (await clients.list()).items.map(({ client: c }) => [c.code, c.displayName, c.registeredName ?? '', c.entityType, c.rdoCode, c.vatStatus, c.status, c.tinMasked ?? '']);
+          break;
+        case 'tasks':
+          rows = (await tasks.list()).items.map(({ task: t, client: c, displayedStatus }) => [t.title || t.templateId || 'Task', c.code, t.period ?? '', t.dueDate, displayedStatus, t.officeAction ? 'YES' : 'NO', t.paymentExpected ? 'YES' : 'NO']);
+          break;
+        case 'lines':
+          rows = store.taskLines
+            .filter((l) => !l.deletedAt && isClientAllowed(l.clientId))
+            .flatMap((l) => {
+              const t = store.tasks.find((x) => x.id === l.taskId);
+              return t && !t.deletedAt ? [[code(l.clientId), t.title || t.templateId || 'Task', l.label, l.copyForm, l.suppliedBy, l.status, l.lateDiscovered ? 'YES' : 'NO']] : [];
+            });
+          break;
+        case 'follow_ups':
+          rows = (await followUps.list()).items.map((fu) => [fu.client.code, fu.followUp.channel, fu.followUp.attemptCount, fu.state, fu.followUp.expectedBy ?? '', [...fu.attempts].sort((a, b) => b.attemptNo - a.attemptNo)[0]?.messageSnapshot ?? '']);
+          break;
+        case 'visits':
+          rows = (await visits.list()).items.map((v) => [v.visit.officeName, v.visit.plannedDate, v.visit.status, v.itemCount, v.isReady ? 'READY' : 'NOT READY', v.visit.departureOverrideReason ?? '']);
+          break;
+        case 'payments':
+          rows = (await payments.list()).items.map((p) => [p.paidOn, code(p.clientId), p.channel, p.referenceNo ?? '', p.paidBy, pesoDecimal(p.amount), p.reimbursement?.status ?? 'none']);
+          break;
+        case 'activity':
+          rows = (await activity.list()).items.map((a) => [a.at, store.users.find((u) => u.id === a.actorId)?.name ?? a.actorId, a.entity, a.action, a.entityId, a.summary]);
+          break;
+        default:
+          throw new ValidationError({ entity: ['Unknown export'] });
+      }
+      return new Blob([toCsv(EXPORT_HEADERS[kind], rows)], { type: 'text/csv;charset=utf-8' });
     },
     async fullBackup() {
       assertOwner();

@@ -3,6 +3,7 @@ import { createApiRepositories } from '@/data/api/repositories';
 import type { Repositories } from '@/data/repositories';
 import { AccessPendingError, ForbiddenError, NotFoundError, UnauthenticatedError, ValidationError, VersionConflictError, classifyError } from '@/domain/errors';
 import { RuleViolationError } from '@/domain/rules';
+import { EXPORT_HEADERS } from '@/domain/exports';
 import { PERSONAS, TEST_ORIGIN, openWorld, type World } from './testing/world';
 
 /**
@@ -78,7 +79,12 @@ describe('reads', () => {
   it('downloads exports as files', async () => {
     const csv = await owner.reports.exportCsv('clients');
     expect(csv).toBeInstanceOf(Blob);
-    expect(await csv.text()).toContain('Entity');
+    const bytes = new Uint8Array(await csv.arrayBuffer());
+    expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]); // the byte-order mark, once
+    const text = new TextDecoder().decode(bytes);
+    expect(text.split('\r\n')[0]).toBe(EXPORT_HEADERS.clients.join(','));
+    expect(text).toContain('RSP');
+    expect(text).not.toMatch(/\d{3}-\d{3}-\d{3}/); // masked TINs only
     expect((await owner.reports.fullBackup()).type).toContain('json');
   });
 });
