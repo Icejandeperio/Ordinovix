@@ -1,6 +1,6 @@
 import type {
   VisitItem, Visit, Task, TaskLine, FollowUp, FollowUpAttempt, Pulse, Channel, StatusGroup, OutcomeCause,
-  Client, DeadlineMove, Baseline, InsightsData, InsightsFilter, InsightsKpi,
+  Client, DeadlineMove, Baseline, InsightsData, InsightsFilter, InsightsKpi, Payment, MonthlySummaryReport,
 } from './types';
 import { daysFromToday, addDaysToDate } from '@/lib/dates';
 import { statusGroup } from './rules';
@@ -595,6 +595,40 @@ function kpi(
 /** First-pass rate (%) before Ordinovix, from the operator's self-reported trips and repeat trips per month; null when unknown. */
 export function firstPassBaselineOf(b: Baseline | null | undefined): number | null {
   return b?.tripsPerMonth && b.repeatTripsPerMonth !== undefined ? Math.max(0, pct(b.tripsPerMonth - b.repeatTripsPerMonth, b.tripsPerMonth)) : null;
+}
+
+export interface MonthlySummaryInput {
+  tasks: Task[];
+  visits: Visit[];
+  visitItems: VisitItem[];
+  payments: Payment[];
+  baseline?: Baseline | null;
+}
+
+/**
+ * The monthly operations summary (spec 11.14): the month's figures from the records, with the same definitions Insights uses per
+ * month, so the printed report and the Insights charts agree. Records arrive already scoped to what the caller may see.
+ */
+export function computeMonthlySummary(input: MonthlySummaryInput, month: string, today: string): MonthlySummaryReport {
+  const months = [month];
+  const filed = input.tasks.filter((t) => (t.submittedAt ?? t.completedAt)?.startsWith(month));
+  const onTimeFiled = filed.filter((t) => (t.submittedAt ?? t.completedAt)!.slice(0, 10) <= t.dueDate);
+  const firstPass = firstPassByMonth(input.visitItems, months)[0];
+  const b = input.baseline;
+  return {
+    month,
+    filingsCount: filed.length,
+    onTimeFilingsCount: onTimeFiled.length,
+    totalVisits: visitsPerMonth(input.visits, months)[0].count,
+    firstPassRate: firstPass.rate ?? 0,
+    firstPassVisits: firstPass.firstVisits,
+    avoidableRepeatTrips: tripsNeedingReturnByMonth(input.visitItems, months)[0].avoidable,
+    onTimeRate: onTimeByMonth(input.tasks, months, today)[0].rate,
+    averageDaysToCollect: calculateDaysToCollect(input.tasks.filter((t) => t.readyAt && monthOf(t.readyAt) === month)),
+    paymentsHandled: input.payments.filter((p) => !p.deletedAt && monthOf(p.paidOn) === month).reduce((sum, p) => sum + p.amount, 0),
+    firstPassBaseline: firstPassBaselineOf(b),
+    repeatTripsBaseline: b?.repeatTripsPerMonth ?? null,
+  };
 }
 
 export function computeInsights(input: InsightsInput, f: InsightsFilter, today: string): InsightsData {

@@ -39,6 +39,7 @@ import type {
   Baseline,
   Pulse,
   ClientChecklistReport,
+  ExportKind,
   ClientHistoryReport,
   MonthlySummaryReport,
   ActivityEvent,
@@ -365,7 +366,7 @@ export interface Repositories {
     clientChecklist(clientId: ID, taskIds?: ID[]): Promise<ClientChecklistReport>;
     clientHistory(clientId: ID, year: number): Promise<ClientHistoryReport>;
     monthlySummary(month: string): Promise<MonthlySummaryReport>;
-    exportCsv(kind: 'clients' | 'tasks' | 'lines' | 'follow_ups' | 'visits' | 'payments' | 'activity', f?: Record<string, unknown>): Promise<Blob>;
+    exportCsv(kind: ExportKind, f?: Record<string, unknown>): Promise<Blob>;
     fullBackup(): Promise<Blob>;
   };
 

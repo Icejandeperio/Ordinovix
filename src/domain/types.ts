@@ -725,12 +725,26 @@ export interface ClientHistoryReport {
 
 export interface MonthlySummaryReport {
   month: string;
+  /** Returns submitted or completed in the month (the "filings" Insights counts per month). */
   filingsCount: number;
+  /** Of those filings, the ones filed on or before their due date. */
   onTimeFilingsCount: number;
+  /** Visits planned in the month that were started (the "visits" Insights counts per month). */
   totalVisits: number;
+  /** First-pass completion (%) of first visits whose outcome was saved in the month; 0 when there were none (see firstPassVisits). */
   firstPassRate: number;
   paymentsHandled: Centavos;
+  firstPassVisits: number;
+  avoidableRepeatTrips: number;
+  /** On-time rate (%) of tasks due in the month, as Insights shows it; null when none were due. */
+  onTimeRate: number | null;
+  averageDaysToCollect: number;
+  /** The operator's self-reported figures before Ordinovix; null when not given. */
+  firstPassBaseline: number | null;
+  repeatTripsBaseline: number | null;
 }
+
+export type ExportKind = 'clients' | 'tasks' | 'lines' | 'follow_ups' | 'visits' | 'payments' | 'activity';
 
 export type InsightsTab = 'overview' | 'trips' | 'chasing' | 'deadlines' | 'workload' | 'clients';
 
