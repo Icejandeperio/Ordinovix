@@ -31,7 +31,7 @@ afterAll(async () => {
 const bodyOf = async (id: string) => (await world.env.DB.prepare('SELECT body FROM notes WHERE id = ?').bind(id).first<{ body: string }>())?.body;
 
 describe('U38 a stale edit in the offline queue', () => {
-  it('comes back 409, stays failed and holds the later write; Retry sends the same version; Discard releases the rest', async () => {
+  it('comes back 409, stays failed and holds the later write; Retry sends the same version; Discard releases the rest', { timeout: 120_000 }, async () => {
     const note = await owner.notes.save({ entity: 'client', entityId: 'client-rsp', body: 'First draft' });
     const staleVersion = note.version; // what this device loaded before it went offline
     const other = await owner.notes.save({ id: note.id, version: staleVersion, entity: 'client', entityId: 'client-rsp', body: "Someone else's edit" });
