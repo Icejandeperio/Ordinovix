@@ -1168,7 +1168,9 @@
       "id": "U36",
       "phase": "P4",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
+      "pr": 47,
+      "evidence": "verify.mjs exit 0 (183 acceptance); tests now passing: U36 (4 acceptance, 6 unit, Worker csv bytes and openPeriod line count, mock-vs-Worker contract for monthlySummary); verifier PASS (docs/state/reviews/U36.md); PR #47",
       "depends_on": [
         "U31"
       ],
