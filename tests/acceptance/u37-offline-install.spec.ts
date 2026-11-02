@@ -85,10 +85,18 @@ test.describe('U37 offline queue', () => {
 
   test('U37 sign-out warns when changes are waiting, keeps them if cancelled, and clears them when confirmed', async ({ page }) => {
     await open(page);
+    // Two changes waiting while the device is online: one the server rejects, and the note held behind it
     await setOffline(page, true);
-    await inApp(page, `async (m) => { await m.repositories.notes.save({ entity: 'client', entityId: 'client-rsp', body: 'U37 waiting note', pinned: false }); }`);
+    await inApp(
+      page,
+      `async (m) => {
+        await m.repositories.lines.setStatus('line-does-not-exist', 'received');
+        await m.repositories.notes.save({ entity: 'client', entityId: 'client-rsp', body: 'U37 waiting note', pinned: false });
+      }`,
+    );
+    await setOffline(page, false);
     const waitingCount = () => inApp<number>(page, `async (m) => m.offlineQueue.getSnapshot().items.length`);
-    expect(await waitingCount()).toBe(1);
+    await expect.poll(waitingCount).toBe(2);
 
     const signOut = page.locator('button[aria-label="Sign out"]:visible').first();
     const messages: string[] = [];
@@ -98,9 +106,9 @@ test.describe('U37 offline queue', () => {
     });
     await signOut.click();
     await expect.poll(() => messages.length).toBe(1);
-    expect(messages[0]).toMatch(/1 change has not been saved yet/);
+    expect(messages[0]).toMatch(/2 changes have not been saved yet/);
     await expect(page).not.toHaveURL(/sign-in/);
-    expect(await waitingCount()).toBe(1);
+    expect(await waitingCount()).toBe(2);
 
     page.once('dialog', (d) => {
       void d.accept();
