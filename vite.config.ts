@@ -43,6 +43,7 @@ export default defineConfig({
   },
   test: {
     include: ['src/**/*.test.{ts,tsx}', 'worker/**/*.test.ts'],
+    setupFiles: ['./vitest.setup.ts'],
   },
   build: {
     rollupOptions: {
