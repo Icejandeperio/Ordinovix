@@ -75,7 +75,7 @@ test.describe('U36 reports with real numbers', () => {
     await page.goto('/reports');
     await page.getByRole('button', { name: /Export Clients/ }).click();
     const [download] = await Promise.all([page.waitForEvent('download'), page.getByText('CSV Spreadsheet').first().click()]);
-    const screenCsv = (await (await import('node:fs/promises')).readFile((await download.path())!, 'utf8')).replace(/^﻿/, '');
+    const screenCsv = (await (await import('node:fs/promises')).readFile((await download.path())!, 'utf8')).replace(String.fromCharCode(0xfeff), '');
     expect(screenCsv.split('\r\n')[0]).toBe(header);
 
     // Every export kind answers with real columns, not the old one-row stub
