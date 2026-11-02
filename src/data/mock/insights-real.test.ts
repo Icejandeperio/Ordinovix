@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { mockRepositories as R, mockDevControls } from './index';
-import { todayInManila } from '@/lib/dates';
 
 const RANGE = { from: '2026-06-01', to: '2026-09-30' };
 
@@ -52,16 +51,13 @@ describe('U12 Insights are computed from the data (B20)', () => {
   });
 
   it('a pulse saved by the owner shows up in the confidence and hours charts', async () => {
-    // The sample pulses cover the six months before today, so pick a month the sample has none for, whatever day this runs
-    const month = `${Number(todayInManila().slice(0, 4)) - 2}-10`;
-    const range = { from: `${month}-01`, to: `${month}-27` };
-    const before = await R.insights.get('overview', range);
-    expect(before.confidenceByMonth).toEqual([{ month, value: null }]);
+    const before = await R.insights.get('overview', { from: '2026-10-01', to: '2026-10-27' });
+    expect(before.confidenceByMonth).toEqual([{ month: '2026-10', value: null }]);
     expect(before.takeaways.confidence).toBe('Not enough data yet.');
-    await R.pulses.save({ month, hoursFindingLastWeek: 3, confidence: 4 });
-    const after = await R.insights.get('overview', range);
-    expect(after.confidenceByMonth).toEqual([{ month, value: 4 }]);
-    expect(after.hoursFindingByMonth).toEqual([{ month, value: 3 }]);
+    await R.pulses.save({ month: '2026-10', hoursFindingLastWeek: 3, confidence: 4 });
+    const after = await R.insights.get('overview', { from: '2026-10-01', to: '2026-10-27' });
+    expect(after.confidenceByMonth).toEqual([{ month: '2026-10', value: 4 }]);
+    expect(after.hoursFindingByMonth).toEqual([{ month: '2026-10', value: 3 }]);
   });
 
   it('the owner baseline appears as the self-reported baseline', async () => {
