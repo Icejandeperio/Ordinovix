@@ -71,7 +71,7 @@ describe('multi-step writes are one batch: a failure leaves no partial write', (
     expect(ok.body.created).toHaveLength(3);
     const after = await snapshot();
     expect(after.tasks).toBe(before.tasks + 3);
-    expect(after.lines).toBeGreaterThanOrEqual(before.lines); // the lines come from the template's requirements (tmpl-1601c has none in the seed)
+    expect(ok.body.lines).toBe(after.lines - before.lines); // the count reported is the lines really written (tmpl-1601c has none in the seed)
     // the second run of the same period applies nothing new (idempotent per client, template and period)
     const again = await send('owner', 'POST', '/api/v1/tasks/open-period', plan('2027-01'));
     expect(again.body.created).toHaveLength(0);

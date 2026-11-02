@@ -1075,10 +1075,11 @@ export function createCommands(ctx: CommandContext) {
     async previewOpenPeriod(period, clientIds) {
       assertOwner();
       const applicable: OpenPeriodPreview['applicableTasks'] = [];
-      const clients = store.clients.filter((c) => clientIds.includes(c.id));
+      const clients = store.clients.filter((c) => !c.deletedAt && clientIds.includes(c.id));
 
       for (const client of clients) {
         for (const tmpl of store.templates) {
+          if (tmpl.appliesTo?.entityTypes && !tmpl.appliesTo.entityTypes.includes(client.entityType)) continue;
           applicable.push({
             clientId: client.id,
             clientName: client.displayName,
@@ -1086,7 +1087,7 @@ export function createCommands(ctx: CommandContext) {
             templateName: tmpl.name,
             kind: tmpl.kind,
             calculatedDue: todayInManila(),
-            linesCount: 2,
+            linesCount: store.reqTemplates.filter((r) => r.taskTemplateId === tmpl.id).length,
           });
         }
       }
@@ -1097,6 +1098,7 @@ export function createCommands(ctx: CommandContext) {
       assertOwner();
       const createdIds: ID[] = [];
       let skipped = 0;
+      let lineCount = 0;
       for (const item of plan.selections) {
         const existing = store.tasks.find(
           (t) => !t.deletedAt && t.clientId === item.clientId && t.templateId === item.templateId && t.period === plan.period
@@ -1108,6 +1110,7 @@ export function createCommands(ctx: CommandContext) {
 
         const tmpl = store.templates.find((t) => t.id === item.templateId);
         const reqs = store.reqTemplates.filter((r) => r.taskTemplateId === item.templateId);
+        const linesBefore = store.taskLines.length;
         const task = await tasks.create(
           {
             clientId: item.clientId,
@@ -1120,8 +1123,10 @@ export function createCommands(ctx: CommandContext) {
           reqs
         );
         createdIds.push(task.id);
+        // Count the lines tasks.create really wrote, not an estimate
+        lineCount += store.taskLines.length - linesBefore;
       }
-      return { created: createdIds, skipped, lines: createdIds.length * 2 };
+      return { created: createdIds, skipped, lines: lineCount };
     },
   };
 

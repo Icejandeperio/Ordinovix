@@ -126,13 +126,15 @@ describe('mockRepositories.insights and Reports Pipeline (M9)', () => {
     });
 
     it('generates monthly operations summary report with KPIs and payments', async () => {
-      const summary = await mockRepositories.reports.monthlySummary('October 2026');
-      expect(summary).toBeDefined();
-      expect(summary.month).toBe('October 2026');
-      expect(summary.filingsCount).toBeGreaterThan(0);
-      expect(summary.onTimeFilingsCount).toBeGreaterThan(0);
-      expect(summary.firstPassRate).toBeGreaterThan(0);
-      expect(summary.paymentsHandled).toBeGreaterThan(0);
+      // U36: the figures are computed from the records, and agree with Insights and Payments for the same month
+      const range = { from: '2026-10-01', to: '2026-10-31' };
+      const summary = await mockRepositories.reports.monthlySummary('2026-10');
+      const october = (await mockRepositories.insights.get('overview', range)).monthlyTrends[0];
+      expect(summary.month).toBe('2026-10');
+      expect(summary.filingsCount).toBe(october.filings);
+      expect(summary.firstPassRate).toBe(october.firstPassRate);
+      expect(summary.onTimeFilingsCount).toBeLessThanOrEqual(summary.filingsCount);
+      expect(summary.paymentsHandled).toBe((await mockRepositories.payments.list(range)).totalAmount);
     });
 
     it('produces a full JSON database backup blob for owner', async () => {

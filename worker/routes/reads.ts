@@ -7,6 +7,7 @@ import { Hono, type Context } from 'hono';
 import { createQueries, type Queries } from '@/data/queries';
 import { ValidationError } from '@/domain/errors';
 import { requireOwner } from '@/domain/policy';
+import { EXPORT_KINDS } from '@/domain/exports';
 import type { InsightsFilter, InsightsTab } from '@/domain/types';
 import { ALL_TABLES, loadQueryData, type QueryTable } from '../db/load';
 import type { AppEnv } from '../env';
@@ -227,9 +228,9 @@ readRoutes.get('/reports/export/:file', async (c) => {
   requireOwner(c.get('actor'));
   const file = c.req.param('file');
   const kind = file.replace(/\.csv$/, '');
-  if (!['clients', 'tasks', 'lines', 'follow_ups', 'visits', 'payments', 'activity'].includes(kind)) throw new ValidationError({ entity: ['Unknown export'] });
+  if (!EXPORT_KINDS.includes(kind as never)) throw new ValidationError({ entity: ['Unknown export'] });
   const blob = await (await queriesFor(c)).reports.exportCsv(kind as never);
-  return new Response('﻿' + (await blob.text()), { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${kind}.csv"`, 'cache-control': 'private, no-store' } });
+  return new Response(await blob.arrayBuffer(), { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${kind}.csv"`, 'cache-control': 'private, no-store' } });
 });
 readRoutes.get('/activity', async (c) => {
   const f = c.req.query();

@@ -134,6 +134,8 @@ async function cases(): Promise<Case[]> {
     { name: 'pulses.list', path: '/api/v1/pulses', call: () => R.pulses.list() },
     { name: 'reports.clientChecklist', path: '/api/v1/reports/client-checklist/client-rsp', call: () => R.reports.clientChecklist('client-rsp') },
     { name: 'reports.clientHistory', path: '/api/v1/reports/client-history/client-rsp?year=2026', call: () => R.reports.clientHistory('client-rsp', 2026) },
+    { name: 'reports.monthlySummary', path: '/api/v1/reports/monthly-summary?month=2026-10', call: () => R.reports.monthlySummary('2026-10') },
+    { name: 'reports.monthlySummary (no records)', path: '/api/v1/reports/monthly-summary?month=2020-01', call: () => R.reports.monthlySummary('2020-01') },
     { name: 'activity.list', path: '/api/v1/activity', call: () => R.activity.list(), paged: true },
     { name: 'search.query', path: '/api/v1/search?q=rivera', call: () => R.search.query('rivera') },
   ];

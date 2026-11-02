@@ -156,6 +156,15 @@ export function useInsights<T extends InsightsTab>(tab: T, filters?: InsightsFil
   });
 }
 
+export function useMonthlySummary(month: string, enabled = true) {
+  return useQuery({
+    queryKey: ['reports', 'monthly-summary', month],
+    queryFn: () => repositories.reports.monthlySummary(month),
+    staleTime: 60 * 1000,
+    enabled,
+  });
+}
+
 export function useNotifications() {
   return useQuery({
     queryKey: ['notifications'],
