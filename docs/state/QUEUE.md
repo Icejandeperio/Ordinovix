@@ -12,17 +12,10 @@ Entry format: a checkbox line `- [ ] <YYYY-MM-DD> U<NN> <short question> (blocks
 lines for Context (one or two lines, link to the PR or draft PR), Options with a recommendation and its reason,
 and, for protected files, the exact change proposed.
 
-- [ ] 2026-10-29 U33 Make the API-mode acceptance job block merges (owner edit to a protected file; blocks nothing)
-  - Context: `verify-api` reported zero failures (169 passed) on PR #43 (run 40841784604) and on the merge to main (run 40842965816); I read the log and the annotations, not only the job's conclusion, because `continue-on-error` keeps it green. Before U39 and U33 it was not like that (the /audit axe finding, a fresh database, the request dropped after a reset).
-  - Options: (A, recommended) make the job honest now, as below, and add `verify-api` to the required status checks of `main` after a week without a red run (the job's own comment asks for that). (B) leave it informational.
-  - Change proposed to `.github/workflows/verify.yml`, step "Acceptance tests against the Worker (one worker; the tests share one database)": delete these three lines
-    ```
-            # Informational until U33 makes API mode dependable (known: /audit axe in API mode). Failures still show as
-            # annotations. U33 queues the owner edit that removes this line so API-mode regressions block merges.
-            continue-on-error: true
-    ```
-    and, in the comment above the job, change "Not a required check yet; make it required once it has been green for a week." to "Required once it has been green for a week." only when you add it to the branch protection rules.
-  - If the job goes red afterwards, the first suspect is a spec that reaches into the mock's in-page store: add its title to the `--grep-invert` list in the same step.
+- [ ] 2026-11-02 U33 Add `verify-api` to the required status checks of `main` (owner; repository setting; blocks nothing)
+  - Context: the API-mode step no longer has `continue-on-error`, so a failing API acceptance test now turns `verify-api` red (decision below). Until the check is required, a red `verify-api` still does not stop `gh pr merge`.
+  - When: after a week without a red run (green since 2026-10-29), so on or after 2026-11-05. Then, in the comment above the job in `.github/workflows/verify.yml`, change "Not a required check yet; make it required once it has been green for a week." to "Required once it has been green for a week."
+  - If the job goes red, the first suspect is a spec that reaches into the mock's in-page store: add its title to the `--grep-invert` list in the same step.
 
 - [ ] 2026-10-28 U10 Practice TIN: should the app store the practice's own TIN? (blocks nothing; decide with the client)
   - Context: U10 removed a hard-coded fake Practice TIN from Settings; OrgSettings has no field for it. Adding it needs a
@@ -113,6 +106,11 @@ and, for protected files, the exact change proposed.
 - 2026-10-27 (from U14 review) More device-time-zone leftovers beyond what audit B25 names: event times labelled `+08:00` but built from the device clock (mock `visits.start` startedAt and recordOutcome outcomeAt, `components/follow-ups/composer.tsx`, the finish-time default in `visits/record.tsx`), "generated/printed" times in `lib/export.ts` and `visits/print.tsx`, and midnight event stamps in `tasks.override`, follow-up respondedAt/resolvedAt and `line.receivedAt`. Use `nowInManila()` and `formatTime`. A B15 test that finishes a visit with empty costs is also missing.
 
 ## Decided
+
+- [x] 2026-10-29 U33 Make the API-mode acceptance job block merges (owner, 2026-11-02)
+  - Decision: option A. The three lines in the step "Acceptance tests against the Worker" (the comment and
+    `continue-on-error: true`) are removed. The step passed in full on the last three runs on `main`
+    (174, 175 and 179 passed; runs #132, #134, #137). Adding the required check stays open above.
 
 - [x] 2026-10-28 U12/U18 and U30: owner edits applied (owner, 2026-10-28)
   - Decision: both flaky-test fixes applied as proposed; the verify-api job added to .github/workflows/verify.yml as proposed
