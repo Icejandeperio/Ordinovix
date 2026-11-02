@@ -42,6 +42,7 @@ import {
   GripVertical,
 } from 'lucide-react';
 import { QueryState } from '@/components/ui/query-state';
+import { useOffline, NEEDS_CONNECTION } from '@/hooks/useOffline';
 
 type TabView =
   | 'all_open'
@@ -55,6 +56,7 @@ type TabView =
   | 'completed';
 
 export function TasksPage() {
+  const offline = useOffline();
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: session } = useSession();
   const { data: clientsData } = useClients();
@@ -316,10 +318,18 @@ export function TasksPage() {
             variant="secondary"
             size="sm"
             onClick={() => setIsOpenPeriodOpen(true)}
+            disabled={offline}
+            title={offline ? NEEDS_CONNECTION : undefined}
+            aria-describedby={offline ? 'open-period-offline-hint' : undefined}
             className="text-xs font-semibold"
           >
             Open Filing Period
           </Button>
+          {offline && (
+            <span id="open-period-offline-hint" className="text-[11px] text-ink-3">
+              Needs a connection
+            </span>
+          )}
 
           <Button
             variant="primary"
