@@ -1228,7 +1228,9 @@
       "id": "U38",
       "phase": "P4",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
+      "pr": 51,
+      "evidence": "verify.mjs exit 0 (193 acceptance); tests now passing: U38 (5 Worker If-Match incl. every update route, 1 stale queued edit, 6 escrow and argument tests with the stubbed runner, 3 acceptance); verifier PASS (docs/state/reviews/U38.md); PR #51",
       "depends_on": [
         "U37"
       ],
