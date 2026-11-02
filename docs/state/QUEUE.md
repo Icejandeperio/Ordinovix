@@ -112,6 +112,9 @@ and, for protected files, the exact change proposed.
 
 ## Decided
 
+- [x] 2026-11-03 U37 persisted query cache: owner decision
+  - Decision (owner, 2026-11-03): option B, `dehydrate`/`hydrate` from `@tanstack/react-query` with `idb-keyval`; no new package. Added to `docs/state/backlog.json` as U40 (T2, depends on U38, `stop_after` is now U40), with what is never persisted: revealed TINs, signed document or file URLs, the session query, notifications, push subscription endpoints, idempotency keys, search-keyed queries and mutations. The proposal text stays under Proposals for reference.
+
 - [x] 2026-10-29 U33 Make the API-mode acceptance job block merges (owner, 2026-11-02)
   - Decision: option A. The three lines in the step "Acceptance tests against the Worker" (the comment and
     `continue-on-error: true`) are removed. The step passed in full on the last three runs on `main`

@@ -2,7 +2,7 @@
   "_about": "Ordinovix work queue for Claude Code. Units run in order, respecting depends_on. Claude may edit only status, pr, evidence and notes. Bug IDs refer to docs/state/QA_AUDIT_2026-10-27.md. Backend units U21-U32 were added by the owner on 2026-10-28 (ADR-0002).",
   "version": 1,
   "created": "2026-10-27",
-  "stop_after": "U38",
+  "stop_after": "U40",
   "phases": {
     "P0": "Demo-ready: fix what would break or embarrass the operator preview",
     "P2": "Contract hardening: make the mock the executable spec for the API",
@@ -1252,6 +1252,36 @@
         "U38"
       ],
       "notes": "Owner decisions (QUEUE.md Decided 2026-10-28): keep If-Match * until this unit; recovery copy via a password manager."
+    },
+    {
+      "id": "U40",
+      "phase": "P4",
+      "tier": "T2",
+      "status": "pending",
+      "depends_on": [
+        "U38"
+      ],
+      "title": "Persisted query cache for offline reading (spec 19.3), with dehydrate/hydrate and idb-keyval",
+      "bugs": [],
+      "scope": [
+        "src/data/query-cache.ts",
+        "src/data/query-cache.test.ts",
+        "src/main.tsx",
+        "src/hooks/useData.ts",
+        "tests/acceptance/u40-*.spec.ts"
+      ],
+      "acceptance": [
+        "The last opened Today, tasks, visits and clients (an allowlist of query keys: today, tasks, visits, clients, client, calendar) are saved to IndexedDB with idb-keyval from dehydrate(), throttled to one write a second, and hydrated before the first render; entries older than 24 hours or from another app version (buster) are dropped on read",
+        "The cache is keyed by the signed-in person; a second person on the same device never reads the first person's cache",
+        "Sign-out clears the cache in the same step that clears the offline queue; a failed sign-out keeps both",
+        "Never persisted, with a test for each: a revealed TIN (clients.revealTin results and any tinFull field), signed document or file URLs (documents.getUrl results and any URL with a signature or expiry), the session query, notifications, push subscription endpoints, idempotency keys, any query keyed by a search string, and mutations",
+        "No new dependency: @tanstack/react-query dehydrate/hydrate and idb-keyval only",
+        "Offline, a reload shows the cached pages (Playwright, in both data sources), and a helper's cache holds only the data their session could read"
+      ],
+      "tests": [
+        "U40"
+      ],
+      "notes": "Owner decision 2026-11-03: option B of the U37 proposal (docs/state/QUEUE.md Decided). Mutations stay with the offline queue."
     }
   ]
 }
