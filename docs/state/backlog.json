@@ -1004,10 +1004,9 @@
       "id": "U32",
       "phase": "P3",
       "tier": "T1",
-      "status": "blocked",
+      "status": "done",
       "pr": 36,
-      "blocked_reason": "awaiting owner: Google OAuth client, setup-cloudflare --secrets, --first-owner and the reseed (QUEUE.md, Open, U31 item); then the access test as a helper and GO_LIVE.md",
-      "evidence": "ids shipped (PR #38) and deploy-preview green (run 40797390461); read-only smoke checks all pass on the live preview (health, 401 without cookie, deep link, security headers, dev sign-in and dev reset 404, unsigned file link 403); GO_LIVE.md shipped (PR #36); left for the owner: OAuth client, --secrets, --first-owner, reseed",
+      "evidence": "ids shipped (PR #38) and deploy-preview green (run 40797390461); read-only smoke checks all pass on the live preview (health, 401 without cookie, deep link, security headers, dev sign-in and dev reset 404, unsigned file link 403); GO_LIVE.md shipped (PR #36); left for the owner: OAuth client, --secrets, --first-owner, reseed; owner confirmed (2026-11-03): OAuth client, --secrets, --first-owner and the reseed are done and Google sign-in works on the preview in an Incognito window",
       "depends_on": [
         "U31"
       ],
@@ -1198,7 +1197,9 @@
       "id": "U37",
       "phase": "P4",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
+      "pr": 50,
+      "evidence": "verify.mjs exit 0 (190 acceptance); tests now passing: U37 (8 queue-hold and 4 install unit tests, 7 acceptance); verifier PASS (docs/state/reviews/U37.md); PR #50",
       "depends_on": [
         "U31"
       ],

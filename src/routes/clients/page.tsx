@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useClients, useMemberships } from '@/hooks/useData';
+import { useOffline, NEEDS_CONNECTION } from '@/hooks/useOffline';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Users,
@@ -27,6 +28,7 @@ type ViewTab = 'active' | 'blocked' | 'auth_attention' | 'archived';
 
 export function ClientsPage() {
   const navigate = useNavigate();
+  const offline = useOffline();
   const { data: clientsData, isLoading, isError, error, refetch } = useClients();
   const { data: memberships } = useMemberships();
 
@@ -198,11 +200,19 @@ export function ClientsPage() {
             variant="primary"
             size="sm"
             onClick={() => setSheetOpen(true)}
+            disabled={offline}
+            title={offline ? NEEDS_CONNECTION : undefined}
+            aria-describedby={offline ? 'new-client-offline-hint' : undefined}
             className="flex items-center gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New Client</span>
           </Button>
+          {offline && (
+            <span id="new-client-offline-hint" className="text-[11px] text-ink-3">
+              Needs a connection
+            </span>
+          )}
         </div>
       </div>
 

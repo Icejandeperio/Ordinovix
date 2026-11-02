@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { devControls, repositories } from '@/data';
+import { devControls, offlineQueue, repositories } from '@/data';
 import { isMockData } from '@/lib/data-source';
 import { deriveViewer } from '@/lib/viewer';
 import { signInPath } from '@/lib/auth';
@@ -30,6 +30,12 @@ export function useSignOut() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   return async () => {
+    // Changes still waiting on this device are lost with the sign-out (spec 19.5): say so first, and let the person stay
+    const { items } = offlineQueue.getSnapshot();
+    if (items.length > 0) {
+      const count = `${items.length} ${items.length === 1 ? 'change has' : 'changes have'}`;
+      if (!window.confirm(`${count} not been saved yet. If you sign out now, ${items.length === 1 ? 'it' : 'they'} will be discarded. Sign out anyway?`)) return;
+    }
     // This device stops getting reminders for the person who signs out; the session is still valid for that call
     await removeThisDevicePush();
     if (!isMockData) {
@@ -43,6 +49,8 @@ export function useSignOut() {
         }
       }
     }
+    // The signed-out device keeps none of this person's waiting changes
+    await offlineQueue.clear();
     // Leave the signed-in screens first, then drop their cached data, so nothing refetches (and nothing signed-out shows data)
     await navigate(signInPath(), { replace: !isMockData });
     if (!isMockData) qc.clear();
