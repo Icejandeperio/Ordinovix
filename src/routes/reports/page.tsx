@@ -16,12 +16,13 @@ import {
   History,
   FileCheck,
 } from 'lucide-react';
-import { useClients, useTasks, useSession } from '@/hooks/useData';
+import { useClients, useTasks, useSession, useMonthlySummary } from '@/hooks/useData';
 import { repositories } from '@/data';
 import { ExportMenu } from '@/components/export-menu';
 import { Select } from '@/components/ui/select';
 import { exportToPdf, type ExportData } from '@/lib/export';
-import { formatPeso, formatDate } from '@/lib/format';
+import { formatPeso, formatDate, todayInManila } from '@/lib/format';
+import { EXPORT_HEADERS } from '@/domain/exports';
 
 export function ReportsPage() {
   const navigate = useNavigate();
@@ -39,13 +40,19 @@ export function ReportsPage() {
   const taskSummaries = tasksData?.items ?? [];
   const isOwner = session?.membership?.role === 'owner';
 
+  // The monthly summary is for the current month in Manila (owner only; a helper is refused by the data layer)
+  const summaryMonth = todayInManila().slice(0, 7);
+  const reportYear = Number(summaryMonth.slice(0, 4));
+  const summaryMonthLabel = new Date(`${summaryMonth}-01T00:00:00Z`).toLocaleDateString('en-PH', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const { data: monthly } = useMonthlySummary(summaryMonth, isOwner);
+
   // 1. Clients CSV
   const getClientsExportData = (): ExportData => {
     return {
       filename: `ordinovix-clients-registry-${new Date().toISOString().slice(0, 10)}`,
       title: 'Clients Registry',
       subtitle: `${session?.org?.name ?? 'Santos Tax Advisory'} · Total Records: ${clientSummaries.length}`,
-      headers: ['Client Code', 'Practice Name', 'Registered Entity Name', 'Entity Type', 'RDO', 'VAT Status', 'Status'],
+      headers: EXPORT_HEADERS.clients,
       rows: clientSummaries.map(({ client: c }) => [
         c.code,
         c.displayName,
@@ -54,6 +61,7 @@ export function ReportsPage() {
         `RDO ${c.rdoCode}`,
         c.vatStatus.replace(/_/g, ' ').toUpperCase(),
         c.status.toUpperCase(),
+        c.tinMasked ?? '—',
       ]),
     };
   };
@@ -64,7 +72,7 @@ export function ReportsPage() {
       filename: `ordinovix-tasks-log-${new Date().toISOString().slice(0, 10)}`,
       title: 'Statutory Obligation Tasks Log',
       subtitle: `${session?.org?.name ?? 'Santos Tax Advisory'} · Total Tasks: ${taskSummaries.length}`,
-      headers: ['Task Code / Title', 'Client Code', 'Period', 'Due Date', 'Status', 'Office Action', 'Payment Expected'],
+      headers: EXPORT_HEADERS.tasks,
       rows: taskSummaries.map(({ task: t, client: c, displayedStatus }) => [
         t.title || t.templateId || 'Task',
         c.code,
@@ -79,7 +87,7 @@ export function ReportsPage() {
 
   // 3. Checklist Lines CSV (Section 11.14)
   const getLinesExportData = async (): Promise<ExportData> => {
-    const tasksRes = await repositories.tasks.list({ limit: 50 });
+    const tasksRes = await repositories.tasks.list();
     const lineRows: string[][] = [];
 
     for (const t of tasksRes.items) {
@@ -101,7 +109,7 @@ export function ReportsPage() {
       filename: `ordinovix-checklist-lines-${new Date().toISOString().slice(0, 10)}`,
       title: 'Document Checklist Requirements & Verification Log',
       subtitle: `Total Lines Tracked: ${lineRows.length}`,
-      headers: ['Client', 'Task', 'Line Requirement', 'Copy Form', 'Supplied By', 'Status', 'Late Discovered'],
+      headers: EXPORT_HEADERS.lines,
       rows: lineRows.length > 0 ? lineRows : [['—', '—', 'No active lines recorded', '—', '—', '—', '—']],
     };
   };
@@ -113,7 +121,7 @@ export function ReportsPage() {
       filename: `ordinovix-follow-ups-log-${new Date().toISOString().slice(0, 10)}`,
       title: 'Client Chasing & Follow-up Communications Log',
       subtitle: `Total Follow-ups: ${fuRes.items.length}`,
-      headers: ['Client', 'Channel', 'Attempts', 'Status', 'Expected By', 'Last Message Snapshot'],
+      headers: EXPORT_HEADERS.follow_ups,
       rows: fuRes.items.map((fu) => [
         fu.client.code,
         fu.followUp.channel.toUpperCase(),
@@ -132,7 +140,7 @@ export function ReportsPage() {
       filename: `ordinovix-visits-outcomes-${new Date().toISOString().slice(0, 10)}`,
       title: 'Office Counter Visits & Trip Outcomes',
       subtitle: `Total Visits: ${visitsRes.items.length}`,
-      headers: ['Office', 'Planned Date', 'Status', 'Items Count', 'Ready to Go', 'Departure Override'],
+      headers: EXPORT_HEADERS.visits,
       rows: visitsRes.items.map((v) => [
         v.visit.officeName,
         formatDate(v.visit.plannedDate),
@@ -151,10 +159,10 @@ export function ReportsPage() {
       filename: `ordinovix-payments-summary-${new Date().toISOString().slice(0, 10)}`,
       title: 'Tax Payments & Remittances Summary',
       subtitle: `Total Remitted: ${formatPeso(paymentsRes.totalAmount)} · Transactions: ${paymentsRes.items.length}`,
-      headers: ['Paid On', 'Client', 'Channel', 'Reference No.', 'Paid By', 'Amount (PHP)', 'Reimbursement Status'],
+      headers: EXPORT_HEADERS.payments,
       rows: paymentsRes.items.map((p) => [
         formatDate(p.paidOn),
-        p.clientId,
+        clientSummaries.find((cs) => cs.client.id === p.clientId)?.client.code ?? p.clientId,
         p.channel.toUpperCase(),
         p.referenceNo || 'NO-REF',
         p.paidBy.toUpperCase(),
@@ -166,12 +174,12 @@ export function ReportsPage() {
 
   // 7. Audit Activity CSV
   const getAuditExportData = async (): Promise<ExportData> => {
-    const activityRes = await repositories.activity.list({ limit: 100 });
+    const activityRes = await repositories.activity.list();
     return {
       filename: `ordinovix-audit-activity-${new Date().toISOString().slice(0, 10)}`,
       title: 'Practice Activity & Audit Log',
       subtitle: 'Immutable Sequential Event Trail',
-      headers: ['Timestamp (PHT)', 'Actor', 'Entity', 'Action', 'Entity ID', 'Summary'],
+      headers: EXPORT_HEADERS.activity,
       rows: activityRes.items.map((a) => [
         a.at,
         a.actorId,
@@ -215,13 +223,13 @@ export function ReportsPage() {
 
   // Client History Report (Section 11.14: "One client, one year: every task, outcome, evidence list")
   const handleGenerateClientHistory = async () => {
-    const history = await repositories.reports.clientHistory(selectedClientId, 2026);
+    const history = await repositories.reports.clientHistory(selectedClientId, reportYear);
     const client = history.client;
 
     exportToPdf({
-      filename: `client-history-${client.code}-2026`,
+      filename: `client-history-${client.code}-${reportYear}`,
       title: `Client Annual Filing History — ${client.displayName}`,
-      subtitle: `${client.code} · Year 2026 · Total Tax Payments: ${formatPeso(history.totalPayments)} · Paper: ${paperSize.toUpperCase()}`,
+      subtitle: `${client.code} · Year ${reportYear} · Total Tax Payments: ${formatPeso(history.totalPayments)} · Paper: ${paperSize.toUpperCase()}`,
       headers: ['Task / Obligation', 'Due Date', 'Status', 'Filing Channel', 'Payment Handled'],
       rows: history.tasks.map((t) => [
         t.task.title || t.task.templateId || 'Task',
@@ -233,19 +241,34 @@ export function ReportsPage() {
     });
   };
 
-  // Monthly Operations Summary PDF (Section 11.14 & 13)
+  // Monthly Operations Summary PDF (Section 11.14 & 13): the month's real figures, with "—" where there is nothing to measure
   const handleGenerateMonthlySummary = () => {
+    if (!monthly) return;
+    const pts = (n: number) => `${n > 0 ? '+' : ''}${n} pts`;
+    const firstPass = monthly.firstPassVisits > 0 ? monthly.firstPassRate : null;
     exportToPdf({
-      filename: `ordinovix-monthly-summary-october-2026`,
+      filename: `ordinovix-monthly-summary-${summaryMonth}`,
       title: 'Monthly Operations & Compliance Summary',
-      subtitle: `Period: October 2026 · Operator: Ana Santos (Owner) · Paper: ${paperSize.toUpperCase()}`,
+      subtitle: `Period: ${summaryMonthLabel} · Operator: ${session?.user.name ?? '—'} (Owner) · Paper: ${paperSize.toUpperCase()}`,
       headers: ['Operational Metric', 'Current Month Result', 'Baseline Benchmark', 'Variance'],
       rows: [
-        ['First-Pass Completion Rate', '86.0%', '55.0% (Self-reported)', '+31.0 pts (Exceeding target)'],
-        ['Avoidable Repeat Counter Trips', '1 trip', '4 trips / month', '-3 trips (75% Reduction)'],
-        ['On-Time Return Filing Compliance', '94.0%', '90.0% SLA', '+4.0 pts (Compliant)'],
-        ['Average Days to Collect Documents', '1.8 days', '6.8 days', '5.0 days faster turnaround'],
-        ['Total Processed Tax Remittances', '₱1,450,000.00', '—', '100% reconciled proof'],
+        [
+          'First-Pass Completion Rate',
+          firstPass === null ? '—' : `${firstPass}%`,
+          monthly.firstPassBaseline === null ? '—' : `${monthly.firstPassBaseline}% (self-reported)`,
+          firstPass === null || monthly.firstPassBaseline === null ? '—' : pts(firstPass - monthly.firstPassBaseline),
+        ],
+        [
+          'Avoidable Repeat Counter Trips',
+          `${monthly.avoidableRepeatTrips} ${monthly.avoidableRepeatTrips === 1 ? 'trip' : 'trips'}`,
+          monthly.repeatTripsBaseline === null ? '—' : `${monthly.repeatTripsBaseline} trips / month (self-reported)`,
+          monthly.repeatTripsBaseline === null ? '—' : `${monthly.avoidableRepeatTrips - monthly.repeatTripsBaseline} trips`,
+        ],
+        ['On-Time Return Filing Compliance', monthly.onTimeRate === null ? '—' : `${monthly.onTimeRate}%`, '—', '—'],
+        ['Returns Filed This Month', `${monthly.filingsCount} (${monthly.onTimeFilingsCount} on or before the due date)`, '—', '—'],
+        ['Counter Visits Made', String(monthly.totalVisits), '—', '—'],
+        ['Median Days to Collect Documents', monthly.averageDaysToCollect ? `${monthly.averageDaysToCollect} days` : '—', '—', '—'],
+        ['Total Recorded Tax Payments', formatPeso(monthly.paymentsHandled), '—', '—'],
       ],
     });
   };
@@ -433,7 +456,7 @@ export function ReportsPage() {
                   </Select>
                 </div>
                 <div className="text-xs text-[var(--ink-3)]">
-                  Reporting Year: <strong className="text-[var(--ink)]">2026</strong>
+                  Reporting Year: <strong className="text-[var(--ink)]">{reportYear}</strong>
                 </div>
               </div>
             </div>
@@ -466,15 +489,15 @@ export function ReportsPage() {
               <div className="p-3 rounded-md bg-[var(--sheet-2)] border border-[var(--rule)] space-y-1.5 text-xs">
                 <div className="flex justify-between">
                   <span className="text-[var(--ink-3)]">Month:</span>
-                  <span className="font-semibold text-[var(--ink)]">October 2026</span>
+                  <span className="font-semibold text-[var(--ink)]">{summaryMonthLabel}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--ink-3)]">Operator:</span>
-                  <span className="font-semibold text-[var(--ink)]">Ana Santos (Owner)</span>
+                  <span className="font-semibold text-[var(--ink)]">{session?.user.name ?? '—'}{isOwner ? ' (Owner)' : ''}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[var(--ink-3)]">Status:</span>
-                  <span className="font-semibold text-[var(--good-fg)]">Verified</span>
+                  <span className="text-[var(--ink-3)]">Returns filed:</span>
+                  <span className="font-semibold text-[var(--ink)]">{monthly ? monthly.filingsCount : '—'}</span>
                 </div>
               </div>
             </div>
@@ -482,6 +505,7 @@ export function ReportsPage() {
             <button
               type="button"
               onClick={handleGenerateMonthlySummary}
+              disabled={!monthly}
               className="w-full flex items-center justify-center gap-2 py-2 rounded-md border border-[var(--rule)] bg-[var(--sheet)] text-[var(--ink)] text-xs font-semibold hover:bg-[var(--sheet-2)] transition-colors cursor-pointer"
             >
               <Printer className="w-4 h-4 text-[var(--ink-2)]" />
