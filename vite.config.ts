@@ -42,7 +42,7 @@ export default defineConfig({
     host: true,
   },
   test: {
-    include: ['src/**/*.test.{ts,tsx}', 'worker/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}', 'worker/**/*.test.ts', 'scripts/**/*.test.mjs'],
     setupFiles: ['./vitest.setup.ts'],
   },
   build: {

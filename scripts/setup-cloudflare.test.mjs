@@ -43,6 +43,8 @@ function world(options = {}) {
     ghSignedIn: options.ghSignedIn ?? true,
     answers: { token: TOKEN, googleId: GOOGLE_ID, googleSecret: GOOGLE_SECRET, subdomain: 'new-sub', account: '1', ...options.answers },
     executedSql: [],
+    revealed: [],
+    cleared: 0,
     fetches: [],
     tempFileSeen: undefined,
   };
@@ -117,11 +119,25 @@ function world(options = {}) {
       w.prompts.push({ question, hidden });
       w.timeline.push({ kind: 'prompt', question, hidden });
       if (/token/i.test(question)) return w.answers.token;
+      if (/LAST 6/.test(question)) {
+        // the owner types the end of the key they just copied (or something wrong, when a test says so)
+        const typed = w.answers.escrowTyped;
+        if (typed) return typed[0];
+        return w.revealed.at(-1).trim().slice(-6);
+      }
       if (/GOOGLE_CLIENT_ID/.test(question)) return w.answers.googleId;
       if (/GOOGLE_CLIENT_SECRET/.test(question)) return w.answers.googleSecret;
       if (/Subdomain/i.test(question)) return w.answers.subdomain;
       if (/account/i.test(question)) return w.answers.account;
       throw new Error(`unexpected prompt: ${question}`);
+    },
+    reveal: (text) => {
+      w.revealed.push(text);
+      w.timeline.push({ kind: 'reveal' });
+    },
+    clear: () => {
+      w.cleared += 1;
+      w.timeline.push({ kind: 'clear' });
     },
     run: async (cmd, args, o = {}) => {
       w.runs.push({ cmd, args, input: o.input, env: o.env });
@@ -337,7 +353,7 @@ describe('phase 2: secrets', () => {
   it('gives each environment its own values', async () => {
     const a = world({ secrets: { preview: [], production: [] } });
     await main(['--secrets'], a.deps);
-    await main(['--secrets', '--env', 'production'], a.deps);
+    await main(['--secrets', '--env', 'production', '--escrow'], a.deps);
     const [preview, production] = a.w.bulk;
     expect(production.env).toBe('production');
     for (const name of ['BETTER_AUTH_SECRET', 'FILE_URL_SIGNING_KEY', 'TIN_ENCRYPTION_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_PUBLIC_KEY']) {
@@ -355,6 +371,92 @@ describe('phase 2: secrets', () => {
     const partial = world({ secrets: { preview: ['TIN_ENCRYPTION_KEY', 'BETTER_AUTH_SECRET', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'] } });
     await main(['--secrets'], partial.deps);
     expect(Object.keys(partial.w.bulk[0].values).sort()).toEqual(['FILE_URL_SIGNING_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_PUBLIC_KEY']);
+  });
+
+  it('arguments: --escrow is for production secrets only', () => {
+    expect(parseArgs(['--secrets', '--env', 'production', '--escrow'])).toMatchObject({ phase: 'secrets', env: 'production', escrow: true });
+    expect(parseArgs(['--secrets']).escrow).toBe(false);
+    expect(() => parseArgs(['--secrets', '--escrow'])).toThrow(/--escrow goes with --secrets --env production/);
+    expect(() => parseArgs(['--env', 'production', '--escrow'])).toThrow(/--escrow goes with/);
+    expect(() => parseArgs(['--first-owner', 'jan@example.org', '--env', 'production', '--org', 'org-main', '--escrow'])).toThrow(/--escrow goes with/);
+  });
+
+  it('production refuses to create the TIN key without --escrow, and sets nothing', async () => {
+    const { w, deps } = world({ secrets: { production: [] } });
+    expect(await main(['--secrets', '--env', 'production'], deps)).toBe(1);
+    expect(w.bulk).toBeUndefined();
+    expect(w.revealed).toHaveLength(0);
+    expect(w.prompts.filter((p) => /GOOGLE/.test(p.question))).toHaveLength(0);
+    expect(w.logs.join('\n')).toMatch(/--secrets --env production --escrow/);
+    // a production Worker that already has the key is not blocked: there is nothing to create
+    const have = world({ secrets: { production: ['TIN_ENCRYPTION_KEY'] } });
+    expect(await main(['--secrets', '--env', 'production'], have.deps)).toBe(0);
+    expect(Object.keys(have.w.bulk[0].values)).not.toContain('TIN_ENCRYPTION_KEY');
+  });
+
+  it('--escrow shows the key once to the terminal, asks for its last 6 characters, clears the screen, then sets that same key', async () => {
+    const { w, deps } = world({ secrets: { production: [] } });
+    expect(await main(['--secrets', '--env', 'production', '--escrow'], deps)).toBe(0);
+
+    expect(w.revealed).toHaveLength(1);
+    const key = w.revealed[0].trim();
+    expect(Buffer.from(key, 'base64')).toHaveLength(32);
+    expect(w.bulk).toHaveLength(1);
+    expect(w.bulk[0].values.TIN_ENCRYPTION_KEY).toBe(key); // the one the owner stored is the one that was set
+
+    // order: shown, confirmed (hidden prompt), screen cleared, and only then sent to Cloudflare
+    const isLast6 = (t) => t.kind === 'prompt' && /LAST 6/.test(t.question);
+    const kinds = w.timeline.filter((t) => t.kind === 'reveal' || t.kind === 'clear' || isLast6(t) || (t.kind === 'run' && t.args.includes('bulk'))).map((t) => t.kind);
+    expect(kinds).toEqual(['reveal', 'prompt', 'clear', 'run']);
+    expect(w.timeline.find(isLast6).hidden).toBe(true);
+
+    // the key is never logged, passed as an argument, put in a prompt text or written to a file; it travels on stdin only
+    expect(everythingPrinted(w)).not.toContain(key);
+    expect(JSON.stringify(w.writes)).not.toContain(key);
+    expect(w.runs.filter((r) => r.input?.includes(key))).toHaveLength(1);
+    expect(w.logs.join('\n')).toMatch(/recovery copy is stored/);
+  });
+
+  it('--escrow: a wrong answer can be retried, and three wrong answers set nothing and void the key', async () => {
+    const retry = world({ secrets: { production: [] } });
+    let first = true;
+    const prompt = retry.deps.prompt;
+    retry.deps.prompt = async (q, o) => {
+      if (/LAST 6/.test(q) && first) {
+        first = false;
+        retry.w.timeline.push({ kind: 'prompt', question: q, hidden: true });
+        return 'nope00';
+      }
+      return prompt(q, o);
+    };
+    expect(await main(['--secrets', '--env', 'production', '--escrow'], retry.deps)).toBe(0);
+    expect(retry.w.bulk).toHaveLength(1);
+    expect(retry.w.logs.join('\n')).toMatch(/does not match/);
+
+    const bad = world({ secrets: { production: [] }, answers: { escrowTyped: ['aaaaaa'] } });
+    expect(await main(['--secrets', '--env', 'production', '--escrow'], bad.deps)).toBe(1);
+    expect(bad.w.bulk).toBeUndefined();
+    expect(bad.w.cleared).toBe(1);
+    expect(bad.w.prompts.filter((p) => /LAST 6/.test(p.question))).toHaveLength(3);
+    expect(bad.w.prompts.filter((p) => /GOOGLE/.test(p.question))).toHaveLength(0);
+    expect(bad.w.logs.join('\n')).toMatch(/was not confirmed/);
+    expect(everythingPrinted(bad.w)).not.toContain(bad.w.revealed[0].trim());
+  });
+
+  it('--escrow when the production key already exists says it cannot be shown again, and sets nothing', async () => {
+    const { w, deps } = world({ secrets: { production: ['TIN_ENCRYPTION_KEY'] } });
+    expect(await main(['--secrets', '--env', 'production', '--escrow'], deps)).toBe(1);
+    expect(w.bulk).toBeUndefined();
+    expect(w.revealed).toHaveLength(0);
+    expect(w.logs.join('\n')).toMatch(/cannot show it again/);
+  });
+
+  it('--dry-run names the escrow step and calls nothing', async () => {
+    const { w, deps } = world();
+    expect(await main(['--secrets', '--env', 'production', '--escrow', '--dry-run'], deps)).toBe(0);
+    expect(w.logs.join('\n')).toMatch(/--escrow: show TIN_ENCRYPTION_KEY once/);
+    expect(w.runs).toHaveLength(0);
+    expect(w.revealed).toHaveLength(0);
   });
 
   it('--rotate replaces one named secret and nothing else', async () => {

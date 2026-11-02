@@ -381,6 +381,7 @@ export function CalendarPage() {
               return (
                 <div
                   key={dateStr}
+                  data-date={dateStr}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     e.preventDefault();
