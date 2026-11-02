@@ -592,6 +592,11 @@ function kpi(
   };
 }
 
+/** First-pass rate (%) before Ordinovix, from the operator's self-reported trips and repeat trips per month; null when unknown. */
+export function firstPassBaselineOf(b: Baseline | null | undefined): number | null {
+  return b?.tripsPerMonth && b.repeatTripsPerMonth !== undefined ? Math.max(0, pct(b.tripsPerMonth - b.repeatTripsPerMonth, b.tripsPerMonth)) : null;
+}
+
 export function computeInsights(input: InsightsInput, f: InsightsFilter, today: string): InsightsData {
   const preset = presetRange('last_6_months', today);
   const from = f.from ?? preset.from;
@@ -623,7 +628,7 @@ export function computeInsights(input: InsightsInput, f: InsightsFilter, today: 
   const rAttempts = attempts.filter((a) => inRange(a.sentAt, from, to));
 
   const b = input.baseline;
-  const firstPassBaseline = b?.tripsPerMonth && b.repeatTripsPerMonth !== undefined ? Math.max(0, pct(b.tripsPerMonth - b.repeatTripsPerMonth, b.tripsPerMonth)) : null;
+  const firstPassBaseline = firstPassBaselineOf(b);
 
   // ---- Overview
   const firstPass = firstPassByMonth(items, months);
