@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { InstallApp } from '@/components/install-app';
 import { useSession, useSignOut, useUnreadNotificationsCount, useViewer } from '@/hooks/useData';
 import { devControls } from '@/data';
 import {
@@ -28,7 +29,6 @@ import {
   EyeOff,
   Lock,
   WifiOff,
-  Download,
   LogOut,
 } from 'lucide-react';
 import { DevMenu } from './dev-menu';
@@ -60,7 +60,6 @@ export function AppShell() {
   const isModalOpen = useIsCenterModalOpen();
   const [commandOpen, setCommandOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
 
   // Privacy Mode State (Section 19.5: Shift+P)
   const [privacyMode, setPrivacyMode] = useState(() => {
@@ -249,16 +248,6 @@ export function AppShell() {
       events.forEach((ev) => window.removeEventListener(ev, resetIdleTimer));
     };
   }, [isIdleLocked]);
-
-  // Capture PWA install prompt (Section 19.3)
-  useEffect(() => {
-    const handleBeforeInstall = (e: Event) => {
-      e.preventDefault();
-      setInstallPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-  }, []);
 
   const location = useLocation();
 
@@ -572,21 +561,8 @@ export function AppShell() {
                 <span className="hidden lg:inline">{privacyMode ? 'Privacy On' : 'Privacy'}</span>
               </button>
 
-              {/* Install App Button (Section 19.3) */}
-              {installPrompt && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    installPrompt.prompt();
-                    setInstallPrompt(null);
-                  }}
-                  className="hidden lg:flex items-center gap-1 px-2.5 py-1 rounded-control bg-sheet-2 border border-rule text-xs font-semibold text-ink hover:bg-sheet-3 transition-colors cursor-pointer"
-                  title="Install Ordinovix application"
-                >
-                  <Download className="w-3.5 h-3.5 text-stamp" />
-                  <span>Install</span>
-                </button>
-              )}
+              {/* Install app (Section 19.3) */}
+              <InstallApp />
 
               <div className="relative">
                 <button

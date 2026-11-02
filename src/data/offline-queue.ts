@@ -181,6 +181,8 @@ export function createOfflineQueue(deps: QueueDeps) {
       items = items.filter((i) => i.id !== id);
       await persist();
       emit();
+      // The writes that were held behind it go now
+      await this.replay();
     },
 
     /** Drops every waiting write and the saved copy (sign-out, after the person was warned). */

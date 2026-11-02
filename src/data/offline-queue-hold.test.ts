@@ -96,7 +96,6 @@ describe('U37 a failed write holds the later ones', () => {
     await queue.replay();
     const [failed] = await queue.list();
     await queue.discard(failed.id);
-    await queue.replay();
     expect(calls.map((c) => c.args[0])).toEqual(['a', 'b']);
     expect(await queue.list()).toEqual([]);
   });
