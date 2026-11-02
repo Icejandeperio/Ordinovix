@@ -1197,7 +1197,9 @@
       "id": "U37",
       "phase": "P4",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
+      "pr": 50,
+      "evidence": "verify.mjs exit 0 (190 acceptance); tests now passing: U37 (8 queue-hold and 4 install unit tests, 7 acceptance); verifier PASS (docs/state/reviews/U37.md); PR #50",
       "depends_on": [
         "U31"
       ],
