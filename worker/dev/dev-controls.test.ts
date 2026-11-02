@@ -92,8 +92,8 @@ describe('POST /dev/reset', () => {
 });
 
 describe('If-Match', () => {
-  it('"*" accepts an update at any version, while a stale number is still a 409 with the current record', { timeout: 180_000 }, async () => {
-    world = await openWorld();
+  it('"*" accepts an update at any version on a local dev server, while a stale number is still a 409 with the current record', { timeout: 180_000 }, async () => {
+    world = await openWorld({ devAuth: true });
     const cookie = await world.cookieFor(PERSONAS.owner);
     const id = 'client-maria';
     const one = await write(world, cookie, 'PATCH', `/api/v1/clients/${id}`, { notes: 'first' }, { 'If-Match': '*' });
