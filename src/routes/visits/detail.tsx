@@ -85,7 +85,10 @@ export function VisitDetailPage() {
     const questions = itemQuestions[itemId];
     if (questions === undefined) return;
     try {
-      await repositories.visits.updateItem(itemId, { questions });
+      // The item's version as this screen loaded it; the next save starts from the version this one produced
+      const version = data?.items.find((i) => i.item.id === itemId)?.item.version;
+      await repositories.visits.updateItem(itemId, { version, questions });
+      await refetch();
       toast.success('Questions saved');
     } catch (err: any) {
       toast.error('Failed to save questions');

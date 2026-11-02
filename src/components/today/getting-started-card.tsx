@@ -16,7 +16,7 @@ export function GettingStartedCard() {
   const done = doneSteps(progress);
   const dismiss = () =>
     save.mutate(
-      { onboarding: { done, dismissed: true } },
+      { version: session.settings.version, onboarding: { done, dismissed: true } },
       { onError: (err) => toast.error((err as Error).message || 'Could not hide the card. Try again.') },
     );
 

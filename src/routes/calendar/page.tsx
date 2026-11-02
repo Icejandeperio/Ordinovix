@@ -172,11 +172,12 @@ export function CalendarPage() {
   };
 
   // Drag-and-drop or move handlers
-  const handleMoveVisit = async (visitId: ID, targetDate: string, prevDate: string) => {
+  const handleMoveVisit = async (visitId: ID, targetDate: string, prevDate: string, version?: number) => {
     try {
-      await updateVisitMutation.mutateAsync({
+      // The move carries the version the calendar showed; Undo carries the version the move produced
+      const moved = await updateVisitMutation.mutateAsync({
         id: visitId,
-        updates: { plannedDate: targetDate },
+        updates: { version, plannedDate: targetDate },
       });
       toast.success(`Visit rescheduled to ${formatDate(targetDate)}`, {
         action: {
@@ -184,7 +185,7 @@ export function CalendarPage() {
           onClick: () => {
             updateVisitMutation.mutate({
               id: visitId,
-              updates: { plannedDate: prevDate },
+              updates: { version: moved.version, plannedDate: prevDate },
             });
           },
         },
@@ -388,7 +389,7 @@ export function CalendarPage() {
                     try {
                       const payload = JSON.parse(dragData);
                       if (payload.type === 'visit') {
-                        handleMoveVisit(payload.id, dateStr, payload.prevDate);
+                        handleMoveVisit(payload.id, dateStr, payload.prevDate, payload.version);
                       } else if (payload.type === 'task') {
                         setTaskToReschedule({
                           taskId: payload.id,
@@ -498,6 +499,7 @@ export function CalendarPage() {
                                 JSON.stringify({
                                   type: 'visit',
                                   id: item.id,
+                                  version: meta?.version,
                                   prevDate: item.date,
                                   officeName: meta?.officeName,
                                 })

@@ -983,6 +983,7 @@ export function createQueries(ctx: QueryContext) {
               assigneeUserId: v.assigneeUserId,
               isReady: summary.isReady,
               status: v.status,
+              version: v.version,
             },
           });
         });

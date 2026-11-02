@@ -79,9 +79,12 @@ export function WelcomePage() {
   // Progress comes from what the last save returned, so a step saved a moment ago is never overwritten by a stale read
   const savedProgress = useRef<OnboardingProgress | undefined>(undefined);
   const markDone = (key: OnboardingStep) => withStepDone(savedProgress.current ?? settings?.onboarding, key);
+  // Each save is made from the version the one before it returned (the sequence would otherwise save from a stale one)
+  const savedVersion = useRef<number | undefined>(undefined);
   const saveProgress = async (s: Parameters<typeof saveSettings.mutateAsync>[0]) => {
-    const saved = await saveSettings.mutateAsync(s);
+    const saved = await saveSettings.mutateAsync({ ...s, version: savedVersion.current ?? settings?.version });
     savedProgress.current = saved.onboarding;
+    savedVersion.current = saved.version;
   };
 
   /** Saves what the current step collected through the repository. Returns false when it failed (the error is shown). */
@@ -102,7 +105,7 @@ export function WelcomePage() {
         if (clientChoice !== 'later') await saveProgress({ onboarding: markDone('clients') });
       } else if (step === 3) {
         for (const t of templates ?? []) {
-          if (isOn(t.id, t.active) !== t.active) await saveTemplate.mutateAsync({ template: { id: t.id, active: !t.active } });
+          if (isOn(t.id, t.active) !== t.active) await saveTemplate.mutateAsync({ template: { id: t.id, version: t.version, active: !t.active } });
         }
         await saveProgress({ onboarding: markDone('templates') });
       } else if (step === 4) {
