@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-11-04 U41 Demo readiness: offline sign-out ends the session; no simulated UI in the API build — blocked
+- Changed: `src/lib/pending-sign-out.ts` (new), `src/data/api/http.ts` (nothing else is sent while a sign-out is owed; it is sent first, at start-up and on `online`), `src/hooks/useData.ts`, `src/app/shell.tsx`, `src/main.tsx`; task detail uploads use `FileDrop`; Today preview uses `PreviewDrawer`; Settings backup panel and Welcome wording differ in the API build
+- Evidence: verify.mjs exit 0 (201 acceptance, 6 new unit); verifier FAIL (docs/state/reviews/U41.md): in API mode the committed U40 test reopens /clients offline after sign-out and now lands on /sign-in; PR draft
+- Notes: awaiting owner: approve the diff to the protected U40 test (QUEUE.md). API-mode suite not run locally (.dev.vars is off limits); CI verify-api is the check. Copy changed only for the unit items.
 ## 2026-11-03 U40 Persisted query cache for offline reading (spec 19.3), with dehydrate/hydrate and idb-keyval — done
 - Changed: `src/data/query-cache.ts` (new), `src/main.tsx` (starts the cache before the first render; offline, a failed refresh keeps the data on screen), `src/hooks/useData.ts` (sign-out clears the saved cache and the queue whether or not the server could be reached), tests
 - Evidence: verify.mjs exit 0; tests now passing: U40 (13 unit, 4 acceptance in mock and API mode); red before: the module did not exist, and an early acceptance run caught the last-person marker surviving another account's sign-in; verifier PASS (docs/state/reviews/U40.md); PR #54

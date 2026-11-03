@@ -12,6 +12,23 @@ Entry format: a checkbox line `- [ ] <YYYY-MM-DD> U<NN> <short question> (blocks
 lines for Context (one or two lines, link to the PR or draft PR), Options with a recommendation and its reason,
 and, for protected files, the exact change proposed.
 
+- [ ] 2026-11-04 U41 Approve a change to the committed U40 test "signing out while offline clears the saved copy and the queue..." (blocks U41)
+  - Context: U41 criterion 1 keeps the app signed out after an offline sign-out until the server sign-out is sent, so reopening `/clients` goes to `/sign-in`. In API mode the committed U40 test reopens `/clients` offline after signing out and expects `#main-content`, which now fails (found by the verifier, docs/state/reviews/U41.md; only `verify-api` runs it). `tests/acceptance/u40-offline-cache.spec.ts` is protected, so the agent did not edit it. Draft PR for U41 is open and not merged.
+  - Options: (A, recommended) apply the diff below: in API mode the test expects `/sign-in` and every storage check after it stays; mock mode is unchanged. (B) exclude the test in API mode with `--grep-invert` in `.github/workflows/verify.yml` (loses the check that nothing is restored).
+  - Proposed diff, in `tests/acceptance/u40-offline-cache.spec.ts` (test starting at line 69):
+    ```diff
+     await page.goto('/clients');
+    -await expect(page.locator('#main-content')).toBeVisible();
+    +if (process.env.VITE_DATA_SOURCE === 'api') {
+    +  // U41: the server never heard about the sign-out, so the person stays signed out
+    +  await expect(page).toHaveURL(/sign-in/);
+    +} else {
+    +  await expect(page.locator('#main-content')).toBeVisible();
+    +}
+     await expect(page.getByText('RSP')).toHaveCount(0);
+    ```
+  - After it is merged: set U41 back to `pending`, rerun `verify-api`, then merge the U41 PR.
+
 - [ ] 2026-11-02 U33 Add `verify-api` to the required status checks of `main` (owner; repository setting; blocks nothing)
   - Context: the API-mode step no longer has `continue-on-error`, so a failing API acceptance test now turns `verify-api` red (decision below). Until the check is required, a red `verify-api` still does not stop `gh pr merge`.
   - When: after a week without a red run (green since 2026-10-29), so on or after 2026-11-05. Then, in the comment above the job in `.github/workflows/verify.yml`, change "Not a required check yet; make it required once it has been green for a week." to "Required once it has been green for a week."
