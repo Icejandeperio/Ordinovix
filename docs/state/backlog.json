@@ -1312,7 +1312,9 @@
       "tests": [
         "U41"
       ],
-      "notes": "Owner instruction 2026-11-04. Copy changes are allowed only for the items above. Blocked: awaiting owner: approve the change to the committed U40 test (docs/state/QUEUE.md, 2026-11-04 U41). Everything else is built; verifier FAIL only on that API-mode regression (docs/state/reviews/U41.md)."
+      "notes": "Owner instruction 2026-11-04. Copy changes are allowed only for the items above. Blocked: awaiting owner: approve the change to the committed U40 test (docs/state/QUEUE.md, 2026-11-04 U41). Everything else is built; verifier FAIL only on that API-mode regression (docs/state/reviews/U41.md).",
+      "pr": 55,
+      "evidence": "verify.mjs exit 0 (201 acceptance, 6 unit); verifier FAIL on one API-mode regression in the committed U40 test (docs/state/reviews/U41.md); draft PR #55, not merged"
     }
   ]
 }
