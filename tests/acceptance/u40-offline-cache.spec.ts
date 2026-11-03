@@ -82,7 +82,12 @@ test.describe('U40 persisted query cache', () => {
     // Sign in again as the same person, still offline: the saved copy is gone, so a start-up restore brings back nothing
     await page.evaluate(() => localStorage.setItem('ox-mock-persona', 'owner'));
     await page.goto('/clients');
-    await expect(page.locator('#main-content')).toBeVisible();
+    if (process.env.VITE_DATA_SOURCE === 'api') {
+      // U41: the server never heard about the sign-out, so the person stays signed out
+      await expect(page).toHaveURL(/sign-in/);
+    } else {
+      await expect(page.locator('#main-content')).toBeVisible();
+    }
     await expect(page.getByText('RSP')).toHaveCount(0);
     expect(await inCache<string>(page, `async (c) => c.savedCacheDump()`)).not.toContain('RSP');
     expect(await inCache<string>(page, `async (c) => c.savedCacheDump()`)).not.toContain('U40 waiting offline');
