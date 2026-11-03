@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-11-03 U38 follow-up: the /clients dark colour-contrast flake — done
+- Changed: `src/components/ui/button.tsx` (ghost and icon variants: `disabled:opacity-100 disabled:text-ink-3`, tokens only)
+- Evidence: verify.mjs exit 0; `u33-axe-while-loading` passes 10 runs in a row with `--repeat-each=10` (40 of 40 in mock mode, and `/clients` in the dark theme 10 of 10 in API mode); the acceptance spec was not edited; PR #53
+- Notes: root cause found by catching the moment the list loads: the "Export CSV" ghost Button turns enabled while its opacity transition (50% to 100%, 150 ms) is still at 50% for up to a second under load, so axe measured #5b5489 on #0e131c (2.72:1). Before the fix a throwaway spec that runs axe at that moment failed 1 in 10; after it, 30 of 30 passed. A disabled ghost or icon Button now looks muted (the `ink-3` text colour at full opacity) instead of half-transparent.
 ## 2026-11-03 U38 follow-up: the next action requires the task version — done
 - Changed: `worker/routes/writes.ts` (`PUT /tasks/:id/next-action` passes `ifMatchVersion`), `src/data/commands.ts` (version check), the contract (`setNextAction(id, next, version?)`), the API client, the mock, `useSetTaskNextAction` and the task screen (send `task.version`), `worker/routes/if-match.test.ts` (route removed from EXEMPT; three exempt PUT routes remain)
 - Evidence: verify.mjs exit 0; tests: if-match per environment (422 for `*` or nothing, 409 stale, real version 200), a stale next-action edit held in the offline queue (409, failed, holds the later write, Retry same version), a mock conflict test; verifier PASS (docs/state/reviews/U38-next-action.md); PR #52
