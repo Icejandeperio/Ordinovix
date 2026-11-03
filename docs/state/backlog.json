@@ -1259,7 +1259,9 @@
       "id": "U40",
       "phase": "P4",
       "tier": "T2",
-      "status": "pending",
+      "status": "done",
+      "pr": 54,
+      "evidence": "verify.mjs exit 0; tests now passing: U40 (13 unit in src/data/query-cache.test.ts, 4 acceptance); verifier PASS (docs/state/reviews/U40.md); PR #54",
       "depends_on": [
         "U38"
       ],
@@ -1283,7 +1285,7 @@
       "tests": [
         "U40"
       ],
-      "notes": "Owner decision 2026-11-03: option B of the U37 proposal (docs/state/QUEUE.md Decided). Mutations stay with the offline queue."
+      "notes": "Owner decision 2026-11-03: option B of the U37 proposal (docs/state/QUEUE.md Decided). Mutations stay with the offline queue. Owner instruction 2026-11-03 replaced the criterion 'a failed sign-out keeps both': sign-out clears the saved cache and the queue even when the device is offline and the server sign-out fails."
     }
   ]
 }

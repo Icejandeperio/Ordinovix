@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { devControls, offlineQueue, repositories } from '@/data';
+import { clearSavedQueryCache } from '@/data/query-cache';
 import { isMockData } from '@/lib/data-source';
 import { deriveViewer } from '@/lib/viewer';
 import { signInPath } from '@/lib/auth';
@@ -38,19 +39,20 @@ export function useSignOut() {
     }
     // This device stops getting reminders for the person who signs out; the session is still valid for that call
     await removeThisDevicePush();
+    let serverEnded = true;
     if (!isMockData) {
       try {
         await repositories.session.signOut();
       } catch (error) {
         // Already signed out (the session ended): carry on to the sign-in page
-        if ((error as { code?: string } | null)?.code !== 'UNAUTHENTICATED') {
-          toast.error('Could not sign out. Check your connection and try again.');
-          return;
-        }
+        if ((error as { code?: string } | null)?.code !== 'UNAUTHENTICATED') serverEnded = false;
       }
     }
-    // The signed-out device keeps none of this person's waiting changes
+    // The device is signed out whether or not the server could be reached (offline, or an error): it keeps none of this person's
+    // waiting changes and no saved copy of their data (spec 19.5). Both are cleared before the page leaves, and neither can throw.
     await offlineQueue.clear();
+    await clearSavedQueryCache();
+    if (!serverEnded) toast.warning('Signed out on this device. The server could not be reached, so its session ends when you sign out again online.');
     // Leave the signed-in screens first, then drop their cached data, so nothing refetches (and nothing signed-out shows data)
     await navigate(signInPath(), { replace: !isMockData });
     if (!isMockData) qc.clear();
