@@ -7,6 +7,7 @@ import { formatHeaderDate } from '@/lib/dates';
 import { Button } from '@/components/ui/button';
 import { GettingStartedCard } from '@/components/today/getting-started-card';
 import { ModalDialog } from '@/components/ui/modal-dialog';
+import { PreviewDrawer } from '@/components/documents/preview-drawer';
 import { DueBadge, StatusChip, ReadinessMeter, AuthorizationBadge } from '@/components/ui/status-chip';
 import { ReviewStamp } from '@/components/ui/stamp';
 import {
@@ -812,50 +813,13 @@ export function TodayPage() {
       })()}
 
       {/* Document File Preview Modal */}
-      {(() => {
-        return (
-          <ModalDialog
-            open={Boolean(previewFile)}
-            onClose={() => setPreviewFile(null)}
-            maxWidth="max-w-lg"
-            ariaLabel="Document File Preview"
-            panelClassName="p-6 space-y-4"
-          >
-            {previewFile && (
-              <>
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <h3 className="text-base font-bold text-ink truncate max-w-sm">
-                      {previewFile.file.displayName}
-                    </h3>
-                    <p className="text-xs text-ink-3">
-                      {previewFile.client.displayName} · {previewFile.file.mimeType} · Version {previewFile.file.versionNo}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setPreviewFile(null)}
-                    className="text-ink-3 hover:text-ink p-1"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="h-48 bg-sheet-2 border border-dashed border-rule rounded-panel flex flex-col items-center justify-center text-ink-3 space-y-2">
-                  <FileText className="w-8 h-8 text-stamp" />
-                  <div className="text-xs font-medium text-ink">Simulated Document Preview</div>
-                  <div className="text-[11px] text-ink-3 font-mono">{previewFile.file.storageKey}</div>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button variant="secondary" size="sm" onClick={() => setPreviewFile(null)}>
-                    Close
-                  </Button>
-                </div>
-              </>
-            )}
-          </ModalDialog>
-        );
-      })()}
+      {/* The real preview drawer, as on the Documents page (it asks documents.getUrl for the file) */}
+      <PreviewDrawer
+        open={Boolean(previewFile)}
+        onClose={() => setPreviewFile(null)}
+        document={previewFile?.file ?? null}
+        clientMeta={previewFile ? { displayName: previewFile.client.displayName, code: previewFile.client.code } : undefined}
+      />
     </div>
   );
 }

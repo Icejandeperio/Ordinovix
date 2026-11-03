@@ -1292,15 +1292,22 @@ export function SettingsPage() {
                 <div className="p-4 rounded-xl border border-[var(--rule)] bg-[var(--sheet-2)] space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="text-sm font-bold text-[var(--ink)]">Automated Backup Status</div>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--good-bg)] text-[var(--good-fg)] border border-[var(--good-bd)]">
-                      Active
-                    </span>
+                    {isMockData && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--good-bg)] text-[var(--good-fg)] border border-[var(--good-bd)]">
+                        Active
+                      </span>
+                    )}
                   </div>
-                  <div className="text-xs text-[var(--ink-2)] space-y-1">
-                    <p>Last automated export: <strong>Yesterday at 02:00 AM (Asia/Manila)</strong></p>
-                    <p>Retention schedule: <strong>7-Year Statutory Tax Record Retention (NIRC Sec. 235)</strong></p>
-                    <p>Encryption standard: <strong>AES-256 at rest</strong></p>
-                  </div>
+                  {/* The app has no backup status of its own: an API build states only what it knows */}
+                  {isMockData ? (
+                    <div className="text-xs text-[var(--ink-2)] space-y-1">
+                      <p>Last automated export: <strong>Yesterday at 02:00 AM (Asia/Manila)</strong></p>
+                      <p>Retention schedule: <strong>7-Year Statutory Tax Record Retention (NIRC Sec. 235)</strong></p>
+                      <p>Encryption standard: <strong>AES-256 at rest</strong></p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-[var(--ink-2)]">Backups run on a schedule set up by the administrator.</p>
+                  )}
                 </div>
 
                 {/* Mock builds only: an API build has no sample data to reset */}

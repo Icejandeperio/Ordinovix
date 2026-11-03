@@ -9,6 +9,7 @@ import {
 } from '@/domain/errors';
 import { RuleViolationError } from '@/domain/rules';
 import { getDevToday } from '@/lib/dates';
+import { clearPendingSignOut, hasPendingSignOut } from '@/lib/pending-sign-out';
 import { notifyAuthFailure } from '../auth-events';
 import { FAILURE_RATE_KEY, OFFLINE_KEY } from '../dev-state';
 
@@ -35,6 +36,8 @@ export interface RequestOptions {
   bootstrap?: boolean;
   /** For tests: the fetch to use instead of the global one. */
   fetchImpl?: typeof fetch;
+  /** The server sign-out itself: it is the one request that may run while a sign-out is pending. */
+  signOut?: boolean;
 }
 
 const read = (key: string): string | null => {
@@ -104,6 +107,27 @@ export const setBeforeFirstRequest = (fn: (() => Promise<void>) | undefined) => 
 };
 let ready: Promise<void> | undefined;
 
+let flushing: Promise<void> | undefined;
+
+/**
+ * Sends the sign-out the device owes the server (see lib/pending-sign-out.ts) and removes the marker once the server has ended the
+ * session (or says there is none). Never rejects: when the server cannot be reached the marker stays and the person stays signed out.
+ */
+export function flushPendingSignOut(): Promise<void> {
+  if (!hasPendingSignOut()) return Promise.resolve();
+  flushing ??= request('POST', '/api/auth/sign-out', { body: {}, bootstrap: true, signOut: true })
+    .then(
+      () => clearPendingSignOut(),
+      (error: unknown) => {
+        if ((error as { code?: string } | null)?.code === 'UNAUTHENTICATED') clearPendingSignOut();
+      },
+    )
+    .finally(() => {
+      flushing = undefined;
+    });
+  return flushing;
+}
+
 export async function request<T = unknown>(method: string, path: string, o: RequestOptions = {}): Promise<T> {
   // The dev controls of the sample-data days still work on the dev server: simulate an offline device or a failing network.
   // A deployed build ignores them, so a stale setting in someone's browser never fails a real request.
@@ -111,6 +135,16 @@ export async function request<T = unknown>(method: string, path: string, o: Requ
     if (read(OFFLINE_KEY) === 'true') throw new Error('Network error: Device is currently simulated as offline');
     const failureRate = parseFloat(read(FAILURE_RATE_KEY) || '0');
     if (failureRate > 0 && Math.random() < failureRate) throw new Error('Simulated network request failure');
+  }
+
+  // A sign-out is owed to the server: it goes first, and until it has gone nothing else is sent (not even a sign-in)
+  if (!o.signOut && hasPendingSignOut()) {
+    await flushPendingSignOut();
+    if (hasPendingSignOut()) {
+      if (o.bootstrap) throw new Error('Network error: the earlier sign-out has not reached the server yet');
+      notifyAuthFailure('unauthenticated');
+      throw new UnauthenticatedError();
+    }
   }
 
   if (beforeFirstRequest && !o.bootstrap) await (ready ??= beforeFirstRequest());
