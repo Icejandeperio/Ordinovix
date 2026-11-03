@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-11-03 U38 follow-up: the next action requires the task version — done
+- Changed: `worker/routes/writes.ts` (`PUT /tasks/:id/next-action` passes `ifMatchVersion`), `src/data/commands.ts` (version check), the contract (`setNextAction(id, next, version?)`), the API client, the mock, `useSetTaskNextAction` and the task screen (send `task.version`), `worker/routes/if-match.test.ts` (route removed from EXEMPT; three exempt PUT routes remain)
+- Evidence: verify.mjs exit 0; tests: if-match per environment (422 for `*` or nothing, 409 stale, real version 200), a stale next-action edit held in the offline queue (409, failed, holds the later write, Retry same version), a mock conflict test; verifier PASS (docs/state/reviews/U38-next-action.md); PR #52
+- Notes: owner decision 2026-11-03. Next action is not one of the four writes the queue accepts offline, so the queue test enqueues it directly to prove the replay path. Proposal from the verifier (queued): make `version` required in the update contract so a missing one fails to compile, which would also remove the `?? '*'` fallback in the API client.
 ## 2026-11-03 U38 Every edit sends its version; If-Match * refused outside local; TIN key recovery step — done
 - Changed: `worker/db/persist.ts` (`If-Match: *` only when the dev sign-in is on), calendar drag and Undo, the Welcome wizard's sequential saves, Getting started, the helpers-can-accept toggle and visit questions (they send the version), `scripts/setup-cloudflare.mjs` (`--escrow`) and its tests, `docs/backend/DEPLOY.md`, `vite.config.ts` (scripts tests now in the unit run)
 - Evidence: verify.mjs exit 0 (193 acceptance); tests now passing: U38 (5 Worker If-Match incl. every PATCH and PUT route, 1 stale queued edit, 6 escrow and argument tests, 3 acceptance); red before: without the Worker change `*` is accepted in preview and production; verifier PASS (docs/state/reviews/U38.md); PR #51

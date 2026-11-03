@@ -201,8 +201,8 @@ const cases: Case[] = [
   },
   {
     name: 'PUT /tasks/:id/next-action',
-    theirs: () => ({ method: 'PUT', path: `/api/v1/tasks/${t.clientMariaTask}/next-action`, body: { next: { text: 'Call the client', owner: 'operator' } } }),
-    mine: () => ({ method: 'PUT', path: `/api/v1/tasks/${t.clientRspTask}/next-action`, body: { next: { text: 'Call the client', owner: 'operator' } } }),
+    theirs: () => ({ method: 'PUT', path: `/api/v1/tasks/${t.clientMariaTask}/next-action`, body: { next: { text: 'Call the client', owner: 'operator' } }, version: ['tasks', t.clientMariaTask] }),
+    mine: () => ({ method: 'PUT', path: `/api/v1/tasks/${t.clientRspTask}/next-action`, body: { next: { text: 'Call the client', owner: 'operator' } }, version: ['tasks', t.clientRspTask] }),
     helperMine: 'ok',
   },
   {

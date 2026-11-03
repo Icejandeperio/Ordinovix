@@ -985,6 +985,7 @@ export function TaskDetailPage() {
                   if (nextActionText.trim()) {
                     setNextAction.mutate({
                       id: task.id,
+                      version: task.version,
                       next: {
                         text: nextActionText.trim(),
                         owner: 'operator',
@@ -992,7 +993,7 @@ export function TaskDetailPage() {
                       },
                     });
                   } else {
-                    setNextAction.mutate({ id: task.id, next: null });
+                    setNextAction.mutate({ id: task.id, version: task.version, next: null });
                   }
                   setIsEditingNextAction(false);
                 }}

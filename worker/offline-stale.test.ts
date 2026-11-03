@@ -71,4 +71,35 @@ describe('U38 a stale edit in the offline queue', () => {
     expect(notes.map((n) => n.body)).toContain('U38 later note');
     expect(await bodyOf(note.id)).toBe("Someone else's edit");
   });
+
+  it('a stale next-action edit replays to 409, stays failed and holds the later write, so it never overwrites a newer next action', { timeout: 120_000 }, async () => {
+    const id = 'task-rsp-0619e';
+    const loaded = (await owner.tasks.get(id)).task; // what this device loaded before it went offline
+    await owner.tasks.setNextAction(id, { text: 'Newer, set by someone else', owner: 'operator' }, loaded.version);
+
+    const queue = createOfflineQueue({
+      dbName: `u38-next-${crypto.randomUUID()}`,
+      call: async (ns, method, args) => {
+        await ((owner as never)[ns][method] as (...a: unknown[]) => Promise<unknown>)(...args);
+      },
+      newKey: () => crypto.randomUUID(),
+      now: () => '2026-10-28T09:00:00+08:00',
+    });
+    await queue.enqueue('tasks.setNextAction', [id, { text: 'Older edit made offline', owner: 'operator' }, loaded.version]);
+    await queue.enqueue('notes.save', [{ entity: 'client', entityId: 'client-rsp', body: 'U38 after the next action' }]);
+    ifMatchSent.length = 0;
+    await queue.replay();
+
+    const [failed, later] = await queue.list();
+    expect(failed.status).toBe('failed');
+    expect(later.status).toBe('pending');
+    expect((await owner.tasks.get(id)).task.nextAction?.text).toBe('Newer, set by someone else');
+    expect(ifMatchSent).toEqual([`"${loaded.version}"`]); // the version it was made with, never "*"
+
+    await queue.retry(failed.id);
+    expect(ifMatchSent).toEqual([`"${loaded.version}"`, `"${loaded.version}"`]);
+    await queue.discard(failed.id);
+    expect(await queue.list()).toEqual([]);
+    expect((await owner.tasks.get(id)).task.nextAction?.text).toBe('Newer, set by someone else');
+  });
 });

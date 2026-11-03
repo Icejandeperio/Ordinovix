@@ -191,7 +191,7 @@ export interface Repositories {
     override(id: ID, status: TaskStatus, reason: string): Promise<Task>;
     clearOverride(id: ID, reason: string): Promise<Task>;
     changeDue(id: ID, dueDate: ISODate, ref: string, reason: string, url?: string): Promise<Task>;
-    setNextAction(id: ID, next: NextAction | null): Promise<Task>;
+    setNextAction(id: ID, next: NextAction | null, version?: number): Promise<Task>;
     archive(id: ID, reason: string): Promise<void>;
     restore(id: ID, reason: string): Promise<void>;
     duplicateForNextPeriod(id: ID): Promise<Task>;

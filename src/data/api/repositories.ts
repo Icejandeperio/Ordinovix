@@ -139,7 +139,7 @@ export function createApiRepositories(fetchImpl?: Fetch): Repositories {
       override: (id, status, reason) => post(`/tasks/${id}/override`, { status, reason }),
       clearOverride: (id, reason) => post(`/tasks/${id}/clear-override`, { reason }),
       changeDue: (id, dueDate, ref, reason, url) => post(`/tasks/${id}/due`, { dueDate, ref, reason, url }),
-      setNextAction: (id, next) => put(`/tasks/${id}/next-action`, { next }),
+      setNextAction: (id, next, version) => put(`/tasks/${id}/next-action`, { next }, { ifMatch: version ?? '*' }),
       archive: (id, reason) => done(post(`/tasks/${id}/archive`, { reason })),
       restore: (id, reason) => done(post(`/tasks/${id}/restore`, { reason })),
       duplicateForNextPeriod: (id) => post(`/tasks/${id}/duplicate`),

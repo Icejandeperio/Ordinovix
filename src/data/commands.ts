@@ -1016,11 +1016,13 @@ export function createCommands(ctx: CommandContext) {
       logActivity('due_changed', 'task', id, `Due changed to ${dueDate}: ${reason}`, task.clientId, reason);
       return task;
     },
-    async setNextAction(id, next) {
+    async setNextAction(id, next, version) {
       assertTask(id);
       if (next) validate(NextActionSchema, next);
       const task = store.tasks.find((item) => item.id === id);
       if (!task) throw new NotFoundError('Task not found');
+      // The next action says who acts next: an edit made from an older version must not overwrite a newer one
+      assertVersion(task, version);
       task.nextAction = next || undefined;
       task.version += 1;
       return task;
