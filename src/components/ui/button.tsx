@@ -37,12 +37,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         'bg-stamp text-on-stamp hover:bg-stamp-strong shadow-xs active:scale-[0.98] border border-transparent',
       secondary:
         'bg-sheet hover:bg-sheet-2 text-ink border border-rule-strong shadow-xs active:scale-[0.98]',
+      // A disabled transparent button is dimmed with the muted text token, not with opacity: an opacity change that has not finished
+      // when the button turns enabled (the list has just loaded) leaves its label at half strength, below 4.5:1 in the dark theme
       ghost:
-        'bg-transparent text-stamp hover:bg-stamp-soft active:scale-[0.98]',
+        'bg-transparent text-stamp hover:bg-stamp-soft active:scale-[0.98] disabled:opacity-100 disabled:text-ink-3',
       danger:
         'bg-critical-solid text-on-critical-solid hover:opacity-90 shadow-xs active:scale-[0.98] border border-transparent',
       icon:
-        'bg-transparent text-ink-2 hover:bg-sheet-2 hover:text-ink active:scale-[0.98] rounded-full',
+        'bg-transparent text-ink-2 hover:bg-sheet-2 hover:text-ink active:scale-[0.98] rounded-full disabled:opacity-100 disabled:text-ink-3',
     }[variant];
 
     return (
