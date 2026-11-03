@@ -160,6 +160,9 @@ export function createQueryCache(opts: QueryCacheOptions) {
   async function dropOthers(identity: CacheIdentity) {
     const keep = entryKey(identity);
     for (const k of await storage.keys()) if (k.startsWith('cache:') && k !== keep) await storage.del(k);
+    // the "last person" marker too: it must not name anyone else
+    const marker = await storage.get<CacheIdentity>(IDENTITY_KEY);
+    if (marker && (marker.userId !== identity.userId || marker.orgId !== identity.orgId)) await storage.del(IDENTITY_KEY);
   }
 
   async function save(): Promise<void> {
@@ -254,4 +257,13 @@ export async function clearSavedQueryCache(): Promise<void> {
 /** The saved entries on this device (names only), for tests. */
 export async function savedCacheKeys(): Promise<string[]> {
   return hasIndexedDb() ? idbStorage().keys() : [];
+}
+
+/** Everything saved on this device as text, for tests that check what is and is not in it. */
+export async function savedCacheDump(): Promise<string> {
+  if (!hasIndexedDb()) return '';
+  const storage = idbStorage();
+  const all: Record<string, unknown> = {};
+  for (const k of await storage.keys()) all[k] = await storage.get(k);
+  return JSON.stringify(all);
 }

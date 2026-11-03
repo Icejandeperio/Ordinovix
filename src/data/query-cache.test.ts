@@ -95,7 +95,7 @@ describe('U40 whose it is, and for how long', () => {
     ben.client.setQueryData(['session'], BEN); // Ben's session loads: the cache learns who is signed in
     await new Promise((r) => setTimeout(r, 30));
     expect(ben.client.getQueryData(['today', 'everyone'])).toBeUndefined();
-    expect(await a.storage.keys()).not.toContain('cache:user-ana:org-main');
+    expect(await a.storage.keys()).toEqual([]); // her copy and the marker that names her
     expect(await ben.cache.restore({ userId: 'user-ben', orgId: 'org-main' })).toBe(0);
     ben.cache.stop();
   });

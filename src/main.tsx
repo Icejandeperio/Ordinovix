@@ -1,12 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
-import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { toast, Toaster } from 'sonner';
 import { LazyMotion } from 'motion/react';
 import { ThemeProvider } from '@/app/theme';
 import { router } from '@/app/router';
-import { offlineQueue } from '@/data';
+import { devControls, offlineQueue } from '@/data';
+import { startQueryCache } from '@/data/query-cache';
 import { installAuthGate } from '@/app/auth-gate';
 import { isMockData } from '@/lib/data-source';
 
@@ -16,7 +17,16 @@ import '@/styles/base.css';
 import '@/styles/print.css';
 import { classifyError } from '@/domain/errors';
 
+// True while the device has no connection (or the dev menu says so)
+const offlineNow = (): boolean => (typeof navigator !== 'undefined' && navigator.onLine === false) || devControls.getOffline();
+
 const queryClient = new QueryClient({
+  // Offline, a refresh that fails must not hide what the screen already has (the saved copy, or the last answer): keep showing it
+  queryCache: new QueryCache({
+    onError: (_error, query) => {
+      if (offlineNow() && query.state.data !== undefined) query.setState({ status: 'success', error: null, fetchStatus: 'idle' });
+    },
+  }),
   // A write that fails validation and has no inline error handling of its own still tells the operator why
   mutationCache: new MutationCache({
     onError: (error, _variables, _context, mutation) => {
@@ -56,6 +66,8 @@ if (!rootElement) {
   throw new Error('Failed to find root element');
 }
 
+// Offline at start-up, the last person's saved copy of Today, tasks, visits and clients is back before the first screen (spec 19.3)
+void startQueryCache(queryClient, offlineNow).finally(() =>
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
@@ -68,4 +80,4 @@ ReactDOM.createRoot(rootElement).render(
       </LazyMotion>
     </QueryClientProvider>
   </React.StrictMode>
-);
+));
