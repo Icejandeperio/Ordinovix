@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { InstallApp } from '@/components/install-app';
 import { useSession, useSignOut, useUnreadNotificationsCount, useViewer } from '@/hooks/useData';
 import { devControls } from '@/data';
@@ -33,6 +33,8 @@ import {
 } from 'lucide-react';
 import { DevMenu } from './dev-menu';
 import { isMockData } from '@/lib/data-source';
+import { signInPath } from '@/lib/auth';
+import { hasPendingSignOut } from '@/lib/pending-sign-out';
 import { CommandPalette } from '@/components/command-palette';
 import { NotificationsPopover } from '@/components/notifications-popover';
 import { SyncIndicator } from '@/components/sync-indicator';
@@ -281,6 +283,8 @@ export function AppShell() {
   // ask for the session again, which must not swap the shell for the loading screen and back.
   if (['UNAUTHENTICATED', 'ACCESS_PENDING'].includes((sessionError as { code?: string } | null)?.code ?? '')) sessionRefusedRef.current = true;
   // (A session call held back because the device is offline keeps the shell too: the pages say they are offline.)
+  // A sign-out the server has not received yet: the person is signed out, whatever is still on this device
+  if (!isMockData && hasPendingSignOut()) return <Navigate to={signInPath()} replace />;
   if (!isMockData && !session && (sessionRefusedRef.current || (sessionFailures === 0 && sessionFetch !== 'paused'))) {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center" role="status" aria-label="Loading">

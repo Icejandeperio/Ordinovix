@@ -2,7 +2,7 @@
   "_about": "Ordinovix work queue for Claude Code. Units run in order, respecting depends_on. Claude may edit only status, pr, evidence and notes. Bug IDs refer to docs/state/QA_AUDIT_2026-10-27.md. Backend units U21-U32 were added by the owner on 2026-10-28 (ADR-0002).",
   "version": 1,
   "created": "2026-10-27",
-  "stop_after": "U40",
+  "stop_after": "U41",
   "phases": {
     "P0": "Demo-ready: fix what would break or embarrass the operator preview",
     "P2": "Contract hardening: make the mock the executable spec for the API",
@@ -1286,6 +1286,35 @@
         "U40"
       ],
       "notes": "Owner decision 2026-11-03: option B of the U37 proposal (docs/state/QUEUE.md Decided). Mutations stay with the offline queue. Owner instruction 2026-11-03 replaced the criterion 'a failed sign-out keeps both': sign-out clears the saved cache and the queue even when the device is offline and the server sign-out fails."
+    },
+    {
+      "id": "U41",
+      "phase": "P4",
+      "tier": "T2",
+      "status": "done",
+      "depends_on": [
+        "U40"
+      ],
+      "title": "Demo readiness: offline sign-out ends the session; no simulated UI in the API build",
+      "bugs": [],
+      "scope": [
+        "src/**",
+        "tests/acceptance/u41-*.spec.ts"
+      ],
+      "acceptance": [
+        "An offline sign-out (or one whose server call fails) stores a pending sign-out marker. While it exists, the app treats the person as signed out: routes go to /sign-in and no data request runs. On reconnect, it calls the server sign-out first, then removes the marker. Acceptance test: sign out offline, go back online, open /, land on /sign-in, and confirm the old session cookie no longer authorizes /api/v1 reads",
+        "Task detail: the return, acknowledgment and payment-proof buttons use the real upload flow (the documents upload already used elsewhere in the app), or are removed if no matching flow exists; never alert(). Acceptance test in API mode: upload one, and it appears on the task after reload",
+        "Today document preview opens the real preview drawer (documents.getUrl), not the \"Simulated Document Preview\" box",
+        "Settings backup panel: in the API build, show only facts the app knows. Remove the fixed \"Yesterday at 02:00\", \"Active\", encryption and NIRC retention lines. If no real backup status exists, say backups run on a schedule set up by the administrator, with no date",
+        "Welcome wizard: no \"sample data\" wording when VITE_DATA_SOURCE is api",
+        "An acceptance test fails if the API build renders \"Simulated\" or \"sample data\" text on Today, a task detail, Settings or Welcome"
+      ],
+      "tests": [
+        "U41"
+      ],
+      "notes": "Owner instruction 2026-11-04. Copy changes are allowed only for the items above. The owner applied option A to the committed U40 test (commit 4c32de0): in API mode it expects /sign-in after the offline sign-out.",
+      "pr": 55,
+      "evidence": "verify.mjs exit 0 (201 acceptance, 6 unit); tests now passing: U41 (4 acceptance, 6 unit); CI verify 201 and verify-api 197 green; verifier PASS (docs/state/reviews/U41.md); PR #55"
     }
   ]
 }

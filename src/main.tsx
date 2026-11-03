@@ -53,6 +53,13 @@ const queryClient = new QueryClient({
 // Against the API a refused session sends the person to /sign-in or /access-pending
 if (!isMockData) installAuthGate(queryClient);
 
+// A sign-out the server has not received yet goes out first: at start-up, and as soon as the device is back online
+if (!isMockData) {
+  const sendPendingSignOut = () => void import('@/data/api/http').then((http) => http.flushPendingSignOut());
+  sendPendingSignOut();
+  window.addEventListener('online', sendPendingSignOut);
+}
+
 // When queued writes have been sent, every screen shows the saved result
 let queued = 0;
 offlineQueue.subscribe(() => {

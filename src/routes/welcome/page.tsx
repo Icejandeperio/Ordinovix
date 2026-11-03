@@ -28,6 +28,7 @@ import {
 } from '@/hooks/useData';
 import { FREQUENCY_LABELS } from '@/domain/labels';
 import { withStepDone, firstOpenStep, toE164 } from '@/lib/onboarding';
+import { isMockData } from '@/lib/data-source';
 import type { OnboardingProgress, OnboardingStep } from '@/domain/types';
 
 export function WelcomePage() {
@@ -334,7 +335,9 @@ export function WelcomePage() {
                       {clientChoice === 'later' && <Check className="w-4 h-4 text-[var(--stamp-ink)]" />}
                     </div>
                     <p className="text-xs text-[var(--ink-2)] mt-1">
-                      Start exploring sample data right away; add your real clients whenever you're ready.
+                      {isMockData
+                        ? "Start exploring sample data right away; add your real clients whenever you're ready."
+                        : "Start with an empty list right away; add your real clients whenever you're ready."}
                     </p>
                   </div>
                 </label>

@@ -14,6 +14,7 @@ import { StatusChip, DueBadge, LineChip } from '@/components/ui/status-chip';
 import { ReviewStamp } from '@/components/ui/stamp';
 import { Button } from '@/components/ui/button';
 import { ModalDialog } from '@/components/ui/modal-dialog';
+import { FileDrop } from '@/components/documents/file-drop';
 import { formatDate } from '@/lib/format';
 import { isLateDiscovered, validAuthorization, authorizationState, periodLabel } from '@/domain/rules';
 import { TASK_STATUS_META } from '@/domain/labels';
@@ -25,7 +26,7 @@ import {
   AddChecklistLineModal,
   ArchiveTaskDialog,
 } from '@/components/tasks/task-modals';
-import type { LineStatus, NextAction } from '@/domain/types';
+import type { DocumentKind, LineStatus, NextAction } from '@/domain/types';
 import {
   ArrowLeft,
   Stamp,
@@ -80,6 +81,9 @@ export function TaskDetailPage() {
   const [isEditingNextAction, setIsEditingNextAction] = useState(false);
   const [nextActionText, setNextActionText] = useState('');
   const [nextActionDue, setNextActionDue] = useState('');
+
+  // The evidence tile being uploaded to (return, acknowledgment, payment proof)
+  const [uploadKind, setUploadKind] = useState<DocumentKind | null>(null);
 
   // Local simulated file upload feedback
   const [recentStampedLineId, setRecentStampedLineId] = useState<string | null>(null);
@@ -695,7 +699,7 @@ export function TaskDetailPage() {
                 </div>
                 {!hasFiledReturn && (
                   <button
-                    onClick={() => alert('Simulated return upload attached!')}
+                    onClick={() => setUploadKind('filed_return')}
                     className="mt-2 text-xs font-bold text-stamp hover:underline text-left"
                   >
                     + Upload Return
@@ -722,7 +726,7 @@ export function TaskDetailPage() {
                 </div>
                 {!hasAcknowledgment && (
                   <button
-                    onClick={() => alert('Simulated acknowledgment uploaded!')}
+                    onClick={() => setUploadKind('acknowledgment')}
                     className="mt-2 text-xs font-bold text-stamp hover:underline text-left"
                   >
                     + Upload Acknowledgment
@@ -749,7 +753,7 @@ export function TaskDetailPage() {
                 </div>
                 {!hasPaymentProof && (
                   <button
-                    onClick={() => alert('Simulated bank payment proof uploaded!')}
+                    onClick={() => setUploadKind('payment_proof')}
                     className="mt-2 text-xs font-bold text-stamp hover:underline text-left"
                   >
                     + Upload Payment Proof
@@ -938,6 +942,32 @@ export function TaskDetailPage() {
         onClose={() => setIsArchiveOpen(false)}
         task={task}
       />
+
+      {/* Evidence upload: the same upload flow as the Documents page */}
+      <ModalDialog
+        open={uploadKind !== null}
+        onClose={() => setUploadKind(null)}
+        maxWidth="max-w-lg"
+        ariaLabel="Upload document"
+        panelClassName="p-5 space-y-4"
+      >
+        <h3 className="text-sm font-bold text-ink font-sans">
+          {uploadKind === 'filed_return' ? 'Upload Return' : uploadKind === 'acknowledgment' ? 'Upload Acknowledgment' : 'Upload Payment Proof'}
+        </h3>
+        <FileDrop
+          clientId={task.clientId}
+          clientCode={summary.client.code}
+          taskId={task.id}
+          period={task.period}
+          defaultKind={uploadKind ?? 'source'}
+          onUploaded={() => setUploadKind(null)}
+        />
+        <div className="flex justify-end pt-2 border-t border-rule">
+          <Button variant="ghost" size="sm" onClick={() => setUploadKind(null)}>
+            Close
+          </Button>
+        </div>
+      </ModalDialog>
 
       {/* Quick Edit Next Action Modal */}
       <ModalDialog

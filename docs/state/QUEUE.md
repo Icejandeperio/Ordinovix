@@ -116,6 +116,11 @@ and, for protected files, the exact change proposed.
 
 ## Decided
 
+- [x] 2026-11-04 U41 Approve a change to the committed U40 test (owner, 2026-11-04)
+  - Decision: option A, applied by the owner on the U41 branch (PR #55), not as a separate PR: on `main` without U41
+    the API-mode run would land on `/clients`, so the changed test passes only together with U41. Set U41 back to
+    `pending`, rerun the verifier, and finish the unit.
+
 - [x] 2026-11-03 U37 persisted query cache: owner decision
   - Decision (owner, 2026-11-03): option B, `dehydrate`/`hydrate` from `@tanstack/react-query` with `idb-keyval`; no new package. Added to `docs/state/backlog.json` as U40 (T2, depends on U38, `stop_after` is now U40), with what is never persisted: revealed TINs, signed document or file URLs, the session query, notifications, push subscription endpoints, idempotency keys, search-keyed queries and mutations. The proposal text stays under Proposals for reference.
 

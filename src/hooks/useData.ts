@@ -6,6 +6,7 @@ import { clearSavedQueryCache } from '@/data/query-cache';
 import { isMockData } from '@/lib/data-source';
 import { deriveViewer } from '@/lib/viewer';
 import { signInPath } from '@/lib/auth';
+import { setPendingSignOut } from '@/lib/pending-sign-out';
 import { removeThisDevicePush } from '@/hooks/push';
 import type { InsightsTab, InsightsFilter, TaskStatus, LineStatus, VisitAction, Outcome, OutcomeCause, NextAction, Baseline } from '@/domain/types';
 
@@ -52,6 +53,8 @@ export function useSignOut() {
     // waiting changes and no saved copy of their data (spec 19.5). Both are cleared before the page leaves, and neither can throw.
     await offlineQueue.clear();
     await clearSavedQueryCache();
+    // The server still owes this person a sign-out: until it has gone through, the app stays signed out
+    if (!serverEnded) setPendingSignOut();
     if (!serverEnded) toast.warning('Signed out on this device. The server could not be reached, so its session ends when you sign out again online.');
     // Leave the signed-in screens first, then drop their cached data, so nothing refetches (and nothing signed-out shows data)
     await navigate(signInPath(), { replace: !isMockData });
