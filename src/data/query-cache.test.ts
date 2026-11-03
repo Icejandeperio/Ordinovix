@@ -152,7 +152,28 @@ describe('U40 whose it is, and for how long', () => {
   });
 });
 
+describe('U40 other things that are never kept', () => {
+  it('a push subscription, an idempotency key, notifications, documents and the session are not query roots that are kept', () => {
+    for (const root of ['push', 'push-subscription', 'idempotency-keys', 'notifications', 'notifications-unread-count', 'documents', 'session', 'audit-log', 'activity']) {
+      expect(isPersistableKey([root, 'x']), root).toBe(false);
+    }
+  });
+});
+
 describe('U40 sign-out', () => {
+  it('a save that was already writing when the person signed out cannot leave a copy behind', async () => {
+    const a = setup();
+    put(a.client, ['today', 'everyone'], todayData);
+    // a slow storage: the write of the copy is still going when clear() is called
+    const slow = { ...a.storage, set: async (k: string, v: unknown) => (await new Promise((r) => setTimeout(r, 30)), a.storage.set(k, v)) };
+    const cache = createQueryCache({ client: a.client, storage: slow, now: () => T0, throttleMs: 5 });
+    const saving = cache.flush();
+    await new Promise((r) => setTimeout(r, 10)); // the write has started
+    const clearing = cache.clear();
+    await Promise.all([saving, clearing]);
+    expect(await a.storage.keys()).toEqual([]);
+  });
+
   it('clear() empties the store, and nothing is saved again until a session has loaded', async () => {
     const a = setup();
     put(a.client, ['today', 'everyone'], todayData);

@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-11-03 U40 Persisted query cache for offline reading (spec 19.3), with dehydrate/hydrate and idb-keyval — done
+- Changed: `src/data/query-cache.ts` (new), `src/main.tsx` (starts the cache before the first render; offline, a failed refresh keeps the data on screen), `src/hooks/useData.ts` (sign-out clears the saved cache and the queue whether or not the server could be reached), tests
+- Evidence: verify.mjs exit 0; tests now passing: U40 (13 unit, 4 acceptance in mock and API mode); red before: the module did not exist, and an early acceptance run caught the last-person marker surviving another account's sign-in; verifier PASS (docs/state/reviews/U40.md); PR #54
+- Notes: one saved copy per user and organization, plus a last-person marker used for an offline start-up; everyone else's copy and marker are deleted once a session loads. 24-hour limit on save and on restore, per query, with a build buster. Never saved: the session, notifications, documents, search-keyed queries, mutations; `tinFull` and signed or blob links are cut out of kept queries (the mock's client records carry `tinFull`). Owner override: sign-out clears everything even when the server cannot be reached, and then leaves for /sign-in with a notice. A save in flight at sign-out cannot leave a copy behind (saves and clears are serialised). No new dependency. API-mode suite not run locally (CI's verify-api runs it).
 ## 2026-11-03 U38 follow-up: the /clients dark colour-contrast flake — done
 - Changed: `src/components/ui/button.tsx` (ghost and icon variants: `disabled:opacity-100 disabled:text-ink-3`, tokens only)
 - Evidence: verify.mjs exit 0; `u33-axe-while-loading` passes 10 runs in a row with `--repeat-each=10` (40 of 40 in mock mode, and `/clients` in the dark theme 10 of 10 in API mode); the acceptance spec was not edited; PR #53

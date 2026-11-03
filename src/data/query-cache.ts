@@ -165,16 +165,26 @@ export function createQueryCache(opts: QueryCacheOptions) {
     if (marker && (marker.userId !== identity.userId || marker.orgId !== identity.orgId)) await storage.del(IDENTITY_KEY);
   }
 
-  async function save(): Promise<void> {
-    timer = null;
-    const identity = identityOf(client);
-    if (blocked || !identity) return;
-    const state = snapshot(client, now());
-    if (state.queries.length === 0) return;
-    const entry: SavedCache = { buster: CACHE_BUSTER, savedAt: now(), identity, state };
-    await storage.set(entryKey(identity), entry);
-    await storage.set(IDENTITY_KEY, identity);
-  }
+  // Saves and clears run one after another: a save that was already writing when the person signed out finishes first, then the
+  // clear removes what it wrote, and a save queued behind the clear sees `blocked` and writes nothing
+  let chain: Promise<unknown> = Promise.resolve();
+  const inOrder = <T,>(job: () => Promise<T>): Promise<T> => {
+    const next = chain.then(job, job);
+    chain = next.catch(() => undefined);
+    return next;
+  };
+
+  const save = (): Promise<void> =>
+    inOrder(async () => {
+      timer = null;
+      const identity = identityOf(client);
+      if (blocked || !identity) return;
+      const state = snapshot(client, now());
+      if (state.queries.length === 0) return;
+      const entry: SavedCache = { buster: CACHE_BUSTER, savedAt: now(), identity, state };
+      await storage.set(entryKey(identity), entry);
+      await storage.set(IDENTITY_KEY, identity);
+    });
 
   const schedule = () => {
     if (!timer && !blocked) timer = setTimeout(() => void save(), throttleMs);
@@ -219,7 +229,7 @@ export function createQueryCache(opts: QueryCacheOptions) {
       restoredFor = null;
       if (timer) clearTimeout(timer);
       timer = null;
-      await storage.clear();
+      await inOrder(() => storage.clear());
     },
     stop() {
       unsubscribe?.();
