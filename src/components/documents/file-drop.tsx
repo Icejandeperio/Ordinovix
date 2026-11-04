@@ -30,6 +30,7 @@ export interface FileDropProps {
   templateCode?: string;
   period?: string;
   lineId?: string;
+  visitItemId?: string;
   defaultKind?: DocumentKind;
   onUploaded?: (doc: DocumentFile) => void;
   className?: string;
@@ -53,6 +54,7 @@ export function FileDrop({
   templateCode,
   period,
   lineId,
+  visitItemId,
   defaultKind = 'source',
   onUploaded,
   className = '',
@@ -144,6 +146,7 @@ export function FileDrop({
               clientId,
               taskId,
               lineId,
+              visitItemId,
               kind: defaultKind,
               source: 'upload',
             },

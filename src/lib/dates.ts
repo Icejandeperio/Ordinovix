@@ -48,6 +48,12 @@ export function todayInManila(): string {
   return manilaDateString;
 }
 
+/** The 20th of the month after `today` ('YYYY-MM-DD'), the default due date of a new filing period. Pure string arithmetic. */
+export function twentiethOfNextMonth(today: string = todayInManila()): string {
+  const [y, m] = today.split('-').map(Number);
+  return `${m === 12 ? y + 1 : y}-${String(m === 12 ? 1 : m + 1).padStart(2, '0')}-20`;
+}
+
 /**
  * Compares two 'YYYY-MM-DD' strings lexicographically.
  */

@@ -1344,6 +1344,35 @@
       "notes": "Owner request 2026-11-04 (preview, main 9c0630f). Root cause found: the payment sheet Upload Proof invented a document id (doc-proof-<time>), assertReferences skipped ids it could not find, and D1 rejected the foreign key as a 500; the 500 error ID was sent by the server but dropped by the client.",
       "pr": 56,
       "evidence": "verify.mjs exit 0 (203 acceptance, 1186 unit); tests now passing: U42 (4 Worker, 2 unit, 2 acceptance); verifier PASS (docs/state/reviews/U42.md); PR #56"
+    },
+    {
+      "id": "U43",
+      "phase": "P4",
+      "tier": "T2",
+      "status": "in_progress",
+      "depends_on": [
+        "U42"
+      ],
+      "title": "Integrity hardening after U42: no made-up ids or hashes, referenced documents are protected, Manila date guard",
+      "bugs": [],
+      "scope": [
+        "src/**",
+        "worker/**",
+        "tests/acceptance/u43-*.spec.ts",
+        "docs/state/**"
+      ],
+      "acceptance": [
+        "Stub sweep: no client path sends an id, hash or other data it made up (Date.now/Math.random ids, 'doc-', 'fake-hash-'); findings listed in docs/state/reviews/U43-stub-sweep.md",
+        "Deleting a document that is the proof of a payment returns 409 naming the payment; the UI shows that message",
+        "Edit Payment shows 'Proof file missing' with an inline remove action for a proof id with no file; save works after the removal",
+        "A test runs the client date defaults at 2026-11-03T18:00:00Z and asserts the Manila date 2026-11-04; a test fails on any calendar date derived from toISOString()",
+        "An acceptance test shows Edit Payment prefilled with every stored field",
+        "The sign-in unit test is fast under load for a stated cause, with no change to the global test timeout"
+      ],
+      "tests": [
+        "U43"
+      ],
+      "notes": "Owner instruction 2026-11-05. Prepare the PR; do not merge. No protected file is changed (the toISOString guard is a Vitest test, not an eslint rule, because eslint.config.js is protected)."
     }
   ]
 }

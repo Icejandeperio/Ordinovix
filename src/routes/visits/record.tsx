@@ -9,6 +9,7 @@ import type {
   Outcome,
   OutcomeCause,
   Supplier,
+  DocumentFile,
   ID,
 } from '@/domain/types';
 import {
@@ -19,7 +20,7 @@ import {
 import { DateField } from '@/components/inputs/date-field';
 import { ModalDialog } from '@/components/ui/modal-dialog';
 import { canFinishVisit } from '@/domain/rules';
-import { todayInManila, addDaysToDate } from '@/lib/dates';
+import { todayInManila, addDaysToDate, nowInManila } from '@/lib/dates';
 import { formatPeso } from '@/lib/format';
 import {
   ArrowLeft,
@@ -38,6 +39,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { QueryState } from '@/components/ui/query-state';
+import { FileDrop } from '@/components/documents/file-drop';
 
 export function VisitRecordPage() {
   const { visitId } = useParams<{ visitId: string }>();
@@ -71,10 +73,13 @@ export function VisitRecordPage() {
     >
   >({});
 
+  // The evidence upload panel of the open item
+  const [evidenceUploadOpen, setEvidenceUploadOpen] = useState(false);
+
   // Finish visit modal state
   const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
   const [finishedTime, setFinishedTime] = useState(
-    new Date().toTimeString().slice(0, 5)
+    nowInManila().slice(11, 16)
   );
   // Costs start empty: a pre-filled amount would be saved as a real cost if she never clears it (B15)
   const [transportPeso, setTransportPeso] = useState('');
@@ -118,7 +123,7 @@ export function VisitRecordPage() {
       requestedDocs: [],
       affectedLines: [],
       evidenceIds: existing?.evidenceDocumentIds || [],
-      evidenceNames: existing?.evidenceDocumentIds?.length ? ['stamped_copy.pdf'] : [],
+      evidenceNames: existing?.evidenceDocumentIds?.length ? [`${existing.evidenceDocumentIds.length} evidence file(s) saved`] : [],
     };
   };
 
@@ -190,16 +195,14 @@ export function VisitRecordPage() {
     updateCurrentForm({ affectedLines: affected });
   };
 
-  const handleSimulateEvidenceUpload = () => {
+  // The evidence is a real upload (the same flow as every other document); only its saved id goes into the outcome
+  const handleEvidenceUploaded = (doc: DocumentFile) => {
     if (!currentForm) return;
-    const mockDocId = `doc-${Date.now()}`;
     updateCurrentForm({
-      evidenceIds: [...currentForm.evidenceIds, mockDocId],
-      evidenceNames: [
-        ...currentForm.evidenceNames,
-        `counter_receipt_${currentForm.evidenceNames.length + 1}.jpg`,
-      ],
+      evidenceIds: [...currentForm.evidenceIds, doc.id],
+      evidenceNames: [...currentForm.evidenceNames, doc.displayName],
     });
+    setEvidenceUploadOpen(false);
     toast.success('Evidence photo attached');
   };
 
@@ -658,13 +661,24 @@ export function VisitRecordPage() {
               </span>
               <button
                 type="button"
-                onClick={handleSimulateEvidenceUpload}
+                onClick={() => setEvidenceUploadOpen((open) => !open)}
                 className="text-xs font-bold text-stamp hover:underline inline-flex items-center gap-1 cursor-pointer"
               >
                 <Camera className="w-3.5 h-3.5" />
                 <span>Take Photo / Upload</span>
               </button>
             </div>
+
+            {evidenceUploadOpen && (
+              <FileDrop
+                clientId={currentItemDetail.client.id}
+                clientCode={currentItemDetail.client.code}
+                taskId={currentItemDetail.item.taskId}
+                visitItemId={currentItemDetail.item.id}
+                defaultKind="stamped_copy"
+                onUploaded={handleEvidenceUploaded}
+              />
+            )}
 
             {currentForm.evidenceNames.length > 0 ? (
               <div className="flex flex-wrap gap-2 pt-1">
