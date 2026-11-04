@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { todayInManila } from '@/lib/dates';
 import { useMemberships, useUpsertAuthorization, useReplaceAuthorization } from '@/hooks/useData';
 import { Button } from '@/components/ui/button';
 import { ModalDialog } from '@/components/ui/modal-dialog';
@@ -59,7 +60,7 @@ export function AuthorizationFormModal({
       setType('spa');
       setGranteeUserId(memberships?.[0]?.userId || 'user-ana');
       setScope(['filing', 'payment']);
-      setIssuedOn(new Date().toISOString().slice(0, 10));
+      setIssuedOn(todayInManila());
       setValidUntil('');
       setNoExpiry(false);
       setNotarized(true);

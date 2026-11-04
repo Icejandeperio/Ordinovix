@@ -1,3 +1,4 @@
+import { todayInManila } from '@/lib/dates';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -1277,7 +1278,7 @@ export function SettingsPage() {
                       );
                       const downloadAnchor = document.createElement('a');
                       downloadAnchor.setAttribute("href", dataStr);
-                      downloadAnchor.setAttribute("download", `ordinovix-backup-${new Date().toISOString().slice(0, 10)}.json`);
+                      downloadAnchor.setAttribute("download", `ordinovix-backup-${todayInManila()}.json`);
                       document.body.appendChild(downloadAnchor);
                       downloadAnchor.click();
                       downloadAnchor.remove();

@@ -2,7 +2,7 @@
   "_about": "Ordinovix work queue for Claude Code. Units run in order, respecting depends_on. Claude may edit only status, pr, evidence and notes. Bug IDs refer to docs/state/QA_AUDIT_2026-10-27.md. Backend units U21-U32 were added by the owner on 2026-10-28 (ADR-0002).",
   "version": 1,
   "created": "2026-10-27",
-  "stop_after": "U41",
+  "stop_after": "U42",
   "phases": {
     "P0": "Demo-ready: fix what would break or embarrass the operator preview",
     "P2": "Contract hardening: make the mock the executable spec for the API",
@@ -1315,6 +1315,35 @@
       "notes": "Owner instruction 2026-11-04. Copy changes are allowed only for the items above. The owner applied option A to the committed U40 test (commit 4c32de0): in API mode it expects /sign-in after the offline sign-out.",
       "pr": 55,
       "evidence": "verify.mjs exit 0 (201 acceptance, 6 unit); tests now passing: U41 (4 acceptance, 6 unit); CI verify 201 and verify-api 197 green; verifier PASS (docs/state/reviews/U41.md); PR #55"
+    },
+    {
+      "id": "U42",
+      "phase": "P4",
+      "tier": "T2",
+      "status": "done",
+      "depends_on": [
+        "U41"
+      ],
+      "title": "Update payment returns 4xx for bad input and shows an error ID on every 5xx; business dates in Asia/Manila",
+      "bugs": [],
+      "scope": [
+        "src/**",
+        "worker/**",
+        "tests/acceptance/u42-*.spec.ts"
+      ],
+      "acceptance": [
+        "Editing a payment with paid_on = Manila today at 00:00-07:59 local saves (Worker test with the clock set to that hour)",
+        "A payment proof is a real uploaded document: the payment sheet uses the documents upload flow, no invented document id; the proof persists across a reload",
+        "A payment (or any write) that names a record that does not exist, or that breaks a database constraint, returns 4xx with a field-level message, never 5xx",
+        "All business dates default and validate in Asia/Manila on the client and the server (no UTC date slices or UTC year for a calendar date)",
+        "Every 5xx response carries an error ID; the toast shows it with a copy control"
+      ],
+      "tests": [
+        "U42"
+      ],
+      "notes": "Owner request 2026-11-04 (preview, main 9c0630f). Root cause found: the payment sheet Upload Proof invented a document id (doc-proof-<time>), assertReferences skipped ids it could not find, and D1 rejected the foreign key as a 500; the 500 error ID was sent by the server but dropped by the client.",
+      "pr": 56,
+      "evidence": "verify.mjs exit 0 (203 acceptance, 1186 unit); tests now passing: U42 (4 Worker, 2 unit, 2 acceptance); verifier PASS (docs/state/reviews/U42.md); PR #56"
     }
   ]
 }

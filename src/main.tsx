@@ -16,6 +16,7 @@ import '@/styles/tokens.css';
 import '@/styles/base.css';
 import '@/styles/print.css';
 import { classifyError } from '@/domain/errors';
+import { toastServerFault } from '@/lib/error-id';
 
 // True while the device has no connection (or the dev menu says so)
 const offlineNow = (): boolean => (typeof navigator !== 'undefined' && navigator.onLine === false) || devControls.getOffline();
@@ -37,6 +38,8 @@ const queryClient = new QueryClient({
         return;
       }
       if (mutation.options.onError) return;
+      // A server fault: say so with its error ID and a way to copy it
+      if (toastServerFault(error)) return;
       if (classifyError(error) === 'validation') toast.error((error as Error).message);
     },
   }),

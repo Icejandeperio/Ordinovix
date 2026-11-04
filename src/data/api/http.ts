@@ -61,7 +61,7 @@ export function toQueryString(query: Query | undefined): string {
 }
 
 interface ErrorBody {
-  error?: { code?: string; message?: string; fields?: Record<string, string[]>; current?: unknown };
+  error?: { code?: string; message?: string; fields?: Record<string, string[]>; current?: unknown; errorId?: string };
 }
 
 /** The domain error for an API error answer. Unknown codes stay a plain Error with the server's message. */
@@ -85,8 +85,12 @@ export function toDomainError(status: number, body: ErrorBody | null): Error {
       return new RateLimitedError(message);
     case 'UNAUTHENTICATED':
       return new UnauthenticatedError(message);
-    default:
-      return status === 401 ? new UnauthenticatedError() : new Error(message);
+    default: {
+      if (status === 401) return new UnauthenticatedError();
+      // A server fault carries an error ID: it goes in the message, so every place that shows the message shows the ID
+      const errorId = e?.errorId;
+      return errorId ? Object.assign(new Error(`${message} Error ID: ${errorId}`), { errorId }) : new Error(message);
+    }
   }
 }
 

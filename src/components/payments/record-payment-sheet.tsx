@@ -4,6 +4,8 @@ import { useClients, useTasks, useSavePayment } from '@/hooks/useData';
 import { MoneyInput } from '@/components/inputs/money-input';
 import { DateField } from '@/components/inputs/date-field';
 import { todayInManila } from '@/lib/dates';
+import { errorIdOf } from '@/lib/error-id';
+import { FileDrop } from '@/components/documents/file-drop';
 import {
   X,
   DollarSign,
@@ -76,8 +78,11 @@ export function RecordPaymentSheet({
     payment?.proofDocumentIds || []
   );
   const [proofName, setProofName] = useState<string>(
-    payment?.proofDocumentIds?.length ? 'validated_teller_receipt.pdf' : ''
+    payment?.proofDocumentIds?.length
+      ? `${payment.proofDocumentIds.length} proof file${payment.proofDocumentIds.length > 1 ? 's' : ''} attached`
+      : ''
   );
+  const [proofUploadOpen, setProofUploadOpen] = useState(false);
   const [note, setNote] = useState<string>(payment?.note || '');
 
   // Filter tasks belonging to selected client
@@ -86,11 +91,13 @@ export function RecordPaymentSheet({
   }, [tasks, clientId]);
 
 
-  const handleSimulateProofUpload = () => {
-    const mockId = `doc-proof-${Date.now()}`;
-    setProofIds([mockId]);
-    setProofName('AAB_teller_stamped_deposit_receipt.jpg');
-    toast.success('Payment receipt attached');
+  // The proof is a real upload, through the same flow as every other document
+  const handleOpenProofUpload = () => {
+    if (!clientId) {
+      toast.error('Please select a client first');
+      return;
+    }
+    setProofUploadOpen((open) => !open);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -145,7 +152,8 @@ export function RecordPaymentSheet({
       onClose();
     } catch (err: any) {
       // A version conflict has already been announced and the record reloaded
-      if (classifyError(err) !== 'conflict') toast.error(err.message || 'Failed to save payment');
+      // (a server fault was announced, with its error ID, by the app's mutation handler)
+      if (classifyError(err) !== 'conflict' && !errorIdOf(err)) toast.error(err.message || 'Failed to save payment');
     }
   };
 
@@ -374,13 +382,28 @@ export function RecordPaymentSheet({
               <span className="font-bold text-ink">Payment Proof / Stamped Slip</span>
               <button
                 type="button"
-                onClick={handleSimulateProofUpload}
+                onClick={handleOpenProofUpload}
                 className="text-xs font-bold text-stamp hover:underline inline-flex items-center gap-1 cursor-pointer"
               >
                 <Camera className="w-3.5 h-3.5" />
                 <span>Upload Proof</span>
               </button>
             </div>
+
+            {proofUploadOpen && clientId && (
+              <FileDrop
+                clientId={clientId}
+                clientCode={clients.find((c) => c.client.id === clientId)?.client.code}
+                taskId={taskId || undefined}
+                defaultKind="payment_proof"
+                onUploaded={(doc) => {
+                  setProofIds((ids) => [...ids, doc.id]);
+                  setProofName(doc.displayName);
+                  setProofUploadOpen(false);
+                  toast.success('Payment receipt attached');
+                }}
+              />
+            )}
 
             {proofName ? (
               <div className="flex items-center gap-2 p-2 rounded bg-good-bg text-good-fg border border-good-bd text-xs font-semibold">

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { todayInManila } from '@/lib/dates';
 import { useActivity, useClients, useMemberships, useSession } from '@/hooks/useData';
 import { Shield, Filter, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -116,7 +117,7 @@ export function AuditPage() {
           <ExportMenu
             label="Export Audit Log"
             getData={() => ({
-              filename: `ordinovix-audit-log-${new Date().toISOString().slice(0, 10)}`,
+              filename: `ordinovix-audit-log-${todayInManila()}`,
               title: 'Practice Activity Audit Trail',
               subtitle: `View: ${view.toUpperCase()} · Total Events: ${events.length}`,
               headers: ['Timestamp (PHT)', 'Actor', 'Target Record', 'Action', 'Details / Delta', 'Client Device'],

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { todayInManila } from '@/lib/dates';
 import { useClients, useMemberships } from '@/hooks/useData';
 import { useOffline, NEEDS_CONNECTION } from '@/hooks/useOffline';
 import { Link, useNavigate } from 'react-router-dom';
@@ -142,7 +143,7 @@ export function ClientsPage() {
     ]);
 
     exportToCsv({
-      filename: `ordinovix-clients-${new Date().toISOString().slice(0, 10)}.csv`,
+      filename: `ordinovix-clients-${todayInManila()}.csv`,
       title: 'Ordinovix Client Directory Export',
       headers,
       rows,
