@@ -61,9 +61,11 @@ export function DocumentsPage() {
 
   const setLineStatus = useSetLineStatus();
   const removeDocument = useRemoveDocument();
-  // A refused removal (for example a file that is the proof of a payment) says why; a conflict or a server fault was announced already
+  // A refused removal (for example a file that is the proof of a payment) says why; the app's mutation handler already announces
+  // a conflict, a validation message and a server fault, so only the other kinds are announced here
   const announceRemoveError = (err: unknown) => {
-    if (classifyError(err) !== 'conflict' && !errorIdOf(err)) toast.error(err instanceof Error ? err.message : 'Could not remove the file');
+    const kind = classifyError(err);
+    if (kind !== 'conflict' && kind !== 'validation' && !errorIdOf(err)) toast.error(err instanceof Error ? err.message : 'Could not remove the file');
   };
 
   const allDocuments = docsData?.items || [];
