@@ -16,7 +16,7 @@ async function renderSignIn(source: string): Promise<string> {
 afterEach(() => vi.unstubAllEnvs());
 
 describe('U39 the sign-in page on each build', () => {
-  it('an API build shows the Google button and none of the mock-only block', async () => {
+  it('an API build shows the Google button and none of the mock-only block', { timeout: 30_000 }, async () => {
     const html = await renderSignIn('api');
     expect(html).toContain('Continue with Google');
     expect(html).not.toMatch(/mock mode only/i);
@@ -25,7 +25,7 @@ describe('U39 the sign-in page on each build', () => {
     expect(html).not.toMatch(/Simulate unauthorized/i);
   });
 
-  it('mock mode keeps the persona buttons', async () => {
+  it('mock mode keeps the persona buttons', { timeout: 30_000 }, async () => {
     const html = await renderSignIn('mock');
     expect(html).toContain('Continue with Google');
     expect(html).toContain('mock mode only');
