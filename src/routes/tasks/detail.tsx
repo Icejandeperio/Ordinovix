@@ -1,3 +1,4 @@
+import { todayInManila } from '@/lib/dates';
 import React, { useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
@@ -506,7 +507,7 @@ export function TaskDetailPage() {
                 sortedLines.map((line) => {
                   const isAccepted = line.status === 'accepted';
                   const isAddedLate =
-                    line.lateDiscovered || isLateDiscovered(task, new Date().toISOString().slice(0, 10));
+                    line.lateDiscovered || isLateDiscovered(task, todayInManila());
 
                   return (
                     <div
