@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { todayInManila } from '@/lib/dates';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import {
   useClient,
@@ -153,7 +154,7 @@ export function ClientDetailPage() {
 
   // Compute Warning Strip Items per Spec 11.7.2
   const warnings: string[] = [];
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = todayInManila();
   const hasExpiringOrExpiredAuth = authorizations.some((a) => {
     const s = authorizationState(a, todayStr);
     return s !== 'valid';

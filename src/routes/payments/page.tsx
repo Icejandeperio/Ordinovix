@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { todayInManila } from '@/lib/dates';
 import { usePayments, useClients } from '@/hooks/useData';
 import type { Payment, PaymentChannel, ID } from '@/domain/types';
 import { formatPeso, formatDate } from '@/lib/format';
@@ -100,12 +101,17 @@ export function PaymentsPage() {
     setTimeout(() => setCopiedRef(null), 2000);
   };
 
+  // The sheet reads its starting values once, so each opening gets a fresh one (an edit must show the payment being edited)
+  const [sheetOpenings, setSheetOpenings] = useState(0);
+
   const handleOpenAdd = () => {
+    setSheetOpenings((n) => n + 1);
     setEditingPayment(null);
     setIsRecordSheetOpen(true);
   };
 
   const handleOpenEdit = (payment: Payment) => {
+    setSheetOpenings((n) => n + 1);
     setEditingPayment(payment);
     setIsRecordSheetOpen(true);
   };
@@ -135,7 +141,7 @@ export function PaymentsPage() {
           <ExportMenu
             label="Export Payments"
             getData={() => ({
-              filename: `ordinovix-payments-${new Date().toISOString().slice(0, 10)}`,
+              filename: `ordinovix-payments-${todayInManila()}`,
               title: 'Tax Payments & Remittances Register',
               subtitle: `Total Filtered: ${formatPeso(filteredTotal)} · ${filteredPayments.length} transactions`,
               headers: [
@@ -480,6 +486,7 @@ export function PaymentsPage() {
 
       {/* Record Payment Sheet Modal */}
       <RecordPaymentSheet
+        key={`${editingPayment?.id ?? 'new'}-${sheetOpenings}`}
         payment={editingPayment}
         isOpen={isRecordSheetOpen}
         onClose={() => {

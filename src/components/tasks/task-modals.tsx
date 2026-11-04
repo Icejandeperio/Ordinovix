@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { todayInManila } from '@/lib/dates';
 import {
   X,
   Send,
@@ -38,7 +39,7 @@ interface MarkSubmittedDialogProps {
 
 export function MarkSubmittedDialog({ open, onClose, task }: MarkSubmittedDialogProps) {
   const markSubmitted = useMarkTaskSubmitted();
-  const [submittedOn, setSubmittedOn] = useState(new Date().toISOString().slice(0, 10));
+  const [submittedOn, setSubmittedOn] = useState(todayInManila());
   const [channel, setChannel] = useState<'efps' | 'ebirforms' | 'manual' | 'office'>('efps');
   const [refNo, setRefNo] = useState('');
   const [note, setNote] = useState('');
@@ -54,7 +55,7 @@ export function MarkSubmittedDialog({ open, onClose, task }: MarkSubmittedDialog
       setError('Date of submission is required');
       return;
     }
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayInManila();
     if (submittedOn > today) {
       setError('Submission date cannot be in the future');
       return;
@@ -174,7 +175,7 @@ export function MarkCompletedDialog({
   hasEvidence = false,
 }: MarkCompletedDialogProps) {
   const markCompleted = useMarkTaskCompleted();
-  const [completedOn, setCompletedOn] = useState(new Date().toISOString().slice(0, 10));
+  const [completedOn, setCompletedOn] = useState(todayInManila());
   const [noEvidenceReason, setNoEvidenceReason] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -410,7 +411,7 @@ interface ChangeDueDateDialogProps {
 
 export function ChangeDueDateDialog({ open, onClose, task }: ChangeDueDateDialogProps) {
   const changeDueMutation = useChangeTaskDueDate();
-  const [dueDate, setDueDate] = useState(task.dueDate || new Date().toISOString().slice(0, 10));
+  const [dueDate, setDueDate] = useState(task.dueDate || todayInManila());
   const [ref, setRef] = useState('');
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);

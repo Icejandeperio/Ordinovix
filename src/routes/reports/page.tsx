@@ -49,7 +49,7 @@ export function ReportsPage() {
   // 1. Clients CSV
   const getClientsExportData = (): ExportData => {
     return {
-      filename: `ordinovix-clients-registry-${new Date().toISOString().slice(0, 10)}`,
+      filename: `ordinovix-clients-registry-${todayInManila()}`,
       title: 'Clients Registry',
       subtitle: `${session?.org?.name ?? 'Santos Tax Advisory'} · Total Records: ${clientSummaries.length}`,
       headers: EXPORT_HEADERS.clients,
@@ -69,7 +69,7 @@ export function ReportsPage() {
   // 2. Tasks CSV
   const getTasksExportData = (): ExportData => {
     return {
-      filename: `ordinovix-tasks-log-${new Date().toISOString().slice(0, 10)}`,
+      filename: `ordinovix-tasks-log-${todayInManila()}`,
       title: 'Statutory Obligation Tasks Log',
       subtitle: `${session?.org?.name ?? 'Santos Tax Advisory'} · Total Tasks: ${taskSummaries.length}`,
       headers: EXPORT_HEADERS.tasks,
@@ -106,7 +106,7 @@ export function ReportsPage() {
     }
 
     return {
-      filename: `ordinovix-checklist-lines-${new Date().toISOString().slice(0, 10)}`,
+      filename: `ordinovix-checklist-lines-${todayInManila()}`,
       title: 'Document Checklist Requirements & Verification Log',
       subtitle: `Total Lines Tracked: ${lineRows.length}`,
       headers: EXPORT_HEADERS.lines,
@@ -118,7 +118,7 @@ export function ReportsPage() {
   const getFollowUpsExportData = async (): Promise<ExportData> => {
     const fuRes = await repositories.followUps.list();
     return {
-      filename: `ordinovix-follow-ups-log-${new Date().toISOString().slice(0, 10)}`,
+      filename: `ordinovix-follow-ups-log-${todayInManila()}`,
       title: 'Client Chasing & Follow-up Communications Log',
       subtitle: `Total Follow-ups: ${fuRes.items.length}`,
       headers: EXPORT_HEADERS.follow_ups,
@@ -137,7 +137,7 @@ export function ReportsPage() {
   const getVisitsExportData = async (): Promise<ExportData> => {
     const visitsRes = await repositories.visits.list();
     return {
-      filename: `ordinovix-visits-outcomes-${new Date().toISOString().slice(0, 10)}`,
+      filename: `ordinovix-visits-outcomes-${todayInManila()}`,
       title: 'Office Counter Visits & Trip Outcomes',
       subtitle: `Total Visits: ${visitsRes.items.length}`,
       headers: EXPORT_HEADERS.visits,
@@ -156,7 +156,7 @@ export function ReportsPage() {
   const getPaymentsExportData = async (): Promise<ExportData> => {
     const paymentsRes = await repositories.payments.list();
     return {
-      filename: `ordinovix-payments-summary-${new Date().toISOString().slice(0, 10)}`,
+      filename: `ordinovix-payments-summary-${todayInManila()}`,
       title: 'Tax Payments & Remittances Summary',
       subtitle: `Total Remitted: ${formatPeso(paymentsRes.totalAmount)} · Transactions: ${paymentsRes.items.length}`,
       headers: EXPORT_HEADERS.payments,
@@ -176,7 +176,7 @@ export function ReportsPage() {
   const getAuditExportData = async (): Promise<ExportData> => {
     const activityRes = await repositories.activity.list();
     return {
-      filename: `ordinovix-audit-activity-${new Date().toISOString().slice(0, 10)}`,
+      filename: `ordinovix-audit-activity-${todayInManila()}`,
       title: 'Practice Activity & Audit Log',
       subtitle: 'Immutable Sequential Event Trail',
       headers: EXPORT_HEADERS.activity,
@@ -279,7 +279,7 @@ export function ReportsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ordinovix-full-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `ordinovix-full-backup-${todayInManila()}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };

@@ -1,3 +1,4 @@
+import { todayInManila } from '@/lib/dates';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -73,9 +74,9 @@ export function NewTaskSheet({ open, onClose, defaultClientId }: NewTaskSheetPro
       setPaymentExpected(Boolean(selectedTemplate.paymentExpected));
 
       // Calculate sample due date (e.g. 20th or 30th of following month)
-      const now = new Date();
-      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 20);
-      setDueDate(nextMonth.toISOString().slice(0, 10));
+      const [year, month] = todayInManila().split('-').map(Number);
+      const [dueYear, dueMonth] = month === 12 ? [year + 1, 1] : [year, month + 1];
+      setDueDate(`${dueYear}-${String(dueMonth).padStart(2, '0')}-20`);
       setDueSourceRef('template default (20th of next month)');
     }
   }, [selectedTemplate, isOneOff]);

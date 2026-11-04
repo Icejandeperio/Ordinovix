@@ -1746,6 +1746,10 @@ export function createCommands(ctx: CommandContext) {
       assertRecordWrite(store.payments, p.id, p.clientId);
       rejectIdentityChange(p, storedPayment);
       validate(PaymentWriteSchema, p);
+      // A proof is a file that was uploaded: an id that names no document is refused here, not left for the database to refuse
+      if (p.proofDocumentIds?.some((id) => !store.documents.some((d) => d.id === id && !d.deletedAt))) {
+        throw new ValidationError({ proofDocumentIds: ['A payment proof must be an uploaded file. Upload the proof again.'] });
+      }
       const { user } = getCurrentUser();
 
       const existing = p.id ? store.payments.find((item) => item.id === p.id) : undefined;

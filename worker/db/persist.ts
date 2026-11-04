@@ -242,6 +242,11 @@ export async function runWrite<T>(c: Context<AppEnv>, o: WriteOptions<T>): Promi
       const current = Object.values(fresh).flatMap((v) => (Array.isArray(v) ? v : [])).find((e) => ids.has((e as { id?: string }).id ?? ''));
       throw new VersionConflictError(scrubTin(current));
     }
+    // input that names a record that is not there: the person's mistake or a stale screen, not a server fault (any other constraint
+    // failure is a bug on our side and stays a 500 with an error ID)
+    if (/FOREIGN KEY constraint failed/i.test(message)) {
+      throw new ValidationError({ form: ['This change refers to a record that no longer exists. Reload the page and try again.'] });
+    }
     throw error;
   }
   await pushNew(c, store.notifications.length > notificationsBefore);

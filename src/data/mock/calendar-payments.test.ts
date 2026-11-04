@@ -105,6 +105,15 @@ describe('mockRepositories.payments and Calendar Pipeline (M8)', () => {
         owner: 'client',
       };
 
+      // A proof is an uploaded file (an invented document id is refused, U42)
+      const bytes = new TextEncoder().encode('proof');
+      const proof = await mockRepositories.documents.upload(
+        { clientId: task.clientId, taskId: task.id, kind: 'payment_proof', source: 'upload' },
+        new Blob([bytes], { type: 'application/pdf' }),
+        undefined,
+        { originalName: 'proof.pdf', originalSizeBytes: bytes.length, sha256: 'u42-proof-' + Date.now() },
+      );
+
       // Record payment with proofDocumentIds attached
       await mockRepositories.payments.save({
         clientId: task.clientId,
@@ -115,7 +124,7 @@ describe('mockRepositories.payments and Calendar Pipeline (M8)', () => {
         provider: 'GCash',
         referenceNo: 'GCASH-987654321',
         paidBy: 'client',
-        proofDocumentIds: ['doc-proof-1'],
+        proofDocumentIds: [proof.id],
       });
 
       // Verify task nextAction was cleared

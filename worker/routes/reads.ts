@@ -3,6 +3,7 @@
  * same read side as the mock (src/data/queries.ts): the permission filters, the derived fields (rules.ts) and the response
  * shapes are shared code, not a second copy. Mounted behind requireSession, requireMembership and requireActive.
  */
+import { todayInManila } from '@/lib/dates';
 import { Hono, type Context } from 'hono';
 import { createQueries, type Queries } from '@/data/queries';
 import { ValidationError } from '@/domain/errors';
@@ -108,7 +109,7 @@ readRoutes.get('/templates', async (c) => c.json(await (await queriesFor(c, ['te
 readRoutes.get('/templates/:id', async (c) => c.json(await (await queriesFor(c, ['templates', 'reqTemplates'])).templates.get(c.req.param('id'))));
 readRoutes.get('/deadline-moves', async (c) => c.json(await (await queriesFor(c, ['deadlineMoves'])).deadlineMoves.list()));
 readRoutes.get('/holidays', async (c) => {
-  const year = num(c.req.query('year'), 'year') ?? new Date().getUTCFullYear();
+  const year = num(c.req.query('year'), 'year') ?? Number(todayInManila().slice(0, 4));
   return c.json(await (await queriesFor(c, ['holidays'])).holidays.list(year));
 });
 readRoutes.get('/messages', async (c) => c.json(await (await queriesFor(c, ['messageTemplates'])).messages.list()));
@@ -211,7 +212,7 @@ readRoutes.get('/notifications', async (c) => c.json(paginate(await (await queri
 // ---- reports and activity ---------------------------------------------------------------------------------------
 readRoutes.get('/reports/client-checklist/:clientId', async (c) => c.json(await (await queriesFor(c)).reports.clientChecklist(c.req.param('clientId'))));
 readRoutes.get('/reports/client-history/:clientId', async (c) => {
-  const year = num(c.req.query('year'), 'year') ?? new Date().getUTCFullYear();
+  const year = num(c.req.query('year'), 'year') ?? Number(todayInManila().slice(0, 4));
   return c.json(await (await queriesFor(c)).reports.clientHistory(c.req.param('clientId'), year));
 });
 readRoutes.get('/reports/monthly-summary', async (c) => {
