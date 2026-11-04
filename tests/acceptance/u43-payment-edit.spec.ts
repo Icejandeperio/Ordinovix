@@ -5,6 +5,8 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 
+// A valid 1x1 PNG, so the browser can decode it
+const PNG_1X1 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 const API = process.env.VITE_DATA_SOURCE === 'api';
 
 async function asOwner(page: Page) {
@@ -80,5 +82,30 @@ test.describe('U43 Edit Payment', () => {
     await expect(edit.getByText('Proof file missing')).toHaveCount(0);
     await edit.getByRole('button', { name: /Update Payment/ }).click();
     await expect(page.getByText('Payment updated').first()).toBeVisible({ timeout: 15_000 });
+  });
+
+  test('U43 removing a file that is the proof of a payment is refused, and the screen says which payment', async ({ page }) => {
+    await asOwner(page);
+    await page.goto('/payments');
+    await page.getByTitle('Edit Payment').first().click();
+    const edit = page.getByRole('dialog');
+    await edit.getByRole('button', { name: /Upload Proof/ }).click();
+    await page.locator('input[type="file"]:not([capture])').last().setInputFiles({ name: 'slip-u43.png', mimeType: 'image/png', buffer: Buffer.from(PNG_1X1, 'base64') });
+    await expect(page.getByText('Payment receipt attached').first()).toBeVisible({ timeout: 15_000 });
+    await edit.getByRole('button', { name: /Update Payment/ }).click();
+    await expect(page.getByText('Payment updated').first()).toBeVisible({ timeout: 15_000 });
+
+    await page.goto('/documents');
+    page.on('dialog', (d) => void d.accept('wrong file'));
+    const removes = page.getByTitle('Remove file');
+    await expect(removes.first()).toBeVisible();
+    // Every proof file belongs to a payment in the sample data, so removing one of them is refused; try rows until the message shows
+    const refused = page.locator('[data-sonner-toast]').filter({ hasText: 'is the proof of the payment of' });
+    for (let i = 0; i < Math.min(await removes.count(), 40) && !(await refused.count()); i++) {
+      await removes.nth(i).click();
+      await page.waitForTimeout(150);
+    }
+    await expect(refused.first()).toBeVisible();
+    await expect(refused.first()).toContainText('Remove it from that payment first');
   });
 });
