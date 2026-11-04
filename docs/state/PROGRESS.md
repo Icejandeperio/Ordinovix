@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-11-04 U42 Update payment: 4xx for bad input, error ID on every 5xx, business dates in Manila — done
+- Changed: `src/data/commands.ts` (a proof must be an uploaded document), `worker/db/persist.ts` (foreign-key failure is a 422), `src/components/payments/record-payment-sheet.tsx` (real upload, no invented id), `src/routes/payments/page.tsx` (sheet starts from the edited payment), `src/data/api/http.ts` + `src/lib/error-id.ts` + `src/main.tsx` (error ID in the message and a Copy control), UTC date slices replaced by `todayInManila()`, `worker/routes/reads.ts`
+- Evidence: verify.mjs exit 0; tests now passing: U42 (4 Worker, 2 unit, 2 acceptance); red before: a made-up proof id gave a 500, and the edit sheet could not upload a proof; verifier PASS (docs/state/reviews/U42.md); PR #56
+- Notes: root cause was the sheet inventing `doc-proof-<time>` ids. Server date handling was already Manila-correct; the UTC slices were on the client. `calendar-payments.test.ts` now uploads a real proof. A load flake in `sign-in/page.test.tsx` (also on main) got a 30 s timeout; testTimeout proposal queued. API-mode suite not run locally (CI verify-api). The owner retest and Worker log in the request were left as placeholders.
 ## 2026-11-04 U41 Demo readiness: offline sign-out ends the session; no simulated UI in the API build — done
 - Changed: `src/lib/pending-sign-out.ts` (new), `src/data/api/http.ts` (nothing but the server sign-out is sent while one is owed; it goes first, at start-up and on `online`), `src/hooks/useData.ts`, `src/app/shell.tsx`, `src/main.tsx`; task detail uploads use `FileDrop`; Today preview uses `PreviewDrawer`; Settings backup panel and Welcome wording differ in the API build
 - Evidence: verify.mjs exit 0; tests now passing: U41 (4 acceptance, 6 unit); CI verify 201 and verify-api 197 green; verifier PASS (docs/state/reviews/U41.md); PR #55

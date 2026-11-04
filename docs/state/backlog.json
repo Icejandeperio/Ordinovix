@@ -1320,7 +1320,7 @@
       "id": "U42",
       "phase": "P4",
       "tier": "T2",
-      "status": "in_progress",
+      "status": "done",
       "depends_on": [
         "U41"
       ],
@@ -1341,7 +1341,9 @@
       "tests": [
         "U42"
       ],
-      "notes": "Owner request 2026-11-04 (preview, main 9c0630f). Root cause found: the payment sheet Upload Proof invented a document id (doc-proof-<time>), assertReferences skipped ids it could not find, and D1 rejected the foreign key as a 500; the 500 error ID was sent by the server but dropped by the client."
+      "notes": "Owner request 2026-11-04 (preview, main 9c0630f). Root cause found: the payment sheet Upload Proof invented a document id (doc-proof-<time>), assertReferences skipped ids it could not find, and D1 rejected the foreign key as a 500; the 500 error ID was sent by the server but dropped by the client.",
+      "pr": 56,
+      "evidence": "verify.mjs exit 0 (203 acceptance, 1186 unit); tests now passing: U42 (4 Worker, 2 unit, 2 acceptance); verifier PASS (docs/state/reviews/U42.md); PR #56"
     }
   ]
 }
