@@ -1349,7 +1349,7 @@
       "id": "U43",
       "phase": "P4",
       "tier": "T2",
-      "status": "in_progress",
+      "status": "done",
       "depends_on": [
         "U42"
       ],
@@ -1372,7 +1372,9 @@
       "tests": [
         "U43"
       ],
-      "notes": "Owner instruction 2026-11-05. Prepare the PR; do not merge. No protected file is changed (the toISOString guard is a Vitest test, not an eslint rule, because eslint.config.js is protected)."
+      "notes": "Owner instruction 2026-11-05. Prepare the PR; do not merge. No protected file is changed (the toISOString guard is a Vitest test, not an eslint rule, because eslint.config.js is protected).",
+      "pr": 57,
+      "evidence": "verify.mjs exit 0; tests now passing: U43 (4 unit in src/data/mock/u43-integrity.test.ts, 4 in src/lib/dates.manila-guard.test.ts, 3 acceptance); API-mode run 201 passed; verifier PASS (docs/state/reviews/U43.md); PR #57 (not merged: owner instruction)"
     }
   ]
 }
