@@ -1,3 +1,6 @@
+import { toast } from 'sonner';
+import { classifyError } from '@/domain/errors';
+import { errorIdOf } from '@/lib/error-id';
 import React, { useState, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
@@ -58,6 +61,12 @@ export function DocumentsPage() {
 
   const setLineStatus = useSetLineStatus();
   const removeDocument = useRemoveDocument();
+  // A refused removal (for example a file that is the proof of a payment) says why; the app's mutation handler already announces
+  // a conflict, a validation message and a server fault, so only the other kinds are announced here
+  const announceRemoveError = (err: unknown) => {
+    const kind = classifyError(err);
+    if (kind !== 'conflict' && kind !== 'validation' && !errorIdOf(err)) toast.error(err instanceof Error ? err.message : 'Could not remove the file');
+  };
 
   const allDocuments = docsData?.items || [];
   const clients = clientsData?.items || [];
@@ -425,7 +434,7 @@ export function DocumentsPage() {
                             onClick={() => {
                               const reason = prompt('Specify reason for removing document:');
                               if (reason) {
-                                removeDocument.mutate({ id: doc.id, reason });
+                                removeDocument.mutate({ id: doc.id, reason }, { onError: announceRemoveError });
                               }
                             }}
                             className="p-1 rounded text-ink-3 hover:text-critical-fg hover:bg-critical-bg transition-colors"
@@ -456,7 +465,7 @@ export function DocumentsPage() {
               onRemove={(d) => {
                 const reason = prompt('Reason for removing file:');
                 if (reason) {
-                  removeDocument.mutate({ id: d.id, reason });
+                  removeDocument.mutate({ id: d.id, reason }, { onError: announceRemoveError });
                 }
               }}
             />

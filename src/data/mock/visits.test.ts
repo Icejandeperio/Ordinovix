@@ -4,6 +4,18 @@ import { mockDevControls } from './index';
 import { visitItemReadiness, visitReadiness, packList } from '@/domain/rules';
 import type { TaskLine, Authorization, VisitItem, Task } from '@/domain/types';
 
+// Counter evidence is an uploaded file; an invented document id is refused (U43)
+async function evidenceFor(item: VisitItem): Promise<string> {
+  const bytes = new TextEncoder().encode('stamped copy ' + item.id);
+  const doc = await repositories.documents.upload(
+    { clientId: item.clientId, taskId: item.taskId, kind: 'stamped_copy', source: 'upload' },
+    new Blob([bytes], { type: 'application/pdf' }),
+    undefined,
+    { originalName: 'stamped.pdf', originalSizeBytes: bytes.length, sha256: 'visits-test-' + item.id },
+  );
+  return doc.id;
+}
+
 describe('mockRepositories.visits and Visits Pipeline (M7)', () => {
   beforeEach(() => {
     mockDevControls.reset();
@@ -90,14 +102,15 @@ describe('mockRepositories.visits and Visits Pipeline (M7)', () => {
     const detail = await repositories.visits.get(listRes.items[0].visit.id);
     const itemToRecord = detail.items[0];
 
+    const evidenceId = await evidenceFor(itemToRecord.item);
     const outcomeResult = await repositories.visits.recordOutcome(itemToRecord.item.id, {
       outcome: 'completed',
-      evidenceDocumentIds: ['doc-receipt-001'],
+      evidenceDocumentIds: [evidenceId],
       windowOrOfficer: 'Window 4 - Officer Reyes',
     });
 
     expect(outcomeResult.outcome).toBe('completed');
-    expect(outcomeResult.evidenceDocumentIds).toContain('doc-receipt-001');
+    expect(outcomeResult.evidenceDocumentIds).toContain(evidenceId);
 
     // Verify task state was updated to completed per Spec 16.6
     const updatedTask = await repositories.tasks.get(itemToRecord.task.id);
@@ -182,7 +195,7 @@ describe('mockRepositories.visits and Visits Pipeline (M7)', () => {
     for (const { item } of detail.items) {
       await repositories.visits.recordOutcome(item.id, {
         outcome: 'completed',
-        evidenceDocumentIds: ['doc-receipt-001'],
+        evidenceDocumentIds: [await evidenceFor(item)],
       });
     }
 

@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-11-05 U43 Integrity hardening after U42 — done (PR open, not merged by owner instruction)
+- Changed: visit evidence is a real upload (`record.tsx`, `file-drop.tsx`); `commands.ts` (unknown evidence id refused, real SHA-256, a payment's proof file cannot be removed: 409 naming the payment, Manila times); `record-payment-sheet.tsx` ("Proof file missing" + remove); `documents/page.tsx` (shows the refusal); `open-period-modal.tsx` + `dates.ts` (Manila due date); sign-in test stubs `@/data`
+- Evidence: verify.mjs exit 0; tests now passing: U43; API-mode run 201 passed; verifier PASS (docs/state/reviews/U43.md); PR #57
+- Notes: stub sweep in docs/state/reviews/U43-stub-sweep.md. Sign-in slowness was the cold import of the whole data layer, not the page; QUEUE timeout proposal withdrawn. The toISOString guard is a Vitest test (eslint.config.js is protected). The unit step of the gate fails about 2 of 3 runs on `main` too, on 5 s Worker timeouts (QUEUE has the baseline and a candidate fix). Advisory: add a Worker HTTP test for the 409.
 ## 2026-11-04 U42 Update payment: 4xx for bad input, error ID on every 5xx, business dates in Manila — done
 - Changed: `src/data/commands.ts` (a proof must be an uploaded document), `worker/db/persist.ts` (foreign-key failure is a 422), `src/components/payments/record-payment-sheet.tsx` (real upload, no invented id), `src/routes/payments/page.tsx` (sheet starts from the edited payment), `src/data/api/http.ts` + `src/lib/error-id.ts` + `src/main.tsx` (error ID in the message and a Copy control), UTC date slices replaced by `todayInManila()`, `worker/routes/reads.ts`
 - Evidence: verify.mjs exit 0; tests now passing: U42 (4 Worker, 2 unit, 2 acceptance); red before: a made-up proof id gave a 500, and the edit sheet could not upload a proof; verifier PASS (docs/state/reviews/U42.md); PR #56

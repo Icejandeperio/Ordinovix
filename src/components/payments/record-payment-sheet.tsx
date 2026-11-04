@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import type { Payment, PaymentChannel, ID, Centavos } from '@/domain/types';
-import { useClients, useTasks, useSavePayment } from '@/hooks/useData';
+import { useClients, useTasks, useSavePayment, useExistingDocumentIds } from '@/hooks/useData';
 import { MoneyInput } from '@/components/inputs/money-input';
 import { DateField } from '@/components/inputs/date-field';
 import { todayInManila } from '@/lib/dates';
@@ -77,11 +77,17 @@ export function RecordPaymentSheet({
   const [proofIds, setProofIds] = useState<ID[]>(
     payment?.proofDocumentIds || []
   );
-  const [proofName, setProofName] = useState<string>(
-    payment?.proofDocumentIds?.length
-      ? `${payment.proofDocumentIds.length} proof file${payment.proofDocumentIds.length > 1 ? 's' : ''} attached`
-      : ''
-  );
+  // The name of a proof uploaded in this sheet; the files already on the payment are counted from the saved documents
+  const [uploadedProofName, setUploadedProofName] = useState<string>('');
+  // A proof id whose file no longer exists is shown as missing, with a way to remove it (a save with it is refused)
+  const existing = useExistingDocumentIds(payment?.clientId, payment?.proofDocumentIds ?? []);
+  const missingProofIds = existing.isSuccess ? proofIds.filter((id) => !existing.data.has(id) && payment?.proofDocumentIds?.includes(id)) : [];
+  const presentProofCount = proofIds.length - missingProofIds.length;
+  const proofName = uploadedProofName
+    ? uploadedProofName
+    : presentProofCount > 0
+      ? `${presentProofCount} proof file${presentProofCount > 1 ? 's' : ''} attached`
+      : '';
   const [proofUploadOpen, setProofUploadOpen] = useState(false);
   const [note, setNote] = useState<string>(payment?.note || '');
 
@@ -246,6 +252,7 @@ export function RecordPaymentSheet({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <MoneyInput
+                id="payment-amount"
                 label="Amount Paid (PHP)"
                 centavos={amountCentavos}
                 onChangeCentavos={setAmountCentavos}
@@ -398,12 +405,25 @@ export function RecordPaymentSheet({
                 defaultKind="payment_proof"
                 onUploaded={(doc) => {
                   setProofIds((ids) => [...ids, doc.id]);
-                  setProofName(doc.displayName);
+                  setUploadedProofName(doc.displayName);
                   setProofUploadOpen(false);
                   toast.success('Payment receipt attached');
                 }}
               />
             )}
+
+            {missingProofIds.map((id) => (
+              <div key={id} className="flex items-center gap-2 p-2 rounded bg-critical-bg text-critical-fg border border-critical-bd text-xs font-semibold">
+                <span className="truncate">Proof file missing</span>
+                <button
+                  type="button"
+                  onClick={() => setProofIds((ids) => ids.filter((x) => x !== id))}
+                  className="ml-auto underline cursor-pointer"
+                >
+                  Remove missing proof
+                </button>
+              </div>
+            ))}
 
             {proofName ? (
               <div className="flex items-center gap-2 p-2 rounded bg-good-bg text-good-fg border border-good-bd text-xs font-semibold">
@@ -412,8 +432,8 @@ export function RecordPaymentSheet({
                 <button
                   type="button"
                   onClick={() => {
-                    setProofIds([]);
-                    setProofName('');
+                    setProofIds(missingProofIds);
+                    setUploadedProofName('');
                   }}
                   className="ml-auto text-ink-3 hover:text-critical-fg"
                 >

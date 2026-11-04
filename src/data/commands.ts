@@ -1555,7 +1555,7 @@ export function createCommands(ctx: CommandContext) {
       const v = store.visits.find((item) => item.id === id);
       if (!v) throw new NotFoundError('Visit not found');
       v.status = 'in_progress';
-      v.startedAt = todayInManila() + 'T' + new Date().toTimeString().slice(0, 8) + '+08:00';
+      v.startedAt = nowInManila();
       v.departureOverrideReason = leaveAnywayReason;
       logActivity('visit_started', 'visit', id, `Started visit to ${v.officeName}`, undefined, leaveAnywayReason);
       return v;
@@ -1578,8 +1578,8 @@ export function createCommands(ctx: CommandContext) {
         if (line.clientId !== item.clientId) throw new RuleViolationError('A line of another client cannot be flagged here');
       }
       for (const docId of o.evidenceDocumentIds ?? []) {
-        const doc = store.documents.find((d) => d.id === docId);
-        if (!doc) continue;
+        const doc = store.documents.find((d) => d.id === docId && !d.deletedAt);
+        if (!doc) throw new ValidationError({ evidenceDocumentIds: ['Counter evidence must be an uploaded file. Upload it again.'] });
         assertClient(doc.clientId);
         if (doc.clientId !== item.clientId) throw new RuleViolationError('A document of another client cannot be attached here');
       }
@@ -1598,7 +1598,7 @@ export function createCommands(ctx: CommandContext) {
       item.windowOrOfficer = o.windowOrOfficer;
       item.nextAction = o.nextAction;
       item.evidenceDocumentIds = o.evidenceDocumentIds || [];
-      item.outcomeAt = todayInManila() + 'T' + new Date().toTimeString().slice(0, 8) + '+08:00';
+      item.outcomeAt = nowInManila();
       item.recordedBy = user.id;
 
       // Apply outcome mapping (Spec 16.6)
@@ -1999,6 +1999,12 @@ export function createCommands(ctx: CommandContext) {
     return ctx.files;
   };
 
+  /** The real content hash for an upload that names none, so no row ever holds a made-up one. */
+  const sha256OfBlob = async (file: Blob): Promise<string> => {
+    const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', await file.arrayBuffer()));
+    return Array.from(digest, (b) => b.toString(16).padStart(2, '0')).join('');
+  };
+
   const documents: Pick<Repositories['documents'], 'upload' | 'replace' | 'update' | 'remove' | 'getUrl'> = {
     async upload(meta, file, thumb, info) {
       assertPatch('documents.upload', meta);
@@ -2031,7 +2037,7 @@ export function createCommands(ctx: CommandContext) {
         originalSizeBytes: info?.originalSizeBytes || file.size,
         compressed: file.size < (info?.originalSizeBytes || file.size),
         pageCount: info?.pageCount,
-        sha256: info?.sha256 || 'fake-hash-' + Date.now(),
+        sha256: info?.sha256 || (await sha256OfBlob(file)),
         storageKey: fileKey,
         thumbnailKey: thumbKey,
         versionNo: 1,
@@ -2083,7 +2089,7 @@ export function createCommands(ctx: CommandContext) {
         originalSizeBytes: info?.originalSizeBytes || file.size,
         compressed: file.size < (info?.originalSizeBytes || file.size),
         pageCount: undefined,
-        sha256: info?.sha256 || 'fake-hash-' + Date.now(),
+        sha256: info?.sha256 || (await sha256OfBlob(file)),
         storageKey: fileKey,
         thumbnailKey: thumbKey,
         versionNo: old.versionNo + 1,
@@ -2124,6 +2130,13 @@ export function createCommands(ctx: CommandContext) {
       assertDocument(id);
       validateReason(reason);
       const doc = store.documents.find((d) => d.id === id);
+      const holder = store.payments.find((p) => !p.deletedAt && p.proofDocumentIds.includes(id));
+      if (doc && holder) {
+        const ref = holder.referenceNo ? `, reference ${holder.referenceNo}` : '';
+        throw new RuleViolationError(
+          `This file is the proof of the payment of ₱${(holder.amount / 100).toFixed(2)} on ${holder.paidOn}${ref}. Remove it from that payment first.`,
+        );
+      }
       if (doc) {
         doc.deletedAt = todayInManila() + 'T00:00:00+08:00';
         doc.deletedReason = reason;

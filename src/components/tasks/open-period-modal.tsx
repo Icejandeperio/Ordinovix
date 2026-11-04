@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ModalDialog } from '@/components/ui/modal-dialog';
 import { useClients, useTemplates, useTasks, useOpenPeriod } from '@/hooks/useData';
+import { twentiethOfNextMonth } from '@/lib/dates';
 
 interface OpenPeriodModalProps {
   open: boolean;
@@ -71,10 +72,8 @@ export function OpenPeriodModal({ open, onClose }: OpenPeriodModalProps) {
       selected: boolean;
     }> = [];
 
-    const now = new Date();
-    const defaultDue = new Date(now.getFullYear(), now.getMonth() + 1, 20)
-      .toISOString()
-      .slice(0, 10);
+    // The 20th of next month, counted from today's Manila date (a local-midnight Date turned into UTC lands a day early)
+    const defaultDue = twentiethOfNextMonth();
 
     for (const cid of selectedClientIds) {
       const cl = clients.find((c) => c.client.id === cid)?.client;

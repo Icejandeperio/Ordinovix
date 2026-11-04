@@ -240,6 +240,25 @@ export function useDocuments(filters?: Parameters<typeof repositories.documents.
   });
 }
 
+/** Which of these document ids still exist for the client (removed or never-saved ids are absent). Follows every page. */
+export function useExistingDocumentIds(clientId: string | undefined, ids: string[]) {
+  return useQuery({
+    queryKey: ['documents', 'existing', clientId, [...ids].sort()],
+    enabled: !!clientId && ids.length > 0,
+    queryFn: async () => {
+      const wanted = new Set(ids);
+      const found = new Set<string>();
+      let cursor: string | undefined;
+      do {
+        const page = await repositories.documents.list({ clientId, cursor, limit: 100 });
+        for (const d of page.items) if (wanted.has(d.id)) found.add(d.id);
+        cursor = found.size === wanted.size ? undefined : page.nextCursor;
+      } while (cursor);
+      return found;
+    },
+  });
+}
+
 export function useMemberships(enabled = true) {
   return useQuery({
     queryKey: ['memberships'],
